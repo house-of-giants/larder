@@ -16,7 +16,9 @@ import type * as lib_auth from "../lib/auth.js";
 import type * as lib_household from "../lib/household.js";
 import type * as lib_ledger from "../lib/ledger.js";
 import type * as lib_pantry from "../lib/pantry.js";
+import type * as lib_quantity_text from "../lib/quantity_text.js";
 import type * as pantry from "../pantry.js";
+import type * as recipes from "../recipes.js";
 import type * as seed from "../seed.js";
 import type * as test_helpers from "../test_helpers.js";
 
@@ -35,7 +37,9 @@ declare const fullApi: ApiFromModules<{
   "lib/household": typeof lib_household;
   "lib/ledger": typeof lib_ledger;
   "lib/pantry": typeof lib_pantry;
+  "lib/quantity_text": typeof lib_quantity_text;
   pantry: typeof pantry;
+  recipes: typeof recipes;
   seed: typeof seed;
   test_helpers: typeof test_helpers;
 }>;
