@@ -29,6 +29,20 @@ Clerk needs a JWT template named `convex` and the deployment needs its issuer do
 bunx convex env set CLERK_JWT_ISSUER_DOMAIN https://<instance>.clerk.accounts.dev
 ```
 
+## Seed a dev household
+
+`convex/seed/` holds a real week of fixtures: 92 ingredients, 7 recipes, the pantry on hand,
+and a planned week. Load them into a household you belong to (find its id in the Convex
+dashboard's `households` table):
+
+```sh
+bunx convex run seed:load '{"householdId":"<id>"}'
+```
+
+It replaces that household's ingredients, pantry, recipes, weeks, lists, and ledger;
+members and agent tokens stay. Running it again gives the same result. It is an internal
+function, so the app cannot call it.
+
 ## Check it
 
 ```sh

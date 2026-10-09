@@ -1,0 +1,80 @@
+{
+  "weekOf": "2026-10-09",
+  "status": "planning",
+  "sourceUrls": [
+    "https://barefoodtim.substack.com/p/a-full-week-of-meals-a-shopping-list-272"
+  ],
+  "recipes": [
+    {
+      "recipe": "Bacon, Egg and Pepper Jack Breakfast Biscuits",
+      "status": "selected",
+      "multiplier": {
+        "text": "1",
+        "decimal": 1
+      }
+    },
+    {
+      "recipe": "Apple Cinnamon Greek Yogurt Parfaits",
+      "status": "selected",
+      "multiplier": {
+        "text": "1",
+        "decimal": 1
+      }
+    },
+    {
+      "recipe": "Rosemary Balsamic Pot Roast with Carrots and Potatoes",
+      "status": "selected",
+      "multiplier": {
+        "text": "1",
+        "decimal": 1
+      }
+    },
+    {
+      "recipe": "Sheet Pan Maple Mustard Sausage, Sweet Potato and Brussels Sprouts",
+      "status": "selected",
+      "multiplier": {
+        "text": "1",
+        "decimal": 1
+      }
+    },
+    {
+      "recipe": "Italian Grinder Sliders",
+      "status": "selected",
+      "multiplier": {
+        "text": "1",
+        "decimal": 1
+      }
+    },
+    {
+      "recipe": "Monster Cookie Protein Bites",
+      "status": "selected",
+      "multiplier": {
+        "text": "1",
+        "decimal": 1
+      }
+    },
+    {
+      "recipe": "Salisbury Steak Meatballs with Mashed Potatoes",
+      "status": "selected",
+      "multiplier": {
+        "text": "1",
+        "decimal": 1
+      }
+    }
+  ],
+  "adaptations": [
+    {
+      "recipe": "Sheet Pan Maple Mustard Sausage, Sweet Potato and Brussels Sprouts",
+      "kind": "replace",
+      "description": "Replace Tim’s 2 lb fully cooked smoked chicken sausage/kielbasa in the sheet-pan dinner with 2 lb elk Italian sausage; if raw, cook to 160°F before/while roasting, then combine with the maple-mustard glaze.",
+      "originalIngredient": "smoked chicken sausage",
+      "newIngredient": "elk Italian sausage",
+      "quantityText": "2",
+      "quantityDecimal": 2,
+      "unit": "lb"
+    }
+  ],
+  "excludedFromSource": [
+    "Miso Chicken Noodle Soup"
+  ]
+}
