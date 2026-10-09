@@ -1,7 +1,7 @@
 import { get, set } from "idb-keyval";
 import { useEffect, useState } from "react";
 import type { CurrentList } from "#/components/list/types";
-import { canShowOffline } from "./ownership";
+import { canShowOffline } from "#/lib/offline-ownership";
 
 // One saved copy of the list on this phone, replaced (never merged) every time the
 // server's copy changes, stamped with the Clerk user it was fetched for. It is cleared on

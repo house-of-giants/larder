@@ -7,9 +7,8 @@ import type { Id } from "../../convex/_generated/dataModel";
 import { currentList, setItemStatus } from "#/components/list/list-data";
 import type { TapStatus } from "#/components/list/types";
 import { errorMessage } from "#/lib/errors";
-import { createListOps } from "./list-ops-store";
+import { createListOps, type QueueStorage, type StoredQueue } from "./list-ops-store";
 import { applyOps } from "./overlay";
-import { canShowOffline } from "./ownership";
 import type { QueuedOp } from "./queue";
 import { useOnline } from "./use-online";
 
@@ -18,27 +17,13 @@ const KEY = "queue:list";
 // replayed later; the write is idempotent, so a late arrival of the first try is harmless.
 const SEND_TIMEOUT_MS = 8_000;
 
-/** The saved queue, stamped with the Clerk user whose taps it holds. */
-type StoredQueue = { owner: string; ops: QueuedOp[] };
-
-async function readQueue(owner: string | null): Promise<QueuedOp[]> {
-  try {
-    const stored = await get<StoredQueue>(KEY);
-    return stored && canShowOffline(stored.owner, owner) ? stored.ops : [];
-  } catch {
-    return [];
-  }
-}
-
-async function writeQueue(owner: string | null, ops: QueuedOp[]): Promise<void> {
-  // Nobody verified: keep the taps in memory only.
-  if (owner === null) return;
-  try {
-    await (ops.length === 0 ? del(KEY) : set(KEY, { owner, ops } satisfies StoredQueue));
-  } catch {
-    // No IndexedDB: the queue lives as long as the page does.
-  }
-}
+// The phone's one queue slot. Ownership checks live in the store (list-ops-store.ts).
+const storage: QueueStorage = {
+  get: () => get<StoredQueue>(KEY).catch(() => undefined),
+  // No IndexedDB: the queue lives as long as the page does.
+  set: (value) => set(KEY, value).catch(() => undefined),
+  del: () => del(KEY).catch(() => undefined),
+};
 
 function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
   return new Promise((resolve, reject) => {
@@ -97,8 +82,8 @@ export function useListOps(owner: string | null) {
   );
   const [ops] = useState(() =>
     createListOps({
-      read: () => readQueue(owner),
-      write: (queue) => writeQueue(owner, queue),
+      owner,
+      storage,
       // Replaced by the effect below before anything is sent.
       send: () => Promise.reject(new Error("not ready")),
     }),
@@ -108,8 +93,11 @@ export function useListOps(owner: string | null) {
   }, [ops, send]);
   const queued = useSyncExternalStore(ops.subscribe, ops.getQueue, ops.getQueue);
 
+  // Unmounting (including on an identity change, since the screen is keyed by owner)
+  // ends this store's session, so a late read or drain cannot touch the next user's queue.
   useEffect(() => {
     void ops.load();
+    return () => ops.dispose();
   }, [ops]);
   useEffect(() => {
     ops.setCanSend(canSend);
