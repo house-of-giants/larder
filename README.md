@@ -36,6 +36,23 @@ bun run check          # typecheck, lint, format, unit + convex tests, build
 bun run test:e2e       # playwright against the built server (run `bun run build` first)
 ```
 
+## Deploy
+
+Vercel builds every PR as a preview with the dev deployment's `VITE_CONVEX_URL`. The
+production build (`vercel.json`) runs `convex deploy`, which needs these on Vercel's
+production environment:
+
+- `CONVEX_DEPLOY_KEY`: a production deploy key from the Convex dashboard. It sets
+  `VITE_CONVEX_URL` for the build on its own.
+- `VITE_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`: from the Clerk production instance.
+- `CLERK_SIGN_IN_URL=/sign-in`, `CLERK_SIGN_UP_URL=/sign-up`.
+
+And on the production Convex deployment:
+
+```sh
+bunx convex env set --prod CLERK_JWT_ISSUER_DOMAIN https://clerk.<your-domain>
+```
+
 ## Layout
 
 ```
