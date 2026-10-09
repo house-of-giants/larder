@@ -278,5 +278,8 @@ export default defineSchema({
     undoesEventId: v.optional(v.id("inventoryEvents")),
   })
     .index("by_householdId", ["householdId"])
-    .index("by_householdId_at", ["householdId", "at"]),
+    .index("by_householdId_at", ["householdId", "at"])
+    // Newest-inserted first within a key: a list item's or a pantry row's latest event.
+    .index("by_householdId_listItemId", ["householdId", "refs.listItemId"])
+    .index("by_householdId_pantryItemId", ["householdId", "refs.pantryItemId"]),
 });

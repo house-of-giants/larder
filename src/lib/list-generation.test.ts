@@ -277,6 +277,26 @@ describe("generateList rules", () => {
     });
   });
 
+  it("keeps a lone row in the recipe's own words and writes only sums fresh", () => {
+    const items = only({
+      recipes: [
+        recipe("Biscuits", [
+          ["butter", 0.5, "½", "cup"],
+          ["salt", 0.2, "1/5", "tsp"],
+        ]),
+        recipe("Roast", [["butter", 0.25, "1/4", "stick"]]),
+        recipe("Bites", [["butter", 0.25, ".25", "stick"]]),
+      ],
+    });
+    expect(
+      items.map((i) => [i.required.quantityText, i.purchase.quantityText, i.required.unit]),
+    ).toEqual([
+      ["½", "½", "cup"],
+      ["1/2", "1/2", "stick"],
+      ["1/5", "1/5", "tsp"],
+    ]);
+  });
+
   it("rounds a purchase in each up to a whole one", () => {
     const [line] = only({ recipes: [recipe("Sliders", [["onion", 0.25, "1/4", "each"]])] });
     expect(line.required).toEqual({ quantityText: "1/4", quantityDecimal: 0.25, unit: "each" });

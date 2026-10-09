@@ -105,10 +105,12 @@ function scaled<I extends string>(
   multiplier: number,
 ): Row<I> {
   const decimal = quantityDecimal == null ? null : quantityDecimal * multiplier;
+  const words = (quantityText ?? "").trim();
   return {
     ingredientId,
     decimal,
-    text: decimal === null ? (quantityText ?? "").trim() : formatQuantity(decimal),
+    // The recipe's words win unless the multiplier changed the number.
+    text: decimal === null || (multiplier === 1 && words !== "") ? words : formatQuantity(decimal),
     unit: (unit ?? "").trim(),
   };
 }
@@ -254,7 +256,8 @@ export function generateList<I extends string, R extends string>(
     items.push({
       ...line,
       purchase: {
-        quantityText: formatQuantity(buy),
+        // Buying exactly what the recipes say keeps their words.
+        quantityText: buy === agg.decimal ? agg.text : formatQuantity(buy),
         quantityDecimal: buy,
         unit: agg.unit,
         ...(onHand > 0 && { note: `${formatQuantity(onHand)} ${agg.unit} on hand` }),

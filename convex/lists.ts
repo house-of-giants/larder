@@ -53,8 +53,19 @@ async function listItemsOf(ctx: QueryCtx, householdId: Id<"households">, listId:
   return rows.filter((r) => r.householdId === householdId);
 }
 
-const planKey = (ingredientId: Id<"ingredients"> | undefined, unit: string) =>
-  JSON.stringify([ingredientId ?? null, unit]);
+/**
+ * A plan line's identity across runs, the same key generateList aggregates by: ingredient
+ * and unit, plus the words when there is no number ("as needed" beside "2" stays apart).
+ */
+const planKey = (
+  ingredientId: Id<"ingredients"> | undefined,
+  required: { quantityText: string; quantityDecimal?: number; unit: string },
+) =>
+  JSON.stringify([
+    ingredientId ?? null,
+    required.unit.trim(),
+    required.quantityDecimal === undefined ? required.quantityText.trim() : null,
+  ]);
 
 export const generate = mutation({
   args: { weekId: v.id("weeks") },
@@ -157,13 +168,18 @@ export const generate = mutation({
       await ctx.db.patch("lists", list._id, { generatedAt: now });
     }
 
-    // Re-running keeps ad-hoc items, and keeps a plan line's row (and so its check-off and
-    // the ledger events that point at it) when the same ingredient and unit come back.
+    // Re-running keeps ad-hoc items untouched, and plan lines someone checked or skipped:
+    // their purchase is what went into the pantry, so they stay exactly as they are even
+    // when the new run would drop or change the line. Lines still open (needed, onHand)
+    // keep their row when the same line comes back, and are replaced otherwise.
+    const decided = new Set<string>();
     const previous = new Map<string, Doc<"listItems">>();
     for (const item of await listItemsOf(ctx, householdId, list._id)) {
       if (item.source !== "plan") continue;
-      const key = planKey(item.ingredientId, item.required.unit);
-      if (previous.has(key)) {
+      const key = planKey(item.ingredientId, item.required);
+      if (item.status === "checked" || item.status === "skipped") {
+        decided.add(key);
+      } else if (previous.has(key)) {
         await ctx.db.delete("listItems", item._id);
       } else {
         previous.set(key, item);
@@ -171,22 +187,20 @@ export const generate = mutation({
     }
 
     for (const line of items) {
+      const key = planKey(line.ingredientId, line.required);
+      if (decided.has(key)) continue;
       const fields = {
         displayName: line.displayName,
         category: line.category,
         required: line.required,
         purchase: line.purchase,
+        status: line.status,
         sourceRecipeIds: line.sourceRecipeIds,
       };
-      const key = planKey(line.ingredientId, line.required.unit);
       const kept = previous.get(key);
       if (kept !== undefined) {
         previous.delete(key);
-        const decided = kept.status === "checked" || kept.status === "skipped";
-        await ctx.db.patch("listItems", kept._id, {
-          ...fields,
-          status: decided ? kept.status : line.status,
-        });
+        await ctx.db.patch("listItems", kept._id, fields);
         continue;
       }
       await ctx.db.insert("listItems", {
@@ -195,7 +209,6 @@ export const generate = mutation({
         source: "plan",
         ingredientId: line.ingredientId,
         ...fields,
-        status: line.status,
       });
     }
     for (const stale of previous.values()) {
@@ -331,9 +344,10 @@ export const addItem = mutation({
 });
 
 type PurchasePayload = {
+  /** The row before the check-off; null when the check-off created it. */
   before: PantrySnapshot | null;
   after: PantrySnapshot;
-  /** The amount added to a same-unit count; absent when the row was set outright. */
+  /** The count that was bought, on every count purchase; absent for levels. */
   added?: { quantityDecimal: number; unit: string };
   /** A count in another unit that the purchase replaced (no unit conversion). */
   replacedCount?: { quantityText: string; quantityDecimal: number; unit: string };
@@ -356,13 +370,19 @@ async function putPantryRow(
   return existing._id;
 }
 
+type Tap = {
+  householdId: Id<"households">;
+  memberId: Id<"members">;
+  item: Doc<"listItems">;
+  ingredient: Doc<"ingredients">;
+  /** The phone's tap time, for replayed offline taps. */
+  at?: number;
+};
+
 /** Check-off of a plan item: the pantry gains what was bought, with a purchase event. */
 async function applyPurchase(
   ctx: MutationCtx,
-  householdId: Id<"households">,
-  memberId: Id<"members">,
-  item: Doc<"listItems">,
-  ingredient: Doc<"ingredients">,
+  { householdId, memberId, item, ingredient, at }: Tap,
 ) {
   const existing = await findPantryRow(ctx, householdId, ingredient._id);
   const location = existing?.location ?? defaultLocation(ingredient.category);
@@ -391,25 +411,15 @@ async function applyPurchase(
     // "As needed" has no number to add; the item is checked and the pantry left alone.
     if (bought === null) return;
     const unit = bought.unit.trim();
+    payload.added = { quantityDecimal: bought.quantityDecimal, unit };
     const count = existing?.count;
-    if (count !== undefined && count.unit.trim() === unit) {
-      const total = count.quantityDecimal + bought.quantityDecimal;
-      after = pantrySnapshot({
-        ...kept,
-        count: { quantityText: formatQuantity(total), quantityDecimal: total, unit },
-      });
-      payload.added = { quantityDecimal: bought.quantityDecimal, unit };
-    } else {
-      after = pantrySnapshot({
-        ...kept,
-        count: {
-          quantityText: formatQuantity(bought.quantityDecimal),
-          quantityDecimal: bought.quantityDecimal,
-          unit,
-        },
-      });
-      if (count !== undefined) payload.replacedCount = count;
-    }
+    const sameUnit = count !== undefined && count.unit.trim() === unit;
+    const total = (sameUnit ? count.quantityDecimal : 0) + bought.quantityDecimal;
+    after = pantrySnapshot({
+      ...kept,
+      count: { quantityText: formatQuantity(total), quantityDecimal: total, unit },
+    });
+    if (count !== undefined && !sameUnit) payload.replacedCount = count;
   }
 
   const pantryItemId = await putPantryRow(ctx, householdId, existing, after);
@@ -419,58 +429,96 @@ async function applyPurchase(
     actor: { kind: "member", memberId },
     refs: { pantryItemId, listItemId: item._id },
     payload: { ...payload, after } satisfies PurchasePayload,
+    at,
+  });
+}
+
+/** The newest-inserted event for a list item or pantry row (not the newest `at`). */
+async function latestEvent(
+  ctx: QueryCtx,
+  householdId: Id<"households">,
+  ref: { listItemId: Id<"listItems"> } | { pantryItemId: Id<"pantryItems"> },
+) {
+  const events =
+    "listItemId" in ref
+      ? ctx.db
+          .query("inventoryEvents")
+          .withIndex("by_householdId_listItemId", (q) =>
+            q.eq("householdId", householdId).eq("refs.listItemId", ref.listItemId),
+          )
+      : ctx.db
+          .query("inventoryEvents")
+          .withIndex("by_householdId_pantryItemId", (q) =>
+            q.eq("householdId", householdId).eq("refs.pantryItemId", ref.pantryItemId),
+          );
+  return await events.order("desc").first();
+}
+
+const sameAmount = (a: number, b: number) => Math.abs(a - b) < 1e-9;
+
+/**
+ * What un-checking should leave in the pantry, or `undefined` to leave the row alone.
+ * Only the check-off's own change is taken back; anything done to the row since stays.
+ */
+async function undoneRow(
+  ctx: QueryCtx,
+  householdId: Id<"households">,
+  purchase: Doc<"inventoryEvents">,
+  existing: Doc<"pantryItems"> | null,
+): Promise<PantrySnapshot | null | undefined> {
+  const payload = purchase.payload as PurchasePayload;
+  if (existing === null) return undefined;
+  const untouched = (await latestEvent(ctx, householdId, { pantryItemId: existing._id }))?._id;
+  const touchedSince = untouched !== purchase._id;
+
+  // A level: back to what it was, only while it is still the full the check-off set.
+  if (payload.added === undefined) {
+    return existing.level === payload.after.level ? payload.before : undefined;
+  }
+
+  const added = payload.added;
+  const count = existing.count;
+  if (count === undefined || count.unit.trim() !== added.unit) return undefined;
+
+  // Another unit was replaced: put it back only while the row holds just what was bought.
+  if (payload.replacedCount !== undefined) {
+    return sameAmount(count.quantityDecimal, added.quantityDecimal) ? payload.before : undefined;
+  }
+
+  // A row the check-off created, untouched since: it goes away again.
+  if (payload.before === null && !touchedSince) return null;
+  const total = Math.max(0, count.quantityDecimal - added.quantityDecimal);
+  return pantrySnapshot({
+    ...existing,
+    count: { quantityText: formatQuantity(total), quantityDecimal: total, unit: count.unit },
   });
 }
 
 /** Un-check of a plan item: reverses its latest purchase event, if it has one standing. */
 async function reversePurchase(
   ctx: MutationCtx,
-  householdId: Id<"households">,
-  memberId: Id<"members">,
-  item: Doc<"listItems">,
-  ingredient: Doc<"ingredients">,
+  { householdId, memberId, item, ingredient, at }: Tap,
 ) {
-  // Newest first, reading only as far back as this item's last event.
-  let latest: Doc<"inventoryEvents"> | undefined;
-  for await (const event of ctx.db
-    .query("inventoryEvents")
-    .withIndex("by_householdId_at", (q) => q.eq("householdId", householdId))
-    .order("desc")) {
-    if (event.refs.listItemId === item._id) {
-      latest = event;
-      break;
-    }
-  }
-  if (latest === undefined || latest.type !== "purchase") return;
-  const payload = latest.payload as PurchasePayload;
+  const latest = await latestEvent(ctx, householdId, { listItemId: item._id });
+  if (latest === null || latest.type !== "purchase") return;
 
   const existing = await findPantryRow(ctx, householdId, ingredient._id);
-  let restored: PantrySnapshot | null;
-  const count = existing?.count;
-  if (
-    existing !== null &&
-    payload.added !== undefined &&
-    count !== undefined &&
-    count.unit.trim() === payload.added.unit
-  ) {
-    // Take back only what the check-off added, so edits made since are kept.
-    const total = Math.max(0, count.quantityDecimal - payload.added.quantityDecimal);
-    restored = pantrySnapshot({
-      ...existing,
-      count: { quantityText: formatQuantity(total), quantityDecimal: total, unit: count.unit },
-    });
-  } else {
-    restored = payload.before;
-  }
-
-  const pantryItemId = await putPantryRow(ctx, householdId, existing, restored);
+  const restored = await undoneRow(ctx, householdId, latest, existing);
+  const before = existing === null ? null : pantrySnapshot(existing);
+  // Left alone, the undo is still recorded, so this purchase is never reversed twice.
+  const after = restored === undefined ? before : restored;
+  const pantryItemId =
+    restored === undefined
+      ? existing?._id
+      : await putPantryRow(ctx, householdId, existing, restored);
   await recordInventoryEvent(ctx, {
     householdId,
     type: "undo",
     actor: { kind: "member", memberId },
     refs: { pantryItemId, listItemId: item._id },
-    payload: { before: existing === null ? null : pantrySnapshot(existing), after: restored },
+    payload: { before, after },
     undoesEventId: latest._id,
+    at,
   });
 }
 
@@ -500,10 +548,11 @@ export const setItemStatus = mutation({
       if (ingredient === null || ingredient.householdId !== householdId) {
         throw new ConvexError(itemNotHere);
       }
+      const tap = { householdId, memberId: member._id, item, ingredient, at: args.at };
       if (args.status === "checked") {
-        await applyPurchase(ctx, householdId, member._id, item, ingredient);
+        await applyPurchase(ctx, tap);
       } else if (item.status === "checked") {
-        await reversePurchase(ctx, householdId, member._id, item, ingredient);
+        await reversePurchase(ctx, tap);
       }
     }
 

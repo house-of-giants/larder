@@ -2,7 +2,7 @@ import { convexTest } from "convex-test";
 import { describe, expect, it } from "vitest";
 import expected from "../src/lib/__fixtures__/seeded-week-expected.json";
 import { api, internal } from "./_generated/api";
-import type { Doc, Id } from "./_generated/dataModel";
+import type { Id } from "./_generated/dataModel";
 import schema from "./schema";
 import { createHousehold, type Test } from "./test_helpers";
 
@@ -54,17 +54,51 @@ async function eventsOf(t: Test, householdId: Id<"households">) {
   );
 }
 
-const shape = (i: Pick<Doc<"listItems">, "displayName" | "required" | "status" | "purchase">) =>
-  [i.displayName, i.required.unit, i.status, i.purchase?.quantityText].join(" | ");
+type Amount = { quantityText: string; quantityDecimal?: number; unit: string; note?: string };
+
+/** Decimals rounded to 1e-9, so a stored 1/3 compares equal to the fixture's. */
+function rounded(amount: Amount | undefined) {
+  if (amount === undefined) return undefined;
+  return amount.quantityDecimal === undefined
+    ? amount
+    : { ...amount, quantityDecimal: Math.round(amount.quantityDecimal * 1e9) / 1e9 };
+}
+
+/** Everything the fixture pins down about a line, recipes by name. */
+async function persistedLines(t: Test, householdId: Id<"households">) {
+  const items = await itemsOf(t, householdId);
+  const recipes = await t.run((ctx) => ctx.db.query("recipes").collect());
+  const recipeNames = new Map(recipes.map((r) => [r._id, r.name]));
+  return items.map((i) => ({
+    section: i.category,
+    displayName: i.displayName,
+    required: rounded(i.required),
+    purchase: rounded(i.purchase),
+    status: i.status,
+    sourceRecipes: i.sourceRecipeIds.map((id) => recipeNames.get(id)),
+  }));
+}
+
+const lineKey = (l: { displayName: string; required?: Amount }) =>
+  `${l.displayName}|${l.required?.unit}`;
+const byLine = (a: { displayName: string }, b: { displayName: string }) =>
+  lineKey(a).localeCompare(lineKey(b));
 
 describe("lists.generate", () => {
   it("makes the seeded week's list, matching the hand-computed one", async () => {
     const t = newTest();
     const { householdId, weekId } = await seededList(t);
+    const lines = await persistedLines(t, householdId);
+    const want = expected.items.map((i) => ({
+      section: i.section,
+      displayName: i.displayName,
+      required: rounded(i.required),
+      purchase: rounded(i.purchase),
+      status: i.status,
+      sourceRecipes: i.sourceRecipes,
+    }));
+    expect(lines.sort(byLine)).toEqual(want.sort(byLine));
     const items = await itemsOf(t, householdId);
-    expect(items.map(shape).sort()).toEqual(
-      expected.items.map((i) => shape({ ...i, status: i.status as "needed" | "onHand" })).sort(),
-    );
     expect(items.every((i) => i.source === "plan" && i.ingredientId !== undefined)).toBe(true);
     const week = await t.run((ctx) => ctx.db.get(weekId));
     expect(week?.status).toBe("shopping");
@@ -283,5 +317,165 @@ describe("lists.current and lists.reconcileItems", () => {
     });
     // One row per ingredient.
     expect(new Set(rows.map((r) => r.ingredientId)).size).toBe(rows.length);
+  });
+});
+
+async function ingredientNamed(t: Test, householdId: Id<"households">, name: string) {
+  const ingredient = await t.run((ctx) =>
+    ctx.db
+      .query("ingredients")
+      .withIndex("by_householdId_name", (q) => q.eq("householdId", householdId).eq("name", name))
+      .unique(),
+  );
+  if (ingredient === null) throw new Error(`No ingredient ${name}`);
+  return ingredient._id;
+}
+
+describe("un-check after the pantry moved on", () => {
+  it("takes back only what a check-off added to a row it created, once someone edits it", async () => {
+    const t = newTest();
+    const { as, householdId } = await seededList(t);
+    const carrots = await planItem(t, householdId, "carrots");
+    const ingredientId = carrots.ingredientId!;
+    await as.mutation(api.lists.setItemStatus, { listItemId: carrots._id, status: "checked" });
+    expect((await eventsOf(t, householdId)).at(-1)?.payload).toMatchObject({
+      before: null,
+      added: { quantityDecimal: 1, unit: "lb" },
+    });
+    await as.mutation(api.pantry.setCount, { ingredientId, quantityText: "4", unit: "lb" });
+
+    await as.mutation(api.lists.setItemStatus, { listItemId: carrots._id, status: "needed" });
+
+    expect((await pantryOf(t, ingredientId))?.count).toEqual({
+      quantityText: "3",
+      quantityDecimal: 3,
+      unit: "lb",
+    });
+  });
+
+  it("puts a level back only while it is still the full the check-off set", async () => {
+    const t = newTest();
+    const { as, householdId } = await seededList(t);
+    const tsp = await planItem(t, householdId, "Dijon mustard", "tsp");
+    const ingredientId = tsp.ingredientId!;
+
+    await as.mutation(api.lists.setItemStatus, { listItemId: tsp._id, status: "checked" });
+    await as.mutation(api.lists.setItemStatus, { listItemId: tsp._id, status: "needed" });
+    expect((await pantryOf(t, ingredientId))?.level).toBe("low");
+
+    await as.mutation(api.lists.setItemStatus, { listItemId: tsp._id, status: "checked" });
+    await as.mutation(api.pantry.setLevel, { ingredientId, level: "half" });
+    await as.mutation(api.lists.setItemStatus, { listItemId: tsp._id, status: "needed" });
+    expect((await pantryOf(t, ingredientId))?.level).toBe("half");
+  });
+
+  it("restores a count in another unit only while the row still holds what was bought", async () => {
+    const t = newTest();
+    const { as, householdId } = await seededList(t);
+    const bacon = await planItem(t, householdId, "bacon");
+    const ingredientId = bacon.ingredientId!;
+
+    await as.mutation(api.lists.setItemStatus, { listItemId: bacon._id, status: "checked" });
+    await as.mutation(api.lists.setItemStatus, { listItemId: bacon._id, status: "needed" });
+    expect((await pantryOf(t, ingredientId))?.count).toMatchObject({
+      quantityDecimal: 10,
+      unit: "slice",
+    });
+
+    await as.mutation(api.lists.setItemStatus, { listItemId: bacon._id, status: "checked" });
+    await as.mutation(api.pantry.setCount, { ingredientId, quantityText: "12", unit: "oz" });
+    await as.mutation(api.lists.setItemStatus, { listItemId: bacon._id, status: "needed" });
+    expect((await pantryOf(t, ingredientId))?.count).toMatchObject({
+      quantityDecimal: 12,
+      unit: "oz",
+    });
+  });
+});
+
+describe("regenerate keeps what someone decided", () => {
+  it("keeps a checked line the new run would leave off, purchase and all", async () => {
+    const t = newTest();
+    const { as, householdId, weekId } = await seededList(t);
+    const tsp = await planItem(t, householdId, "Dijon mustard", "tsp");
+    await as.mutation(api.lists.setItemStatus, {
+      listItemId: tsp._id,
+      status: "checked",
+      at: 500,
+    });
+    // Dijon is full now, so a fresh run would not put it on the list.
+    await as.mutation(api.lists.generate, { weekId });
+
+    const kept = (await itemsOf(t, householdId)).filter((i) => i._id === tsp._id);
+    expect(kept).toEqual([
+      expect.objectContaining({ status: "checked", purchase: tsp.purchase, checkedAt: 500 }),
+    ]);
+    await as.mutation(api.lists.setItemStatus, { listItemId: tsp._id, status: "needed" });
+    expect((await pantryOf(t, tsp.ingredientId!))?.level).toBe("low");
+  });
+
+  it("buys butter once: check, regenerate, un-check, check ends at 22 tbsp", async () => {
+    const t = newTest();
+    const { as, householdId, weekId } = await seededList(t);
+    const butter = await planItem(t, householdId, "unsalted butter");
+    await as.mutation(api.lists.setItemStatus, { listItemId: butter._id, status: "checked" });
+    await as.mutation(api.lists.generate, { weekId });
+    await as.mutation(api.lists.setItemStatus, { listItemId: butter._id, status: "needed" });
+    await as.mutation(api.lists.setItemStatus, { listItemId: butter._id, status: "checked" });
+    expect((await pantryOf(t, butter.ingredientId!))?.count).toMatchObject({
+      quantityDecimal: 22,
+      unit: "tbsp",
+    });
+  });
+
+  it("finds an as-needed line beside a numbered one in the same unit", async () => {
+    const t = newTest();
+    const { as, householdId } = await createHousehold(t, { who: "Alice", name: "Elm" });
+    await t.mutation(internal.seed.load, { householdId });
+    const spray = await ingredientNamed(t, householdId, "nonstick spray");
+    await t.run((ctx) => ctx.db.patch(spray, { tracked: true }));
+    const week = (await as.query(api.weeks.current, {}))!;
+    await as.mutation(api.weeks.addAdaptation, {
+      weekId: week._id,
+      recipeId: week.recipes[0].recipeId,
+      kind: "add",
+      newIngredientId: spray,
+      quantityText: "2",
+      description: "",
+    });
+    await as.mutation(api.lists.generate, { weekId: week._id });
+    const sprayLines = async () =>
+      (await itemsOf(t, householdId))
+        .filter((i) => i.ingredientId === spray)
+        .map((i) => [i._id, i.required.quantityText])
+        .sort();
+    const before = await sprayLines();
+    expect(before.map(([, text]) => text)).toEqual(["2", "as needed"].sort());
+
+    await as.mutation(api.lists.generate, { weekId: week._id });
+    expect(await sprayLines()).toEqual(before);
+  });
+});
+
+describe("offline replay", () => {
+  it("stamps events with the tap time and undoes the newest-inserted purchase", async () => {
+    const t = newTest();
+    const { as, householdId } = await seededList(t);
+    const butter = await planItem(t, householdId, "unsalted butter");
+    const listItemId = butter._id;
+    // Taps replayed out of order: the later tap (2000) lands first.
+    await as.mutation(api.lists.setItemStatus, { listItemId, status: "checked", at: 2000 });
+    await as.mutation(api.lists.setItemStatus, { listItemId, status: "needed", at: 1000 });
+    await as.mutation(api.lists.setItemStatus, { listItemId, status: "checked", at: 1500 });
+    await as.mutation(api.lists.setItemStatus, { listItemId, status: "needed" });
+
+    const mine = (await eventsOf(t, householdId)).filter((e) => e.refs.listItemId === listItemId);
+    expect(mine.map((e) => [e.type, e.at]).slice(0, 3)).toEqual([
+      ["purchase", 2000],
+      ["undo", 1000],
+      ["purchase", 1500],
+    ]);
+    expect(mine[1].undoesEventId).toBe(mine[0]._id);
+    expect(mine[3]).toMatchObject({ type: "undo", undoesEventId: mine[2]._id });
+    expect((await pantryOf(t, butter.ingredientId!))?.count?.quantityDecimal).toBe(5);
   });
 });

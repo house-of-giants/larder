@@ -8,6 +8,7 @@ import { Label } from "#/components/ui/label";
 import { errorMessage } from "#/lib/errors";
 import { parseQuantity } from "#/lib/quantities";
 import { cn } from "#/lib/utils";
+import { multiplierChange } from "./multiplier";
 
 const quickPicks = ["1/2", "1", "2"] as const;
 const badMultiplier = "Use a number like 1/2, 1 or 2.";
@@ -30,26 +31,34 @@ export function MultiplierField({
   const [draft, setDraft] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const discard = useRef(false);
+  // The text of the save on its way to the server, so a later tap compares against it.
+  const inFlight = useRef<string | null>(null);
+  // Set while a quick pick is pressed: the field's blur then drops its draft, so the tap
+  // decides the value instead of racing the typed text.
+  const picking = useRef(false);
   const id = `multiplier-${recipeId}`;
 
   async function save(multiplierText: string) {
-    const trimmed = multiplierText.trim();
-    if (trimmed === text) {
+    const next = multiplierChange(multiplierText, { inFlight: inFlight.current, saved: text });
+    if (next === null) {
       setDraft(null);
       setError(null);
       return;
     }
-    const decimal = parseQuantity(trimmed);
+    const decimal = parseQuantity(next);
     if (decimal === null || decimal <= 0) {
       setError(badMultiplier);
       return;
     }
+    inFlight.current = next;
     try {
-      await setRecipe({ weekId, recipeId, status: "selected", multiplierText: trimmed });
+      await setRecipe({ weekId, recipeId, status: "selected", multiplierText: next });
       setDraft((current) => (current === multiplierText ? null : current));
       setError(null);
     } catch (e) {
       setError(errorMessage(e));
+    } finally {
+      if (inFlight.current === next) inFlight.current = null;
     }
   }
 
@@ -78,8 +87,9 @@ export function MultiplierField({
           onFocus={() => setDraft((d) => d ?? text)}
           onChange={(e) => setDraft(e.target.value)}
           onBlur={() => {
-            if (discard.current) {
+            if (discard.current || picking.current) {
               discard.current = false;
+              setDraft(null);
               return;
             }
             if (draft !== null) void save(draft);
@@ -101,7 +111,14 @@ export function MultiplierField({
             size="sm"
             aria-pressed={text === pick}
             className={cn("num h-10 min-w-11", text === pick && "border-primary text-primary")}
+            onPointerDown={() => {
+              picking.current = true;
+            }}
+            onPointerCancel={() => {
+              picking.current = false;
+            }}
             onClick={() => {
+              picking.current = false;
               setDraft(null);
               void save(pick);
             }}
