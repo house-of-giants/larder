@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Id } from "../../convex/_generated/dataModel";
-import { drain, enqueue, settle, type QueuedOp } from "./queue";
+import { drain, enqueue, mergeQueues, settle, type QueuedOp } from "./queue";
 
 const eggs = "1listItems" as Id<"listItems">;
 const rolls = "2listItems" as Id<"listItems">;
@@ -108,5 +108,29 @@ describe("settle", () => {
     // The drain took [sentCheck]; meanwhile eggs was un-checked and rolls was checked.
     const current = enqueue(enqueue([sentCheck], laterUncheck), other);
     expect(settle(current, [sentCheck], [])).toEqual([laterUncheck, other]);
+  });
+});
+
+describe("mergeQueues", () => {
+  it("keeps the later tap per item, whichever side it came from", () => {
+    const stored: QueuedOp[] = [
+      { listItemId: eggs, status: "checked", at: 5 },
+      { listItemId: rolls, status: "checked", at: 9 },
+    ];
+    const buffered: QueuedOp[] = [
+      { listItemId: eggs, status: "needed", at: 7 },
+      { listItemId: rolls, status: "skipped", at: 8 },
+      { listItemId: ham, status: "checked", at: 10 },
+    ];
+    expect(mergeQueues(stored, buffered)).toEqual([
+      { listItemId: rolls, status: "checked", at: 9 },
+      { listItemId: eggs, status: "needed", at: 7 },
+      { listItemId: ham, status: "checked", at: 10 },
+    ]);
+  });
+
+  it("is the stored queue when nothing was tapped during startup", () => {
+    const stored: QueuedOp[] = [{ listItemId: eggs, status: "checked", at: 5 }];
+    expect(mergeQueues(stored, [])).toEqual(stored);
   });
 });

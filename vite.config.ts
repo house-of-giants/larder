@@ -52,24 +52,31 @@ export default defineConfig({
         ],
       },
       workbox: {
-        // The app shell: every built client asset. Pages are rendered by the server, so
-        // there is no static index.html to fall back to; see runtimeCaching instead.
+        // The app shell: every built client asset, precached.
         globPatterns: ["**/*.{js,css,svg,png,webmanifest}"],
+        // No neutral shell to fall back to (v1 tradeoff). Every page is server-rendered
+        // through the root route, which carries the signed-in user's Clerk SSR state, so
+        // there is no user-free HTML to precache at build time; making one would mean a
+        // second document route outside ClerkProvider and the root loader, plus a
+        // prerender step. Instead each app page is kept as last served for the signed-in
+        // user and used only when the network fails. src/offline/identity.tsx deletes
+        // this cache on sign-out and whenever a different user signs in.
         navigateFallback: null,
         runtimeCaching: [
           {
-            // Each app page as last served, so a page opened once opens again with no
-            // signal. Sign-in, the MCP door, and APIs always go to the network.
+            // Sign-in, the MCP door, and APIs always go to the network.
             urlPattern: ({ request, url }) =>
               request.mode === "navigate" &&
               !/^\/(mcp|sign-in|sign-up|api)(\/|$)/.test(url.pathname),
+            // Network first with no timeout: a slow network still gets the fresh page;
+            // the cached copy is served only when the fetch fails (offline).
             handler: "NetworkFirst",
             options: {
+              // Must match PAGES_CACHE in src/offline/identity.tsx.
               cacheName: "pages",
-              networkTimeoutSeconds: 4,
               // Only real pages: never a redirect (status 0) or an error.
               cacheableResponse: { statuses: [200] },
-              expiration: { maxEntries: 16 },
+              expiration: { maxEntries: 20, maxAgeSeconds: 7 * 24 * 60 * 60 },
             },
           },
         ],

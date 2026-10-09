@@ -6,6 +6,7 @@ import { useEffect, type ReactNode } from "react";
 import { clerkConfigured } from "#/lib/clerk-config";
 import { convex } from "#/lib/convex";
 import { Toaster } from "#/components/ui/sonner";
+import { OfflineIdentityProvider } from "#/offline/identity";
 import { registerServiceWorker } from "#/offline/register-sw";
 import appCss from "#/styles.css?url";
 
@@ -66,7 +67,9 @@ function RootLayout() {
   return (
     <ClerkProvider>
       <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
-        <Outlet />
+        <OfflineIdentityProvider>
+          <Outlet />
+        </OfflineIdentityProvider>
         <Toaster position="top-center" />
       </ConvexProviderWithClerk>
     </ClerkProvider>

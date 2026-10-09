@@ -1,14 +1,16 @@
 import { del, get, set } from "idb-keyval";
 import { useConvexAuth, useConvexConnectionState, useMutation } from "convex/react";
 import { ConvexError } from "convex/values";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { toast } from "sonner";
 import type { Id } from "../../convex/_generated/dataModel";
 import { currentList, setItemStatus } from "#/components/list/list-data";
 import type { TapStatus } from "#/components/list/types";
 import { errorMessage } from "#/lib/errors";
+import { createListOps } from "./list-ops-store";
 import { applyOps } from "./overlay";
-import { drain, enqueue, settle, type QueuedOp } from "./queue";
+import { canShowOffline } from "./ownership";
+import type { QueuedOp } from "./queue";
 import { useOnline } from "./use-online";
 
 const KEY = "queue:list";
@@ -16,17 +18,23 @@ const KEY = "queue:list";
 // replayed later; the write is idempotent, so a late arrival of the first try is harmless.
 const SEND_TIMEOUT_MS = 8_000;
 
-async function readQueue(): Promise<QueuedOp[]> {
+/** The saved queue, stamped with the Clerk user whose taps it holds. */
+type StoredQueue = { owner: string; ops: QueuedOp[] };
+
+async function readQueue(owner: string | null): Promise<QueuedOp[]> {
   try {
-    return (await get<QueuedOp[]>(KEY)) ?? [];
+    const stored = await get<StoredQueue>(KEY);
+    return stored && canShowOffline(stored.owner, owner) ? stored.ops : [];
   } catch {
     return [];
   }
 }
 
-async function writeQueue(queue: QueuedOp[]): Promise<void> {
+async function writeQueue(owner: string | null, ops: QueuedOp[]): Promise<void> {
+  // Nobody verified: keep the taps in memory only.
+  if (owner === null) return;
   try {
-    await (queue.length === 0 ? del(KEY) : set(KEY, queue));
+    await (ops.length === 0 ? del(KEY) : set(KEY, { owner, ops } satisfies StoredQueue));
   } catch {
     // No IndexedDB: the queue lives as long as the page does.
   }
@@ -49,12 +57,12 @@ function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
 }
 
 /**
- * Check-offs that survive the aisle. With a signal a tap goes straight to Convex (with
- * an optimistic update); without one, or when the send fails, it joins a queue kept in
- * IndexedDB. The queue drains on mount, on reconnect, and when the network comes back.
- * `queued` is what the screen lays over the list so taps show at once either way.
+ * Check-offs that survive the aisle, for the verified user `owner` (mount it keyed by
+ * owner). The queue logic lives in list-ops-store.ts; this wires it to Convex (with an
+ * optimistic update), IndexedDB, and the connection. `queued` is what the screen lays
+ * over the list so taps show at once either way.
  */
-export function useListOps() {
+export function useListOps(owner: string | null) {
   const online = useOnline();
   const { isAuthenticated } = useConvexAuth();
   const { isWebSocketConnected } = useConvexConnectionState();
@@ -72,35 +80,6 @@ export function useListOps() {
     [baseMutate],
   );
 
-  const [queued, setQueued] = useState<QueuedOp[]>([]);
-  const [loaded, setLoaded] = useState(false);
-  const queueRef = useRef<QueuedOp[]>([]);
-  const loadedRef = useRef(false);
-  const draining = useRef(false);
-  // The latest tap per item, so a slow failure never queues over a newer tap.
-  const latest = useRef(new Map<Id<"listItems">, QueuedOp>());
-
-  const commit = useCallback((next: QueuedOp[]) => {
-    queueRef.current = next;
-    setQueued(next);
-    // Until the stored queue is read, writing would overwrite it; the load merges.
-    if (loadedRef.current) void writeQueue(next);
-  }, []);
-
-  useEffect(() => {
-    let current = true;
-    void readQueue().then((stored) => {
-      if (!current) return;
-      loadedRef.current = true;
-      // Taps made before the read finished are newer than anything stored.
-      commit(queueRef.current.reduce(enqueue, stored));
-      setLoaded(true);
-    });
-    return () => {
-      current = false;
-    };
-  }, [commit]);
-
   const send = useCallback(
     async (op: QueuedOp) => {
       try {
@@ -116,43 +95,29 @@ export function useListOps() {
     },
     [mutate],
   );
-
-  const flush = useCallback(async () => {
-    if (draining.current) return;
-    draining.current = true;
-    try {
-      // Taps made during a drain are queued; keep going while each pass makes progress.
-      while (queueRef.current.length > 0) {
-        const attempted = queueRef.current;
-        const failed = await drain(attempted, send);
-        commit(settle(queueRef.current, attempted, failed));
-        if (failed.length === attempted.length) break;
-      }
-    } finally {
-      draining.current = false;
-    }
-  }, [commit, send]);
+  const [ops] = useState(() =>
+    createListOps({
+      read: () => readQueue(owner),
+      write: (queue) => writeQueue(owner, queue),
+      // Replaced by the effect below before anything is sent.
+      send: () => Promise.reject(new Error("not ready")),
+    }),
+  );
+  useEffect(() => {
+    ops.setSend(send);
+  }, [ops, send]);
+  const queued = useSyncExternalStore(ops.subscribe, ops.getQueue, ops.getQueue);
 
   useEffect(() => {
-    if (loaded && canSend && queued.length > 0) void flush();
-  }, [loaded, canSend, queued.length, flush]);
+    void ops.load();
+  }, [ops]);
+  useEffect(() => {
+    ops.setCanSend(canSend);
+  }, [ops, canSend]);
 
   const setStatus = useCallback(
-    async (listItemId: Id<"listItems">, status: TapStatus) => {
-      const op: QueuedOp = { listItemId, status, at: Date.now() };
-      latest.current.set(listItemId, op);
-      // Straight to the server only when nothing older is waiting, so writes stay in order.
-      if (!canSend || queueRef.current.length > 0 || draining.current) {
-        commit(enqueue(queueRef.current, op));
-        return;
-      }
-      try {
-        await send(op);
-      } catch {
-        if (latest.current.get(listItemId) === op) commit(enqueue(queueRef.current, op));
-      }
-    },
-    [canSend, commit, send],
+    (listItemId: Id<"listItems">, status: TapStatus) => ops.tap(listItemId, status, Date.now()),
+    [ops],
   );
 
   return { setStatus, queued, pending: queued.length, online, canSend };

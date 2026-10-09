@@ -41,3 +41,20 @@ export function settle(
   const sent = new Set(attempted.filter((op) => !failed.includes(op)));
   return current.filter((op) => !sent.has(op));
 }
+
+/**
+ * The stored queue with taps made before it was read laid on top: one op per item, the
+ * later `at` winning, stored order first.
+ */
+export function mergeQueues(
+  stored: readonly QueuedOp[],
+  buffered: readonly QueuedOp[],
+): QueuedOp[] {
+  return buffered.reduce(
+    (queue, op) => {
+      const existing = queue.find((queued) => queued.listItemId === op.listItemId);
+      return existing && existing.at > op.at ? queue : enqueue(queue, op);
+    },
+    [...stored],
+  );
+}
