@@ -9,9 +9,14 @@ function item(displayName: string, status: ListItem["status"] = "needed"): ListI
   return {
     _id: `${n}listItems` as Id<"listItems">,
     source: "plan",
+    ingredientId: undefined,
     displayName,
+    category: "produce",
+    kind: "count",
     required: { quantityText: "1", unit: "each" },
+    purchase: undefined,
     status,
+    checkedAt: undefined,
     sourceRecipeIds: [],
   };
 }
@@ -19,7 +24,9 @@ function item(displayName: string, status: ListItem["status"] = "needed"): ListI
 const list: CurrentList = {
   listId: "1lists" as Id<"lists">,
   weekId: "1weeks" as Id<"weeks">,
+  weekOf: "2026-10-09",
   status: "active",
+  generatedAt: 0,
   sections: [
     {
       category: "produce",

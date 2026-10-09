@@ -1,31 +1,12 @@
-import type { Id } from "../../../convex/_generated/dataModel";
+import type { FunctionReturnType } from "convex/server";
+import { api } from "../../../convex/_generated/api";
 
-// Client-side shape of `api.lists.current`, per the Phase 3 contract. Once the typed
-// query lands these can be derived with `FunctionReturnType`; until then they are the
-// contract the store screen is built against.
+// Client-side shape of `api.lists.current`, derived from the query so the store screen
+// and the offline overlay can never drift from what Convex returns.
+export type CurrentList = NonNullable<FunctionReturnType<typeof api.lists.current>>;
+export type ListSection = CurrentList["sections"][number];
+export type ListItem = ListSection["items"][number];
+export type ListStatus = ListItem["status"];
 
-export type ListStatus = "needed" | "checked" | "skipped" | "onHand";
-
-export type ListItem = {
-  _id: Id<"listItems">;
-  source: "plan" | "adhoc";
-  displayName: string;
-  kind?: "count" | "level";
-  required: { quantityText: string; unit: string };
-  purchase?: { quantityText: string; unit: string; note?: string };
-  status: ListStatus;
-  checkedAt?: number;
-  storeTag?: string;
-  sourceRecipeIds: Id<"recipes">[];
-};
-
-export type ListSection = { category: string; items: ListItem[] };
-
-export type CurrentList = {
-  listId: Id<"lists">;
-  weekId: Id<"weeks">;
-  /** Not in the contract yet; shown in the header when the query provides it. */
-  weekOf?: string;
-  status: "draft" | "active" | "complete";
-  sections: ListSection[];
-};
+/** Statuses a tap can set; `onHand` is assigned by the generator, never by a person. */
+export type TapStatus = Exclude<ListStatus, "onHand">;

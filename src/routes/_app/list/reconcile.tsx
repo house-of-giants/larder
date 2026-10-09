@@ -7,7 +7,6 @@ import { PageSkeleton } from "#/components/page-skeleton";
 import { categoryLabels } from "#/components/pantry/labels";
 import { ReconcileRow, type ReconcileItem } from "#/components/reconcile/reconcile-row";
 import { Button } from "#/components/ui/button";
-import { listPath } from "#/components/week/list-path";
 import { errorMessage } from "#/lib/errors";
 
 export const Route = createFileRoute("/_app/list/reconcile")({
@@ -57,7 +56,7 @@ function ReconcileList({ weekId, items }: { weekId: Id<"weeks">; items: Reconcil
     setError(null);
     try {
       if (edited) await generate({ weekId });
-      await navigate({ to: listPath });
+      await navigate({ to: "/list" });
     } catch (e) {
       setError(errorMessage(e));
       setPending(false);

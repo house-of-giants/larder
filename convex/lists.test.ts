@@ -246,7 +246,7 @@ describe("lists.current and lists.reconcileItems", () => {
     const { as } = await seededList(t);
     await as.mutation(api.lists.addItem, { displayName: "paper towels" });
     const list = await as.query(api.lists.current, {});
-    expect(list?.sections.map((s) => s.section)).toEqual([
+    expect(list?.sections.map((s) => s.category)).toEqual([
       "produce",
       "meat_deli",
       "dairy_refrigerated",

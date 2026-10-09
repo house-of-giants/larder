@@ -6,7 +6,7 @@ import { cn } from "#/lib/utils";
 import { AddSomething } from "./add-something";
 import { ListRow } from "./list-row";
 import { nextStatus, viewList } from "./list-view";
-import type { CurrentList, ListItem, ListStatus } from "./types";
+import type { CurrentList, ListItem, TapStatus } from "./types";
 
 // The app header is 3rem; the filter bar sticks under it and section headers under that.
 const FILTER_TOP = "top-[calc(3rem+env(safe-area-inset-top))]";
@@ -37,7 +37,7 @@ export function StoreView({
   online: boolean;
   pending: number;
   canSend: boolean;
-  onSetStatus: (listItemId: Id<"listItems">, status: ListStatus) => void;
+  onSetStatus: (listItemId: Id<"listItems">, status: TapStatus) => void;
 }) {
   const [filter, setFilter] = useState<string | null>(null);
   const view = viewList(list, filter);

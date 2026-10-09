@@ -1,4 +1,4 @@
-import type { CurrentList, ListItem, ListStatus } from "./types";
+import type { CurrentList, ListItem, ListStatus, TapStatus } from "./types";
 
 export type ListView = {
   /** Needed items across the whole list, whatever the filter. */
@@ -43,6 +43,6 @@ export function viewList(list: CurrentList, filter: string | null): ListView {
 }
 
 /** A tap checks a needed item and puts anything else back on the list. */
-export function nextStatus(status: ListStatus): ListStatus {
+export function nextStatus(status: ListStatus): TapStatus {
   return status === "needed" ? "checked" : "needed";
 }

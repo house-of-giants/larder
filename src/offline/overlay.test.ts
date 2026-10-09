@@ -9,9 +9,14 @@ function item(n: number, name: string, status: ListItem["status"] = "needed"): L
   return {
     _id: id(n),
     source: "plan",
+    ingredientId: undefined,
     displayName: name,
+    category: "produce",
+    kind: "count",
     required: { quantityText: "1", unit: "each" },
+    purchase: undefined,
     status,
+    checkedAt: undefined,
     sourceRecipeIds: [],
   };
 }
@@ -19,7 +24,9 @@ function item(n: number, name: string, status: ListItem["status"] = "needed"): L
 const list: CurrentList = {
   listId: "1lists" as Id<"lists">,
   weekId: "1weeks" as Id<"weeks">,
+  weekOf: "2026-10-09",
   status: "active",
+  generatedAt: 0,
   sections: [
     { category: "produce", items: [item(1, "Onions"), item(2, "Basil", "checked")] },
     { category: "dairy_refrigerated", items: [item(3, "Eggs"), item(4, "Butter", "onHand")] },

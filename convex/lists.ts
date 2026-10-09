@@ -230,8 +230,10 @@ export const current = query({
     v.object({
       listId: v.id("lists"),
       weekId: v.id("weeks"),
+      weekOf: v.string(),
+      status: v.union(v.literal("draft"), v.literal("active"), v.literal("complete")),
       generatedAt: v.number(),
-      sections: v.array(v.object({ section: v.string(), items: v.array(listItemView) })),
+      sections: v.array(v.object({ category: v.string(), items: v.array(listItemView) })),
     }),
   ),
   handler: async (ctx) => {
@@ -272,13 +274,20 @@ export const current = query({
         byText(a.displayName, b.displayName) ||
         byText(a.required.unit, b.required.unit),
     );
-    const sections: { section: string; items: typeof items }[] = [];
+    const sections: { category: string; items: typeof items }[] = [];
     for (const item of items) {
       const last = sections.at(-1);
-      if (last?.section === item.category) last.items.push(item);
-      else sections.push({ section: item.category, items: [item] });
+      if (last?.category === item.category) last.items.push(item);
+      else sections.push({ category: item.category, items: [item] });
     }
-    return { listId: list._id, weekId: week._id, generatedAt: list.generatedAt, sections };
+    return {
+      listId: list._id,
+      weekId: week._id,
+      weekOf: week.weekOf,
+      status: list.status,
+      generatedAt: list.generatedAt,
+      sections,
+    };
   },
 });
 

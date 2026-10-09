@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import type { Id } from "../../convex/_generated/dataModel";
 import { currentList, setItemStatus } from "#/components/list/list-data";
-import type { ListStatus } from "#/components/list/types";
+import type { TapStatus } from "#/components/list/types";
 import { errorMessage } from "#/lib/errors";
 import { applyOps } from "./overlay";
 import { drain, enqueue, settle, type QueuedOp } from "./queue";
@@ -138,7 +138,7 @@ export function useListOps() {
   }, [loaded, canSend, queued.length, flush]);
 
   const setStatus = useCallback(
-    async (listItemId: Id<"listItems">, status: ListStatus) => {
+    async (listItemId: Id<"listItems">, status: TapStatus) => {
       const op: QueuedOp = { listItemId, status, at: Date.now() };
       latest.current.set(listItemId, op);
       // Straight to the server only when nothing older is waiting, so writes stay in order.

@@ -1,8 +1,8 @@
 import type { Id } from "../../convex/_generated/dataModel";
-import type { ListStatus } from "#/components/list/types";
+import type { TapStatus } from "#/components/list/types";
 
 /** A check-off waiting for a signal. Status writes are idempotent, so replay is safe. */
-export type QueuedOp = { listItemId: Id<"listItems">; status: ListStatus; at: number };
+export type QueuedOp = { listItemId: Id<"listItems">; status: TapStatus; at: number };
 
 /** Adds an op, keeping one per item: the latest tap wins. */
 export function enqueue(queue: readonly QueuedOp[], op: QueuedOp): QueuedOp[] {

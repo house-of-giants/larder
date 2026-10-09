@@ -5,7 +5,6 @@ import { api } from "../../../../convex/_generated/api";
 import { PageSkeleton } from "#/components/page-skeleton";
 import { Button } from "#/components/ui/button";
 import { type CurrentWeek } from "#/components/week/labels";
-import { listPath } from "#/components/week/list-path";
 import { StatusPill } from "#/components/week/status-pill";
 import { errorMessage } from "#/lib/errors";
 import { localIsoDate, weekOfLabel } from "#/lib/week-dates";
@@ -130,7 +129,7 @@ function WeekActions({ week, selectedCount }: { week: CurrentWeek; selectedCount
       <div className="flex flex-wrap gap-2">
         {shopping && (
           <Button asChild>
-            <Link to={listPath}>Open the list</Link>
+            <Link to="/list">Open the list</Link>
           </Button>
         )}
         <Button asChild variant="outline">
