@@ -36,7 +36,7 @@
 
 /*
  * Tokens ported from OpenTrainer's OKLCH scale (warm neutrals, hue 85 surfaces).
- * The primary hue is a Phase 1 decision; the OpenTrainer violet (295) is the placeholder.
+ * Primary is green (hue 150): a stocked pantry shelf, quiet rather than lime.
  */
 :root {
   --radius: 0.625rem;
@@ -46,18 +46,18 @@
   --card-foreground: oklch(0.22 0.015 280);
   --popover: oklch(0.995 0.005 85);
   --popover-foreground: oklch(0.22 0.015 280);
-  --primary: oklch(0.55 0.18 295);
-  --primary-foreground: oklch(0.98 0.01 295);
+  --primary: oklch(0.47 0.1 150);
+  --primary-foreground: oklch(0.98 0.01 150);
   --secondary: oklch(0.92 0.015 85);
   --secondary-foreground: oklch(0.25 0.02 280);
   --muted: oklch(0.9 0.012 85);
   --muted-foreground: oklch(0.45 0.02 280);
-  --accent: oklch(0.88 0.05 295);
-  --accent-foreground: oklch(0.3 0.1 295);
+  --accent: oklch(0.9 0.05 150);
+  --accent-foreground: oklch(0.3 0.08 150);
   --destructive: oklch(0.577 0.2 25);
   --border: oklch(0.85 0.018 85);
   --input: oklch(0.88 0.015 85);
-  --ring: oklch(0.55 0.15 295);
+  --ring: oklch(0.47 0.1 150);
 }
 
 .dark {
@@ -67,18 +67,24 @@
   --card-foreground: oklch(0.92 0.01 85);
   --popover: oklch(0.22 0.025 280);
   --popover-foreground: oklch(0.92 0.01 85);
-  --primary: oklch(0.72 0.16 295);
-  --primary-foreground: oklch(0.14 0.03 295);
+  --primary: oklch(0.72 0.12 150);
+  --primary-foreground: oklch(0.16 0.04 150);
   --secondary: oklch(0.26 0.025 280);
   --secondary-foreground: oklch(0.92 0.01 85);
   --muted: oklch(0.24 0.02 280);
   --muted-foreground: oklch(0.6 0.02 85);
-  --accent: oklch(0.32 0.07 295);
-  --accent-foreground: oklch(0.9 0.06 295);
+  --accent: oklch(0.32 0.06 150);
+  --accent-foreground: oklch(0.9 0.06 150);
   --destructive: oklch(0.65 0.2 25);
-  --border: oklch(1 0.03 295 / 18%);
-  --input: oklch(1 0.03 295 / 20%);
-  --ring: oklch(0.68 0.14 295);
+  --border: oklch(1 0.03 150 / 18%);
+  --input: oklch(1 0.03 150 / 20%);
+  --ring: oklch(0.68 0.11 150);
+}
+
+/* Every quantity and count on screen: monospace, tabular figures. */
+@utility num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
 }
 
 @layer base {

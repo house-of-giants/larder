@@ -8,7 +8,13 @@
  * @module
  */
 
+import type * as events from "../events.js";
 import type * as health from "../health.js";
+import type * as households from "../households.js";
+import type * as lib_auth from "../lib/auth.js";
+import type * as lib_household from "../lib/household.js";
+import type * as lib_ledger from "../lib/ledger.js";
+import type * as test_helpers from "../test_helpers.js";
 
 import type {
   ApiFromModules,
@@ -17,7 +23,13 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  events: typeof events;
   health: typeof health;
+  households: typeof households;
+  "lib/auth": typeof lib_auth;
+  "lib/household": typeof lib_household;
+  "lib/ledger": typeof lib_ledger;
+  test_helpers: typeof test_helpers;
 }>;
 
 /**

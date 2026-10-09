@@ -5,6 +5,7 @@ import { ConvexProviderWithClerk } from "convex/react-clerk";
 import type { ReactNode } from "react";
 import { clerkConfigured } from "#/lib/clerk-config";
 import { convex } from "#/lib/convex";
+import { Toaster } from "#/components/ui/sonner";
 import appCss from "#/styles.css?url";
 
 // Read on the server at request time so a missing Clerk key is reported, not crashed on.
@@ -56,6 +57,7 @@ function RootLayout() {
     <ClerkProvider>
       <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
         <Outlet />
+        <Toaster position="top-center" />
       </ConvexProviderWithClerk>
     </ClerkProvider>
   );

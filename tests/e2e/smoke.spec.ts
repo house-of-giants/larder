@@ -26,11 +26,13 @@ test.describe("with Clerk keys", () => {
     await expect(page).toHaveTitle("Larder");
     // Clerk's sign-in card carries a form; its exact copy belongs to Clerk.
     await expect(page.locator("form").first()).toBeVisible();
+    await expect(page.locator('[data-screen="sign-in"]')).toBeVisible();
   });
 
   test("a nested sign-in step still renders the sign-in screen", async ({ page }) => {
     const response = await page.goto("/sign-in/verify/factor-one");
     expect(response?.status()).toBe(200);
     await expect(page.getByText(/not found/i)).toHaveCount(0);
+    await expect(page.locator('[data-screen="sign-in"]')).toBeVisible();
   });
 });

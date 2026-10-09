@@ -7,7 +7,7 @@ export const Route = createFileRoute("/sign-in/$")({
 
 function SignInRoute() {
   return (
-    <main className="flex min-h-dvh items-center justify-center px-4 py-10">
+    <main data-screen="sign-in" className="flex min-h-dvh items-center justify-center px-4 py-10">
       <SignIn signUpUrl="/sign-up" fallbackRedirectUrl="/" />
     </main>
   );
