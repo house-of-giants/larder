@@ -104,6 +104,64 @@ const cases: Case[] = [
   },
   { name: "recipes.archive", kind: "mutation", fn: api.recipes.archive, args: { id: "1recipes" } },
   { name: "recipes.restore", kind: "mutation", fn: api.recipes.restore, args: { id: "1recipes" } },
+  // Phase 3.
+  { name: "weeks.current", kind: "query", fn: api.weeks.current, args: {} },
+  {
+    name: "weeks.create",
+    kind: "mutation",
+    fn: api.weeks.create,
+    args: { weekOf: "2026-10-09" },
+  },
+  {
+    name: "weeks.setRecipe",
+    kind: "mutation",
+    fn: api.weeks.setRecipe,
+    args: { weekId: "1weeks", recipeId: "1recipes", status: "selected" },
+  },
+  {
+    name: "weeks.addAdaptation",
+    kind: "mutation",
+    fn: api.weeks.addAdaptation,
+    args: {
+      weekId: "1weeks",
+      recipeId: "1recipes",
+      kind: "remove",
+      originalIngredientId: "1ingredients",
+      description: "",
+    },
+  },
+  {
+    name: "weeks.removeAdaptation",
+    kind: "mutation",
+    fn: api.weeks.removeAdaptation,
+    args: { adaptationId: "1weekAdaptations" },
+  },
+  {
+    name: "weeks.setStatus",
+    kind: "mutation",
+    fn: api.weeks.setStatus,
+    args: { weekId: "1weeks", status: "cooking" },
+  },
+  { name: "lists.generate", kind: "mutation", fn: api.lists.generate, args: { weekId: "1weeks" } },
+  { name: "lists.current", kind: "query", fn: api.lists.current, args: {} },
+  {
+    name: "lists.addItem",
+    kind: "mutation",
+    fn: api.lists.addItem,
+    args: { displayName: "paper towels" },
+  },
+  {
+    name: "lists.setItemStatus",
+    kind: "mutation",
+    fn: api.lists.setItemStatus,
+    args: { listItemId: "1listItems", status: "checked" },
+  },
+  {
+    name: "lists.reconcileItems",
+    kind: "query",
+    fn: api.lists.reconcileItems,
+    args: { weekId: "1weeks" },
+  },
 ];
 
 // Every Convex function module, so a public function added in any phase must be listed

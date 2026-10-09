@@ -1,0 +1,509 @@
+{
+  "_comment": "Hand-computed by the orchestrator on 2026-10-09 from artifacts/lanes/phase-2/seed/*.json, before any generator exists. Rules: expand selected recipes x multiplier (all 1); apply the elk-sausage replace adaptation; drop tracked:false; aggregate by ingredient + exact unit; count items subtract the on-hand count in the same unit only; level items appear only when the pantry level is low or out (absent = out) and are never subtracted; purchase = required minus on hand, rounded up to a whole number for unit 'each', else as-is; status onHand when nothing is left to buy. Sections in store order; within a section needed first then onHand, each alphabetical by displayName (case-insensitive).",
+  "sectionOrder": [
+    "produce",
+    "meat_deli",
+    "dairy_refrigerated",
+    "bread_canned_jarred",
+    "dry_goods",
+    "baking_pantry_condiments",
+    "frozen",
+    "other"
+  ],
+  "absent": [
+    "smoked chicken sausage",
+    "nonstick spray",
+    "all-purpose flour",
+    "baking powder",
+    "kosher salt",
+    "black pepper",
+    "vanilla extract",
+    "olive oil",
+    "tomato paste",
+    "Italian seasoning",
+    "sliced pepperoncini",
+    "mayonnaise",
+    "red wine vinegar",
+    "dried oregano",
+    "Parmesan",
+    "old-fashioned rolled oats",
+    "creamy peanut butter",
+    "honey",
+    "protein powder",
+    "mini M&M’s",
+    "mini chocolate chips",
+    "garlic powder",
+    "onion powder"
+  ],
+  "items": [
+    {
+      "section": "produce",
+      "displayName": "baby Yukon Gold potatoes",
+      "required": { "quantityText": "1 1/2", "quantityDecimal": 1.5, "unit": "lb" },
+      "purchase": { "quantityText": "1 1/2", "quantityDecimal": 1.5, "unit": "lb" },
+      "status": "needed",
+      "sourceRecipes": ["Rosemary Balsamic Pot Roast with Carrots and Potatoes"]
+    },
+    {
+      "section": "produce",
+      "displayName": "Brussels sprouts",
+      "required": { "quantityText": "1 1/2", "quantityDecimal": 1.5, "unit": "lb" },
+      "purchase": { "quantityText": "1 1/2", "quantityDecimal": 1.5, "unit": "lb" },
+      "status": "needed",
+      "sourceRecipes": ["Sheet Pan Maple Mustard Sausage, Sweet Potato and Brussels Sprouts"]
+    },
+    {
+      "section": "produce",
+      "displayName": "carrots",
+      "required": { "quantityText": "1", "quantityDecimal": 1, "unit": "lb" },
+      "purchase": { "quantityText": "1", "quantityDecimal": 1, "unit": "lb" },
+      "status": "needed",
+      "sourceRecipes": ["Rosemary Balsamic Pot Roast with Carrots and Potatoes"]
+    },
+    {
+      "section": "produce",
+      "displayName": "celery stalks",
+      "required": { "quantityText": "3", "quantityDecimal": 3, "unit": "each" },
+      "purchase": { "quantityText": "3", "quantityDecimal": 3, "unit": "each" },
+      "status": "needed",
+      "sourceRecipes": ["Rosemary Balsamic Pot Roast with Carrots and Potatoes"]
+    },
+    {
+      "section": "produce",
+      "displayName": "cremini mushrooms",
+      "required": { "quantityText": "16", "quantityDecimal": 16, "unit": "oz" },
+      "purchase": { "quantityText": "16", "quantityDecimal": 16, "unit": "oz" },
+      "status": "needed",
+      "sourceRecipes": ["Salisbury Steak Meatballs with Mashed Potatoes"]
+    },
+    {
+      "section": "produce",
+      "displayName": "crisp apples",
+      "required": { "quantityText": "6", "quantityDecimal": 6, "unit": "each" },
+      "purchase": { "quantityText": "6", "quantityDecimal": 6, "unit": "each" },
+      "status": "needed",
+      "sourceRecipes": [
+        "Apple Cinnamon Greek Yogurt Parfaits",
+        "Sheet Pan Maple Mustard Sausage, Sweet Potato and Brussels Sprouts"
+      ]
+    },
+    {
+      "section": "produce",
+      "displayName": "flat leaf parsley",
+      "required": { "quantityText": "2", "quantityDecimal": 2, "unit": "tbsp" },
+      "purchase": { "quantityText": "2", "quantityDecimal": 2, "unit": "tbsp" },
+      "status": "needed",
+      "level": true,
+      "sourceRecipes": ["Salisbury Steak Meatballs with Mashed Potatoes"]
+    },
+    {
+      "section": "produce",
+      "displayName": "fresh rosemary",
+      "required": { "quantityText": "2", "quantityDecimal": 2, "unit": "sprig" },
+      "purchase": { "quantityText": "2", "quantityDecimal": 2, "unit": "sprig" },
+      "status": "needed",
+      "level": true,
+      "sourceRecipes": ["Rosemary Balsamic Pot Roast with Carrots and Potatoes"]
+    },
+    {
+      "section": "produce",
+      "displayName": "fresh thyme",
+      "required": { "quantityText": "4", "quantityDecimal": 4, "unit": "sprig" },
+      "purchase": { "quantityText": "4", "quantityDecimal": 4, "unit": "sprig" },
+      "status": "needed",
+      "level": true,
+      "sourceRecipes": ["Rosemary Balsamic Pot Roast with Carrots and Potatoes"]
+    },
+    {
+      "section": "produce",
+      "displayName": "garlic cloves",
+      "required": { "quantityText": "7", "quantityDecimal": 7, "unit": "each" },
+      "purchase": { "quantityText": "7", "quantityDecimal": 7, "unit": "each" },
+      "status": "needed",
+      "sourceRecipes": [
+        "Rosemary Balsamic Pot Roast with Carrots and Potatoes",
+        "Salisbury Steak Meatballs with Mashed Potatoes"
+      ]
+    },
+    {
+      "section": "produce",
+      "displayName": "sweet potatoes",
+      "required": { "quantityText": "2", "quantityDecimal": 2, "unit": "lb" },
+      "purchase": { "quantityText": "2", "quantityDecimal": 2, "unit": "lb" },
+      "status": "needed",
+      "sourceRecipes": ["Sheet Pan Maple Mustard Sausage, Sweet Potato and Brussels Sprouts"]
+    },
+    {
+      "section": "produce",
+      "displayName": "yellow onion",
+      "required": { "quantityText": "3", "quantityDecimal": 3, "unit": "each" },
+      "purchase": { "quantityText": "3", "quantityDecimal": 3, "unit": "each" },
+      "status": "needed",
+      "sourceRecipes": [
+        "Rosemary Balsamic Pot Roast with Carrots and Potatoes",
+        "Salisbury Steak Meatballs with Mashed Potatoes"
+      ]
+    },
+    {
+      "section": "produce",
+      "displayName": "Yukon Gold potatoes",
+      "required": { "quantityText": "3", "quantityDecimal": 3, "unit": "lb" },
+      "purchase": { "quantityText": "3", "quantityDecimal": 3, "unit": "lb" },
+      "status": "needed",
+      "sourceRecipes": ["Salisbury Steak Meatballs with Mashed Potatoes"]
+    },
+    {
+      "section": "produce",
+      "displayName": "lettuce",
+      "required": { "quantityText": "3", "quantityDecimal": 3, "unit": "cup" },
+      "purchase": {
+        "quantityText": "0",
+        "quantityDecimal": 0,
+        "unit": "cup",
+        "note": "3 cup on hand"
+      },
+      "status": "onHand",
+      "sourceRecipes": ["Italian Grinder Sliders"]
+    },
+    {
+      "section": "produce",
+      "displayName": "small red onion",
+      "required": { "quantityText": "1/4", "quantityDecimal": 0.25, "unit": "each" },
+      "purchase": {
+        "quantityText": "0",
+        "quantityDecimal": 0,
+        "unit": "each",
+        "note": "1/4 each on hand"
+      },
+      "status": "onHand",
+      "sourceRecipes": ["Italian Grinder Sliders"]
+    },
+
+    {
+      "section": "meat_deli",
+      "displayName": "bacon",
+      "required": { "quantityText": "8", "quantityDecimal": 8, "unit": "oz" },
+      "purchase": { "quantityText": "8", "quantityDecimal": 8, "unit": "oz" },
+      "status": "needed",
+      "_why": "pantry holds 10 slice; different unit, so no subtraction",
+      "sourceRecipes": ["Bacon, Egg and Pepper Jack Breakfast Biscuits"]
+    },
+    {
+      "section": "meat_deli",
+      "displayName": "boneless chuck roast",
+      "required": { "quantityText": "4", "quantityDecimal": 4, "unit": "lb" },
+      "purchase": { "quantityText": "4", "quantityDecimal": 4, "unit": "lb" },
+      "status": "needed",
+      "sourceRecipes": ["Rosemary Balsamic Pot Roast with Carrots and Potatoes"]
+    },
+    {
+      "section": "meat_deli",
+      "displayName": "elk Italian sausage",
+      "required": { "quantityText": "2", "quantityDecimal": 2, "unit": "lb" },
+      "purchase": {
+        "quantityText": "1",
+        "quantityDecimal": 1,
+        "unit": "lb",
+        "note": "1 lb on hand"
+      },
+      "status": "needed",
+      "_why": "replace adaptation on the sheet pan; 1 lb in the freezer",
+      "sourceRecipes": ["Sheet Pan Maple Mustard Sausage, Sweet Potato and Brussels Sprouts"]
+    },
+    {
+      "section": "meat_deli",
+      "displayName": "ground beef",
+      "required": { "quantityText": "2", "quantityDecimal": 2, "unit": "lb" },
+      "purchase": {
+        "quantityText": "0",
+        "quantityDecimal": 0,
+        "unit": "lb",
+        "note": "2 lb on hand"
+      },
+      "status": "onHand",
+      "sourceRecipes": ["Salisbury Steak Meatballs with Mashed Potatoes"]
+    },
+    {
+      "section": "meat_deli",
+      "displayName": "sliced ham",
+      "required": { "quantityText": "8", "quantityDecimal": 8, "unit": "oz" },
+      "purchase": {
+        "quantityText": "0",
+        "quantityDecimal": 0,
+        "unit": "oz",
+        "note": "8 oz on hand"
+      },
+      "status": "onHand",
+      "sourceRecipes": ["Italian Grinder Sliders"]
+    },
+    {
+      "section": "meat_deli",
+      "displayName": "sliced pepperoni",
+      "required": { "quantityText": "4", "quantityDecimal": 4, "unit": "oz" },
+      "purchase": {
+        "quantityText": "0",
+        "quantityDecimal": 0,
+        "unit": "oz",
+        "note": "4 oz on hand"
+      },
+      "status": "onHand",
+      "sourceRecipes": ["Italian Grinder Sliders"]
+    },
+    {
+      "section": "meat_deli",
+      "displayName": "sliced salami",
+      "required": { "quantityText": "6", "quantityDecimal": 6, "unit": "oz" },
+      "purchase": {
+        "quantityText": "0",
+        "quantityDecimal": 0,
+        "unit": "oz",
+        "note": "6 oz on hand"
+      },
+      "status": "onHand",
+      "sourceRecipes": ["Italian Grinder Sliders"]
+    },
+
+    {
+      "section": "dairy_refrigerated",
+      "displayName": "buttermilk",
+      "required": { "quantityText": "1", "quantityDecimal": 1, "unit": "cup" },
+      "purchase": { "quantityText": "1", "quantityDecimal": 1, "unit": "cup" },
+      "status": "needed",
+      "sourceRecipes": ["Bacon, Egg and Pepper Jack Breakfast Biscuits"]
+    },
+    {
+      "section": "dairy_refrigerated",
+      "displayName": "pepper jack cheese",
+      "required": { "quantityText": "1 1/2", "quantityDecimal": 1.5, "unit": "cup" },
+      "purchase": { "quantityText": "1 1/2", "quantityDecimal": 1.5, "unit": "cup" },
+      "status": "needed",
+      "sourceRecipes": ["Bacon, Egg and Pepper Jack Breakfast Biscuits"]
+    },
+    {
+      "section": "dairy_refrigerated",
+      "displayName": "plain Greek yogurt",
+      "required": { "quantityText": "4", "quantityDecimal": 4, "unit": "cup" },
+      "purchase": { "quantityText": "4", "quantityDecimal": 4, "unit": "cup" },
+      "status": "needed",
+      "sourceRecipes": ["Apple Cinnamon Greek Yogurt Parfaits"]
+    },
+    {
+      "section": "dairy_refrigerated",
+      "displayName": "sour cream",
+      "required": { "quantityText": "1/2", "quantityDecimal": 0.5, "unit": "cup" },
+      "purchase": { "quantityText": "1/2", "quantityDecimal": 0.5, "unit": "cup" },
+      "status": "needed",
+      "sourceRecipes": ["Salisbury Steak Meatballs with Mashed Potatoes"]
+    },
+    {
+      "section": "dairy_refrigerated",
+      "displayName": "unsalted butter",
+      "required": { "quantityText": "22", "quantityDecimal": 22, "unit": "tbsp" },
+      "purchase": {
+        "quantityText": "17",
+        "quantityDecimal": 17,
+        "unit": "tbsp",
+        "note": "5 tbsp on hand"
+      },
+      "status": "needed",
+      "_why": "9+1+1+2+9 across five recipes; 5 tbsp in the fridge",
+      "sourceRecipes": [
+        "Bacon, Egg and Pepper Jack Breakfast Biscuits",
+        "Apple Cinnamon Greek Yogurt Parfaits",
+        "Rosemary Balsamic Pot Roast with Carrots and Potatoes",
+        "Italian Grinder Sliders",
+        "Salisbury Steak Meatballs with Mashed Potatoes"
+      ]
+    },
+    {
+      "section": "dairy_refrigerated",
+      "displayName": "whole milk",
+      "required": { "quantityText": "1 1/4", "quantityDecimal": 1.25, "unit": "cup" },
+      "purchase": {
+        "quantityText": "1",
+        "quantityDecimal": 1,
+        "unit": "cup",
+        "note": "1/4 cup on hand"
+      },
+      "status": "needed",
+      "_why": "1/2 + 3/4 in Salisbury; 1/4 cup in the fridge",
+      "sourceRecipes": ["Salisbury Steak Meatballs with Mashed Potatoes"]
+    },
+    {
+      "section": "dairy_refrigerated",
+      "displayName": "large eggs",
+      "required": { "quantityText": "7", "quantityDecimal": 7, "unit": "each" },
+      "purchase": {
+        "quantityText": "0",
+        "quantityDecimal": 0,
+        "unit": "each",
+        "note": "15 each on hand"
+      },
+      "status": "onHand",
+      "_why": "6 + 1; 'large egg' and 'large eggs' resolve to one ingredient",
+      "sourceRecipes": [
+        "Bacon, Egg and Pepper Jack Breakfast Biscuits",
+        "Salisbury Steak Meatballs with Mashed Potatoes"
+      ]
+    },
+    {
+      "section": "dairy_refrigerated",
+      "displayName": "provolone",
+      "required": { "quantityText": "12", "quantityDecimal": 12, "unit": "slice" },
+      "purchase": {
+        "quantityText": "0",
+        "quantityDecimal": 0,
+        "unit": "slice",
+        "note": "12 slice on hand"
+      },
+      "status": "onHand",
+      "sourceRecipes": ["Italian Grinder Sliders"]
+    },
+
+    {
+      "section": "bread_canned_jarred",
+      "displayName": "low-sodium beef broth",
+      "required": { "quantityText": "7", "quantityDecimal": 7, "unit": "cup" },
+      "purchase": { "quantityText": "7", "quantityDecimal": 7, "unit": "cup" },
+      "status": "needed",
+      "sourceRecipes": [
+        "Rosemary Balsamic Pot Roast with Carrots and Potatoes",
+        "Salisbury Steak Meatballs with Mashed Potatoes"
+      ]
+    },
+    {
+      "section": "bread_canned_jarred",
+      "displayName": "Hawaiian rolls",
+      "required": { "quantityText": "12", "quantityDecimal": 12, "unit": "each" },
+      "purchase": {
+        "quantityText": "0",
+        "quantityDecimal": 0,
+        "unit": "each",
+        "note": "12 each on hand"
+      },
+      "status": "onHand",
+      "sourceRecipes": ["Italian Grinder Sliders"]
+    },
+
+    {
+      "section": "dry_goods",
+      "displayName": "granola",
+      "required": { "quantityText": "1 1/2", "quantityDecimal": 1.5, "unit": "cup" },
+      "purchase": { "quantityText": "1 1/2", "quantityDecimal": 1.5, "unit": "cup" },
+      "status": "needed",
+      "level": true,
+      "sourceRecipes": ["Apple Cinnamon Greek Yogurt Parfaits"]
+    },
+    {
+      "section": "dry_goods",
+      "displayName": "pecans",
+      "required": { "quantityText": "1/2", "quantityDecimal": 0.5, "unit": "cup" },
+      "purchase": { "quantityText": "1/2", "quantityDecimal": 0.5, "unit": "cup" },
+      "status": "needed",
+      "level": true,
+      "sourceRecipes": ["Apple Cinnamon Greek Yogurt Parfaits"]
+    },
+    {
+      "section": "dry_goods",
+      "displayName": "plain breadcrumbs",
+      "required": { "quantityText": "1", "quantityDecimal": 1, "unit": "cup" },
+      "purchase": { "quantityText": "1", "quantityDecimal": 1, "unit": "cup" },
+      "status": "needed",
+      "level": true,
+      "sourceRecipes": ["Salisbury Steak Meatballs with Mashed Potatoes"]
+    },
+
+    {
+      "section": "baking_pantry_condiments",
+      "displayName": "apple cider vinegar",
+      "required": { "quantityText": "2", "quantityDecimal": 2, "unit": "tbsp" },
+      "purchase": { "quantityText": "2", "quantityDecimal": 2, "unit": "tbsp" },
+      "status": "needed",
+      "level": true,
+      "sourceRecipes": ["Sheet Pan Maple Mustard Sausage, Sweet Potato and Brussels Sprouts"]
+    },
+    {
+      "section": "baking_pantry_condiments",
+      "displayName": "balsamic vinegar",
+      "required": { "quantityText": "1/3", "quantityDecimal": 0.3333333333333333, "unit": "cup" },
+      "purchase": { "quantityText": "1/3", "quantityDecimal": 0.3333333333333333, "unit": "cup" },
+      "status": "needed",
+      "level": true,
+      "sourceRecipes": ["Rosemary Balsamic Pot Roast with Carrots and Potatoes"]
+    },
+    {
+      "section": "baking_pantry_condiments",
+      "displayName": "Dijon mustard",
+      "required": { "quantityText": "1", "quantityDecimal": 1, "unit": "tbsp" },
+      "purchase": { "quantityText": "1", "quantityDecimal": 1, "unit": "tbsp", "note": "low" },
+      "status": "needed",
+      "level": true,
+      "_why": "pantry level is low; tbsp and tsp stay separate lines",
+      "sourceRecipes": ["Salisbury Steak Meatballs with Mashed Potatoes"]
+    },
+    {
+      "section": "baking_pantry_condiments",
+      "displayName": "Dijon mustard",
+      "required": { "quantityText": "2", "quantityDecimal": 2, "unit": "tsp" },
+      "purchase": { "quantityText": "2", "quantityDecimal": 2, "unit": "tsp", "note": "low" },
+      "status": "needed",
+      "level": true,
+      "_why": "1 tsp sliders + 1 tsp Salisbury",
+      "sourceRecipes": ["Italian Grinder Sliders", "Salisbury Steak Meatballs with Mashed Potatoes"]
+    },
+    {
+      "section": "baking_pantry_condiments",
+      "displayName": "dried thyme",
+      "required": { "quantityText": "1", "quantityDecimal": 1, "unit": "tsp" },
+      "purchase": { "quantityText": "1", "quantityDecimal": 1, "unit": "tsp" },
+      "status": "needed",
+      "level": true,
+      "sourceRecipes": ["Salisbury Steak Meatballs with Mashed Potatoes"]
+    },
+    {
+      "section": "baking_pantry_condiments",
+      "displayName": "ground cinnamon",
+      "required": { "quantityText": "1", "quantityDecimal": 1, "unit": "tsp" },
+      "purchase": { "quantityText": "1", "quantityDecimal": 1, "unit": "tsp", "note": "low" },
+      "status": "needed",
+      "level": true,
+      "sourceRecipes": ["Apple Cinnamon Greek Yogurt Parfaits"]
+    },
+    {
+      "section": "baking_pantry_condiments",
+      "displayName": "maple syrup",
+      "required": { "quantityText": "6", "quantityDecimal": 6, "unit": "tbsp" },
+      "purchase": { "quantityText": "6", "quantityDecimal": 6, "unit": "tbsp" },
+      "status": "needed",
+      "level": true,
+      "_why": "4 parfaits + 2 sheet pan",
+      "sourceRecipes": [
+        "Apple Cinnamon Greek Yogurt Parfaits",
+        "Sheet Pan Maple Mustard Sausage, Sweet Potato and Brussels Sprouts"
+      ]
+    },
+    {
+      "section": "baking_pantry_condiments",
+      "displayName": "whole-grain mustard",
+      "required": { "quantityText": "3", "quantityDecimal": 3, "unit": "tbsp" },
+      "purchase": { "quantityText": "3", "quantityDecimal": 3, "unit": "tbsp" },
+      "status": "needed",
+      "level": true,
+      "_why": "'whole-grain or Dijon mustard' is its own ingredient; the resolver never merges it into Dijon",
+      "sourceRecipes": ["Sheet Pan Maple Mustard Sausage, Sweet Potato and Brussels Sprouts"]
+    },
+    {
+      "section": "baking_pantry_condiments",
+      "displayName": "Worcestershire sauce",
+      "required": { "quantityText": "4", "quantityDecimal": 4, "unit": "tbsp" },
+      "purchase": { "quantityText": "4", "quantityDecimal": 4, "unit": "tbsp" },
+      "status": "needed",
+      "level": true,
+      "_why": "1 pot roast + 3 Salisbury",
+      "sourceRecipes": [
+        "Rosemary Balsamic Pot Roast with Carrots and Potatoes",
+        "Salisbury Steak Meatballs with Mashed Potatoes"
+      ]
+    }
+  ]
+}
