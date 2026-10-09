@@ -10,7 +10,7 @@ export default defineConfig({
     tailwindcss(),
     // Tests beside the screens in src/routes are not routes.
     tanstackStart({ router: { routeFileIgnorePattern: "\\.test\\.tsx?$" } }),
-    // Packages the Start server for the deploy target: Vercel Functions in CI, a node server locally.
+    // Packages the Start server for the deploy target: Vercel Functions on Vercel, a node server everywhere else.
     nitro(),
     viteReact(),
   ],

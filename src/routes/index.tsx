@@ -13,7 +13,8 @@ const authStateFn = createServerFn({ method: "GET" }).handler(async () => {
   }
   const { isAuthenticated, userId } = await auth();
   if (!isAuthenticated) {
-    throw redirect({ to: "/sign-in" });
+    // href, not `to`: the sign-in screen is a catch-all route and this is its base path.
+    throw redirect({ href: "/sign-in" });
   }
   return { userId };
 });
