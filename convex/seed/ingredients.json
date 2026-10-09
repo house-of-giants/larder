@@ -1,0 +1,955 @@
+[
+  {
+    "name": "crisp apples",
+    "kind": "count",
+    "category": "produce",
+    "defaultUnit": "each",
+    "aliases": [
+      "apples",
+      "apple",
+      "crisp apple"
+    ],
+    "tracked": true
+  },
+  {
+    "name": "Brussels sprouts",
+    "kind": "count",
+    "category": "produce",
+    "defaultUnit": "lb",
+    "aliases": [
+      "brussels sprout",
+      "brussel sprouts"
+    ],
+    "tracked": true
+  },
+  {
+    "name": "carrots",
+    "kind": "count",
+    "category": "produce",
+    "defaultUnit": "lb",
+    "aliases": [
+      "carrot"
+    ],
+    "tracked": true
+  },
+  {
+    "name": "celery stalks",
+    "kind": "count",
+    "category": "produce",
+    "defaultUnit": "each",
+    "aliases": [
+      "celery",
+      "celery stalk"
+    ],
+    "tracked": true
+  },
+  {
+    "name": "garlic cloves",
+    "kind": "count",
+    "category": "produce",
+    "defaultUnit": "each",
+    "aliases": [
+      "garlic",
+      "garlic clove",
+      "cloves garlic"
+    ],
+    "tracked": true
+  },
+  {
+    "name": "yellow onion",
+    "kind": "count",
+    "category": "produce",
+    "defaultUnit": "each",
+    "aliases": [
+      "yellow onions",
+      "onion",
+      "onions"
+    ],
+    "tracked": true
+  },
+  {
+    "name": "small red onion",
+    "kind": "count",
+    "category": "produce",
+    "defaultUnit": "each",
+    "aliases": [
+      "red onion",
+      "red onions"
+    ],
+    "tracked": true
+  },
+  {
+    "name": "sweet potatoes",
+    "kind": "count",
+    "category": "produce",
+    "defaultUnit": "lb",
+    "aliases": [
+      "sweet potato"
+    ],
+    "tracked": true
+  },
+  {
+    "name": "Yukon Gold potatoes",
+    "kind": "count",
+    "category": "produce",
+    "defaultUnit": "lb",
+    "aliases": [
+      "yukon gold potato",
+      "yukon golds"
+    ],
+    "tracked": true
+  },
+  {
+    "name": "baby Yukon Gold potatoes",
+    "kind": "count",
+    "category": "produce",
+    "defaultUnit": "lb",
+    "aliases": [
+      "baby yukon golds",
+      "baby potatoes"
+    ],
+    "tracked": true
+  },
+  {
+    "name": "cremini mushrooms",
+    "kind": "count",
+    "category": "produce",
+    "defaultUnit": "oz",
+    "aliases": [
+      "cremini",
+      "mushrooms",
+      "baby bella mushrooms"
+    ],
+    "tracked": true
+  },
+  {
+    "name": "lettuce",
+    "kind": "count",
+    "category": "produce",
+    "defaultUnit": "cup",
+    "aliases": [
+      "shredded iceberg or romaine",
+      "iceberg lettuce",
+      "romaine lettuce",
+      "iceberg",
+      "romaine"
+    ],
+    "tracked": true
+  },
+  {
+    "name": "flat leaf parsley",
+    "kind": "level",
+    "category": "produce",
+    "defaultUnit": null,
+    "aliases": [
+      "parsley",
+      "italian parsley",
+      "fresh parsley"
+    ],
+    "tracked": true
+  },
+  {
+    "name": "fresh rosemary",
+    "kind": "level",
+    "category": "produce",
+    "defaultUnit": null,
+    "aliases": [
+      "rosemary",
+      "rosemary sprigs"
+    ],
+    "tracked": true
+  },
+  {
+    "name": "fresh thyme",
+    "kind": "level",
+    "category": "produce",
+    "defaultUnit": null,
+    "aliases": [
+      "thyme sprigs"
+    ],
+    "tracked": true
+  },
+  {
+    "name": "baby spinach",
+    "kind": "count",
+    "category": "produce",
+    "defaultUnit": "oz",
+    "aliases": [
+      "spinach"
+    ],
+    "tracked": true
+  },
+  {
+    "name": "broccoli florets",
+    "kind": "count",
+    "category": "produce",
+    "defaultUnit": "oz",
+    "aliases": [
+      "broccoli"
+    ],
+    "tracked": true
+  },
+  {
+    "name": "fresh ginger",
+    "kind": "level",
+    "category": "produce",
+    "defaultUnit": null,
+    "aliases": [
+      "ginger",
+      "fresh ginger, grated",
+      "grated ginger"
+    ],
+    "tracked": true
+  },
+  {
+    "name": "bacon",
+    "kind": "count",
+    "category": "meat_deli",
+    "defaultUnit": "oz",
+    "aliases": [
+      "bacon slices"
+    ],
+    "tracked": true
+  },
+  {
+    "name": "ground beef",
+    "kind": "count",
+    "category": "meat_deli",
+    "defaultUnit": "lb",
+    "aliases": [
+      "lean ground beef",
+      "beef, ground"
+    ],
+    "tracked": true
+  },
+  {
+    "name": "boneless chuck roast",
+    "kind": "count",
+    "category": "meat_deli",
+    "defaultUnit": "lb",
+    "aliases": [
+      "chuck roast",
+      "beef chuck roast"
+    ],
+    "tracked": true
+  },
+  {
+    "name": "elk Italian sausage",
+    "kind": "count",
+    "category": "meat_deli",
+    "defaultUnit": "lb",
+    "aliases": [
+      "elk sausage",
+      "elk italian sausage, already in freezer"
+    ],
+    "tracked": true
+  },
+  {
+    "name": "smoked chicken sausage",
+    "kind": "count",
+    "category": "meat_deli",
+    "defaultUnit": "lb",
+    "aliases": [
+      "smoked chicken sausage or kielbasa",
+      "kielbasa",
+      "chicken sausage",
+      "fully cooked smoked chicken sausage"
+    ],
+    "tracked": true
+  },
+  {
+    "name": "sliced ham",
+    "kind": "count",
+    "category": "meat_deli",
+    "defaultUnit": "oz",
+    "aliases": [
+      "ham",
+      "deli ham"
+    ],
+    "tracked": true
+  },
+  {
+    "name": "sliced salami",
+    "kind": "count",
+    "category": "meat_deli",
+    "defaultUnit": "oz",
+    "aliases": [
+      "salami",
+      "genoa salami"
+    ],
+    "tracked": true
+  },
+  {
+    "name": "sliced pepperoni",
+    "kind": "count",
+    "category": "meat_deli",
+    "defaultUnit": "oz",
+    "aliases": [
+      "pepperoni"
+    ],
+    "tracked": true
+  },
+  {
+    "name": "large eggs",
+    "kind": "count",
+    "category": "dairy_refrigerated",
+    "defaultUnit": "each",
+    "aliases": [
+      "egg",
+      "eggs",
+      "large egg"
+    ],
+    "tracked": true
+  },
+  {
+    "name": "unsalted butter",
+    "kind": "count",
+    "category": "dairy_refrigerated",
+    "defaultUnit": "tbsp",
+    "aliases": [
+      "butter"
+    ],
+    "tracked": true
+  },
+  {
+    "name": "buttermilk",
+    "kind": "count",
+    "category": "dairy_refrigerated",
+    "defaultUnit": "cup",
+    "aliases": [],
+    "tracked": true
+  },
+  {
+    "name": "whole milk",
+    "kind": "count",
+    "category": "dairy_refrigerated",
+    "defaultUnit": "cup",
+    "aliases": [
+      "milk"
+    ],
+    "tracked": true
+  },
+  {
+    "name": "plain Greek yogurt",
+    "kind": "count",
+    "category": "dairy_refrigerated",
+    "defaultUnit": "cup",
+    "aliases": [
+      "greek yogurt",
+      "yogurt"
+    ],
+    "tracked": true
+  },
+  {
+    "name": "sour cream",
+    "kind": "count",
+    "category": "dairy_refrigerated",
+    "defaultUnit": "cup",
+    "aliases": [],
+    "tracked": true
+  },
+  {
+    "name": "pepper jack cheese",
+    "kind": "count",
+    "category": "dairy_refrigerated",
+    "defaultUnit": "cup",
+    "aliases": [
+      "pepper jack",
+      "pepper jack cheese, shredded",
+      "shredded pepper jack"
+    ],
+    "tracked": true
+  },
+  {
+    "name": "provolone",
+    "kind": "count",
+    "category": "dairy_refrigerated",
+    "defaultUnit": "slice",
+    "aliases": [
+      "provolone cheese",
+      "sliced provolone"
+    ],
+    "tracked": true
+  },
+  {
+    "name": "Parmesan",
+    "kind": "level",
+    "category": "dairy_refrigerated",
+    "defaultUnit": null,
+    "aliases": [
+      "parmesan, grated",
+      "grated parmesan",
+      "parmesan cheese",
+      "parmigiano"
+    ],
+    "tracked": true
+  },
+  {
+    "name": "heavy cream",
+    "kind": "count",
+    "category": "dairy_refrigerated",
+    "defaultUnit": "cup",
+    "aliases": [
+      "cream"
+    ],
+    "tracked": true
+  },
+  {
+    "name": "cream cheese",
+    "kind": "count",
+    "category": "dairy_refrigerated",
+    "defaultUnit": "oz",
+    "aliases": [],
+    "tracked": true
+  },
+  {
+    "name": "full-fat cottage cheese",
+    "kind": "count",
+    "category": "dairy_refrigerated",
+    "defaultUnit": "cup",
+    "aliases": [
+      "cottage cheese"
+    ],
+    "tracked": true
+  },
+  {
+    "name": "Gruyère",
+    "kind": "count",
+    "category": "dairy_refrigerated",
+    "defaultUnit": "cup",
+    "aliases": [
+      "gruyère, shredded",
+      "gruyere",
+      "gruyere, shredded"
+    ],
+    "tracked": true
+  },
+  {
+    "name": "Monterey Jack",
+    "kind": "count",
+    "category": "dairy_refrigerated",
+    "defaultUnit": "cup",
+    "aliases": [
+      "monterey jack, shredded",
+      "monterey jack cheese"
+    ],
+    "tracked": true
+  },
+  {
+    "name": "cheese tortellini",
+    "kind": "count",
+    "category": "dairy_refrigerated",
+    "defaultUnit": "package",
+    "aliases": [
+      "tortellini"
+    ],
+    "tracked": true
+  },
+  {
+    "name": "Hawaiian rolls",
+    "kind": "count",
+    "category": "bread_canned_jarred",
+    "defaultUnit": "each",
+    "aliases": [
+      "hawaiian sweet rolls",
+      "king's hawaiian rolls",
+      "rolls"
+    ],
+    "tracked": true
+  },
+  {
+    "name": "tomato paste",
+    "kind": "level",
+    "category": "bread_canned_jarred",
+    "defaultUnit": null,
+    "aliases": [],
+    "tracked": true
+  },
+  {
+    "name": "sliced pepperoncini",
+    "kind": "level",
+    "category": "bread_canned_jarred",
+    "defaultUnit": null,
+    "aliases": [
+      "pepperoncini",
+      "pepperoncinis"
+    ],
+    "tracked": true
+  },
+  {
+    "name": "low-sodium beef broth",
+    "kind": "count",
+    "category": "bread_canned_jarred",
+    "defaultUnit": "cup",
+    "aliases": [
+      "beef broth",
+      "beef stock"
+    ],
+    "tracked": true
+  },
+  {
+    "name": "crushed tomatoes",
+    "kind": "count",
+    "category": "bread_canned_jarred",
+    "defaultUnit": "oz",
+    "aliases": [],
+    "tracked": true
+  },
+  {
+    "name": "pumpkin purée",
+    "kind": "count",
+    "category": "bread_canned_jarred",
+    "defaultUnit": "cup",
+    "aliases": [
+      "pumpkin puree",
+      "canned pumpkin"
+    ],
+    "tracked": true
+  },
+  {
+    "name": "old-fashioned rolled oats",
+    "kind": "level",
+    "category": "dry_goods",
+    "defaultUnit": null,
+    "aliases": [
+      "rolled oats",
+      "oats",
+      "old fashioned oats"
+    ],
+    "tracked": true
+  },
+  {
+    "name": "granola",
+    "kind": "level",
+    "category": "dry_goods",
+    "defaultUnit": null,
+    "aliases": [],
+    "tracked": true
+  },
+  {
+    "name": "plain breadcrumbs",
+    "kind": "level",
+    "category": "dry_goods",
+    "defaultUnit": null,
+    "aliases": [
+      "breadcrumbs",
+      "bread crumbs"
+    ],
+    "tracked": true
+  },
+  {
+    "name": "pecans",
+    "kind": "level",
+    "category": "dry_goods",
+    "defaultUnit": null,
+    "aliases": [
+      "pecans, chopped",
+      "chopped pecans"
+    ],
+    "tracked": true
+  },
+  {
+    "name": "mini chocolate chips",
+    "kind": "level",
+    "category": "dry_goods",
+    "defaultUnit": null,
+    "aliases": [
+      "chocolate chips"
+    ],
+    "tracked": true
+  },
+  {
+    "name": "mini M&M’s",
+    "kind": "level",
+    "category": "dry_goods",
+    "defaultUnit": null,
+    "aliases": [
+      "mini m&ms",
+      "m&ms",
+      "mini m&m's"
+    ],
+    "tracked": true
+  },
+  {
+    "name": "protein powder",
+    "kind": "level",
+    "category": "dry_goods",
+    "defaultUnit": null,
+    "aliases": [
+      "vanilla or unflavored protein powder",
+      "vanilla protein powder"
+    ],
+    "tracked": true
+  },
+  {
+    "name": "creamy peanut butter",
+    "kind": "level",
+    "category": "dry_goods",
+    "defaultUnit": null,
+    "aliases": [
+      "peanut butter"
+    ],
+    "tracked": true
+  },
+  {
+    "name": "cooked jasmine rice",
+    "kind": "count",
+    "category": "dry_goods",
+    "defaultUnit": "cup",
+    "aliases": [
+      "jasmine rice",
+      "rice"
+    ],
+    "tracked": true
+  },
+  {
+    "name": "ground flaxseed",
+    "kind": "level",
+    "category": "dry_goods",
+    "defaultUnit": null,
+    "aliases": [
+      "flaxseed",
+      "flax"
+    ],
+    "tracked": true
+  },
+  {
+    "name": "all-purpose flour",
+    "kind": "level",
+    "category": "baking_pantry_condiments",
+    "defaultUnit": null,
+    "aliases": [
+      "flour",
+      "ap flour"
+    ],
+    "tracked": true
+  },
+  {
+    "name": "baking powder",
+    "kind": "level",
+    "category": "baking_pantry_condiments",
+    "defaultUnit": null,
+    "aliases": [],
+    "tracked": true
+  },
+  {
+    "name": "baking soda",
+    "kind": "level",
+    "category": "baking_pantry_condiments",
+    "defaultUnit": null,
+    "aliases": [],
+    "tracked": true
+  },
+  {
+    "name": "kosher salt",
+    "kind": "level",
+    "category": "baking_pantry_condiments",
+    "defaultUnit": null,
+    "aliases": [
+      "salt"
+    ],
+    "tracked": true
+  },
+  {
+    "name": "black pepper",
+    "kind": "level",
+    "category": "baking_pantry_condiments",
+    "defaultUnit": null,
+    "aliases": [
+      "pepper",
+      "ground black pepper"
+    ],
+    "tracked": true
+  },
+  {
+    "name": "ground cinnamon",
+    "kind": "level",
+    "category": "baking_pantry_condiments",
+    "defaultUnit": null,
+    "aliases": [
+      "cinnamon"
+    ],
+    "tracked": true
+  },
+  {
+    "name": "dried oregano",
+    "kind": "level",
+    "category": "baking_pantry_condiments",
+    "defaultUnit": null,
+    "aliases": [
+      "oregano"
+    ],
+    "tracked": true
+  },
+  {
+    "name": "dried thyme",
+    "kind": "level",
+    "category": "baking_pantry_condiments",
+    "defaultUnit": null,
+    "aliases": [],
+    "tracked": true
+  },
+  {
+    "name": "Italian seasoning",
+    "kind": "level",
+    "category": "baking_pantry_condiments",
+    "defaultUnit": null,
+    "aliases": [],
+    "tracked": true
+  },
+  {
+    "name": "garlic powder",
+    "kind": "level",
+    "category": "baking_pantry_condiments",
+    "defaultUnit": null,
+    "aliases": [],
+    "tracked": true
+  },
+  {
+    "name": "onion powder",
+    "kind": "level",
+    "category": "baking_pantry_condiments",
+    "defaultUnit": null,
+    "aliases": [],
+    "tracked": true
+  },
+  {
+    "name": "pumpkin pie spice",
+    "kind": "level",
+    "category": "baking_pantry_condiments",
+    "defaultUnit": null,
+    "aliases": [],
+    "tracked": true
+  },
+  {
+    "name": "red pepper flakes",
+    "kind": "level",
+    "category": "baking_pantry_condiments",
+    "defaultUnit": null,
+    "aliases": [
+      "chili flakes",
+      "crushed red pepper"
+    ],
+    "tracked": false
+  },
+  {
+    "name": "vanilla extract",
+    "kind": "level",
+    "category": "baking_pantry_condiments",
+    "defaultUnit": null,
+    "aliases": [
+      "vanilla"
+    ],
+    "tracked": true
+  },
+  {
+    "name": "maple syrup",
+    "kind": "level",
+    "category": "baking_pantry_condiments",
+    "defaultUnit": null,
+    "aliases": [
+      "pure maple syrup"
+    ],
+    "tracked": true
+  },
+  {
+    "name": "honey",
+    "kind": "level",
+    "category": "baking_pantry_condiments",
+    "defaultUnit": null,
+    "aliases": [],
+    "tracked": true
+  },
+  {
+    "name": "granulated sugar",
+    "kind": "level",
+    "category": "baking_pantry_condiments",
+    "defaultUnit": null,
+    "aliases": [
+      "sugar",
+      "white sugar"
+    ],
+    "tracked": true
+  },
+  {
+    "name": "light brown sugar",
+    "kind": "level",
+    "category": "baking_pantry_condiments",
+    "defaultUnit": null,
+    "aliases": [
+      "brown sugar"
+    ],
+    "tracked": true
+  },
+  {
+    "name": "cornstarch",
+    "kind": "level",
+    "category": "baking_pantry_condiments",
+    "defaultUnit": null,
+    "aliases": [
+      "corn starch"
+    ],
+    "tracked": true
+  },
+  {
+    "name": "olive oil",
+    "kind": "level",
+    "category": "baking_pantry_condiments",
+    "defaultUnit": null,
+    "aliases": [
+      "olive or avocado oil",
+      "avocado oil",
+      "extra virgin olive oil"
+    ],
+    "tracked": true
+  },
+  {
+    "name": "neutral oil",
+    "kind": "level",
+    "category": "baking_pantry_condiments",
+    "defaultUnit": null,
+    "aliases": [
+      "vegetable oil",
+      "canola oil"
+    ],
+    "tracked": true
+  },
+  {
+    "name": "sesame oil",
+    "kind": "level",
+    "category": "baking_pantry_condiments",
+    "defaultUnit": null,
+    "aliases": [
+      "toasted sesame oil"
+    ],
+    "tracked": true
+  },
+  {
+    "name": "balsamic vinegar",
+    "kind": "level",
+    "category": "baking_pantry_condiments",
+    "defaultUnit": null,
+    "aliases": [],
+    "tracked": true
+  },
+  {
+    "name": "apple cider vinegar",
+    "kind": "level",
+    "category": "baking_pantry_condiments",
+    "defaultUnit": null,
+    "aliases": [
+      "cider vinegar"
+    ],
+    "tracked": true
+  },
+  {
+    "name": "red wine vinegar",
+    "kind": "level",
+    "category": "baking_pantry_condiments",
+    "defaultUnit": null,
+    "aliases": [
+      "red wine vinegar or pepperoncini brine"
+    ],
+    "tracked": true
+  },
+  {
+    "name": "rice vinegar",
+    "kind": "level",
+    "category": "baking_pantry_condiments",
+    "defaultUnit": null,
+    "aliases": [
+      "rice wine vinegar"
+    ],
+    "tracked": true
+  },
+  {
+    "name": "Dijon mustard",
+    "kind": "level",
+    "category": "baking_pantry_condiments",
+    "defaultUnit": null,
+    "aliases": [
+      "dijon"
+    ],
+    "tracked": true
+  },
+  {
+    "name": "whole-grain mustard",
+    "kind": "level",
+    "category": "baking_pantry_condiments",
+    "defaultUnit": null,
+    "aliases": [
+      "whole-grain or Dijon mustard",
+      "whole grain mustard",
+      "grainy mustard"
+    ],
+    "tracked": true
+  },
+  {
+    "name": "mayonnaise",
+    "kind": "level",
+    "category": "baking_pantry_condiments",
+    "defaultUnit": null,
+    "aliases": [
+      "mayo",
+      "kewpie"
+    ],
+    "tracked": true
+  },
+  {
+    "name": "Worcestershire sauce",
+    "kind": "level",
+    "category": "baking_pantry_condiments",
+    "defaultUnit": null,
+    "aliases": [
+      "worcestershire"
+    ],
+    "tracked": true
+  },
+  {
+    "name": "low-sodium soy sauce",
+    "kind": "level",
+    "category": "baking_pantry_condiments",
+    "defaultUnit": null,
+    "aliases": [
+      "soy sauce"
+    ],
+    "tracked": true
+  },
+  {
+    "name": "Sriracha",
+    "kind": "level",
+    "category": "baking_pantry_condiments",
+    "defaultUnit": null,
+    "aliases": [
+      "sriracha sauce"
+    ],
+    "tracked": false
+  },
+  {
+    "name": "sesame seeds",
+    "kind": "level",
+    "category": "baking_pantry_condiments",
+    "defaultUnit": null,
+    "aliases": [],
+    "tracked": true
+  },
+  {
+    "name": "nonstick spray",
+    "kind": "level",
+    "category": "baking_pantry_condiments",
+    "defaultUnit": null,
+    "aliases": [
+      "cooking spray",
+      "nonstick cooking spray"
+    ],
+    "tracked": false
+  },
+  {
+    "name": "water",
+    "kind": "count",
+    "category": "other",
+    "defaultUnit": "cup",
+    "aliases": [],
+    "tracked": false
+  }
+]

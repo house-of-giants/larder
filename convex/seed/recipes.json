@@ -1,0 +1,1182 @@
+[
+  {
+    "name": "Bacon, Egg and Pepper Jack Breakfast Biscuits",
+    "source": {
+      "type": "barefoodtim",
+      "title": "A Full Week of Meals + A Shopping List",
+      "url": "https://barefoodtim.substack.com/p/a-full-week-of-meals-a-shopping-list-272",
+      "date": "2026-10-09"
+    },
+    "yield": {
+      "quantityText": "8",
+      "quantityDecimal": 8,
+      "unit": "biscuit"
+    },
+    "freezerFriendly": true,
+    "storageNotes": "Wrap individually; reheat in the oven or air fryer.",
+    "reheatingNotes": null,
+    "instructions": [],
+    "tags": [
+      "breakfast",
+      "meal-prep"
+    ],
+    "needsReview": true,
+    "ingredients": [
+      {
+        "order": 0,
+        "ingredient": "bacon",
+        "displayName": "bacon",
+        "quantityText": "8",
+        "quantityDecimal": 8.0,
+        "unit": "oz",
+        "optional": false,
+        "preparation": null,
+        "needsReview": false
+      },
+      {
+        "order": 1,
+        "ingredient": "large eggs",
+        "displayName": "large eggs",
+        "quantityText": "6",
+        "quantityDecimal": 6.0,
+        "unit": "each",
+        "optional": false,
+        "preparation": null,
+        "needsReview": false
+      },
+      {
+        "order": 2,
+        "ingredient": "unsalted butter",
+        "displayName": "unsalted butter",
+        "quantityText": "9",
+        "quantityDecimal": 9.0,
+        "unit": "tbsp",
+        "optional": false,
+        "preparation": null,
+        "needsReview": false
+      },
+      {
+        "order": 3,
+        "ingredient": "all-purpose flour",
+        "displayName": "all-purpose flour",
+        "quantityText": "2 1/2",
+        "quantityDecimal": 2.5,
+        "unit": "cup",
+        "optional": false,
+        "preparation": null,
+        "needsReview": false
+      },
+      {
+        "order": 4,
+        "ingredient": "baking powder",
+        "displayName": "baking powder",
+        "quantityText": "1",
+        "quantityDecimal": 1.0,
+        "unit": "tbsp",
+        "optional": false,
+        "preparation": null,
+        "needsReview": false
+      },
+      {
+        "order": 5,
+        "ingredient": "kosher salt",
+        "displayName": "kosher salt",
+        "quantityText": "1",
+        "quantityDecimal": 1.0,
+        "unit": "tsp",
+        "optional": false,
+        "preparation": null,
+        "needsReview": false
+      },
+      {
+        "order": 6,
+        "ingredient": "black pepper",
+        "displayName": "black pepper",
+        "quantityText": "1/2",
+        "quantityDecimal": 0.5,
+        "unit": "tsp",
+        "optional": false,
+        "preparation": null,
+        "needsReview": false
+      },
+      {
+        "order": 7,
+        "ingredient": "buttermilk",
+        "displayName": "buttermilk",
+        "quantityText": "1",
+        "quantityDecimal": 1.0,
+        "unit": "cup",
+        "optional": false,
+        "preparation": null,
+        "needsReview": false
+      },
+      {
+        "order": 8,
+        "ingredient": "pepper jack cheese",
+        "displayName": "pepper jack cheese, shredded",
+        "quantityText": "1 1/2",
+        "quantityDecimal": 1.5,
+        "unit": "cup",
+        "optional": false,
+        "preparation": "shredded",
+        "needsReview": false
+      },
+      {
+        "order": 9,
+        "ingredient": "nonstick spray",
+        "displayName": "nonstick spray",
+        "quantityText": "as needed",
+        "quantityDecimal": null,
+        "unit": "",
+        "optional": false,
+        "preparation": null,
+        "needsReview": false
+      }
+    ]
+  },
+  {
+    "name": "Apple Cinnamon Greek Yogurt Parfaits",
+    "source": {
+      "type": "barefoodtim",
+      "title": "A Full Week of Meals + A Shopping List",
+      "url": "https://barefoodtim.substack.com/p/a-full-week-of-meals-a-shopping-list-272",
+      "date": "2026-10-09"
+    },
+    "yield": {
+      "quantityText": "4",
+      "quantityDecimal": 4,
+      "unit": "parfait"
+    },
+    "freezerFriendly": false,
+    "storageNotes": "Keep the granola separate until serving.",
+    "reheatingNotes": null,
+    "instructions": [],
+    "tags": [
+      "breakfast",
+      "meal-prep"
+    ],
+    "needsReview": true,
+    "ingredients": [
+      {
+        "order": 0,
+        "ingredient": "crisp apples",
+        "displayName": "crisp apples",
+        "quantityText": "4",
+        "quantityDecimal": 4.0,
+        "unit": "each",
+        "optional": false,
+        "preparation": null,
+        "needsReview": false
+      },
+      {
+        "order": 1,
+        "ingredient": "unsalted butter",
+        "displayName": "unsalted butter",
+        "quantityText": "1",
+        "quantityDecimal": 1.0,
+        "unit": "tbsp",
+        "optional": false,
+        "preparation": null,
+        "needsReview": false
+      },
+      {
+        "order": 2,
+        "ingredient": "maple syrup",
+        "displayName": "maple syrup",
+        "quantityText": "4",
+        "quantityDecimal": 4.0,
+        "unit": "tbsp",
+        "optional": false,
+        "preparation": null,
+        "needsReview": false
+      },
+      {
+        "order": 3,
+        "ingredient": "ground cinnamon",
+        "displayName": "ground cinnamon",
+        "quantityText": "1",
+        "quantityDecimal": 1.0,
+        "unit": "tsp",
+        "optional": false,
+        "preparation": null,
+        "needsReview": false
+      },
+      {
+        "order": 4,
+        "ingredient": "kosher salt",
+        "displayName": "kosher salt",
+        "quantityText": "1",
+        "quantityDecimal": 1.0,
+        "unit": "pinch",
+        "optional": false,
+        "preparation": null,
+        "needsReview": false
+      },
+      {
+        "order": 5,
+        "ingredient": "plain Greek yogurt",
+        "displayName": "plain Greek yogurt",
+        "quantityText": "4",
+        "quantityDecimal": 4.0,
+        "unit": "cup",
+        "optional": false,
+        "preparation": null,
+        "needsReview": false
+      },
+      {
+        "order": 6,
+        "ingredient": "vanilla extract",
+        "displayName": "vanilla extract",
+        "quantityText": "1 1/2",
+        "quantityDecimal": 1.5,
+        "unit": "tsp",
+        "optional": false,
+        "preparation": null,
+        "needsReview": false
+      },
+      {
+        "order": 7,
+        "ingredient": "granola",
+        "displayName": "granola",
+        "quantityText": "1 1/2",
+        "quantityDecimal": 1.5,
+        "unit": "cup",
+        "optional": false,
+        "preparation": null,
+        "needsReview": false
+      },
+      {
+        "order": 8,
+        "ingredient": "pecans",
+        "displayName": "pecans, chopped",
+        "quantityText": "1/2",
+        "quantityDecimal": 0.5,
+        "unit": "cup",
+        "optional": false,
+        "preparation": "chopped",
+        "needsReview": false
+      }
+    ]
+  },
+  {
+    "name": "Rosemary Balsamic Pot Roast with Carrots and Potatoes",
+    "source": {
+      "type": "barefoodtim",
+      "title": "A Full Week of Meals + A Shopping List",
+      "url": "https://barefoodtim.substack.com/p/a-full-week-of-meals-a-shopping-list-272",
+      "date": "2026-10-09"
+    },
+    "yield": {
+      "quantityText": "6",
+      "quantityDecimal": 6,
+      "unit": "portion"
+    },
+    "freezerFriendly": true,
+    "storageNotes": null,
+    "reheatingNotes": null,
+    "instructions": [],
+    "tags": [
+      "dinner",
+      "meal-prep",
+      "comfort-food"
+    ],
+    "needsReview": true,
+    "ingredients": [
+      {
+        "order": 0,
+        "ingredient": "boneless chuck roast",
+        "displayName": "boneless chuck roast",
+        "quantityText": "4",
+        "quantityDecimal": 4.0,
+        "unit": "lb",
+        "optional": false,
+        "preparation": null,
+        "needsReview": false
+      },
+      {
+        "order": 1,
+        "ingredient": "kosher salt",
+        "displayName": "kosher salt",
+        "quantityText": "2",
+        "quantityDecimal": 2.0,
+        "unit": "tsp",
+        "optional": false,
+        "preparation": null,
+        "needsReview": false
+      },
+      {
+        "order": 2,
+        "ingredient": "black pepper",
+        "displayName": "black pepper",
+        "quantityText": "1",
+        "quantityDecimal": 1.0,
+        "unit": "tsp",
+        "optional": false,
+        "preparation": null,
+        "needsReview": false
+      },
+      {
+        "order": 3,
+        "ingredient": "olive oil",
+        "displayName": "olive or avocado oil",
+        "quantityText": "2",
+        "quantityDecimal": 2.0,
+        "unit": "tbsp",
+        "optional": false,
+        "preparation": null,
+        "needsReview": false
+      },
+      {
+        "order": 4,
+        "ingredient": "yellow onion",
+        "displayName": "yellow onion",
+        "quantityText": "1",
+        "quantityDecimal": 1.0,
+        "unit": "each",
+        "optional": false,
+        "preparation": null,
+        "needsReview": false
+      },
+      {
+        "order": 5,
+        "ingredient": "garlic cloves",
+        "displayName": "garlic cloves",
+        "quantityText": "3",
+        "quantityDecimal": 3.0,
+        "unit": "each",
+        "optional": false,
+        "preparation": null,
+        "needsReview": false
+      },
+      {
+        "order": 6,
+        "ingredient": "tomato paste",
+        "displayName": "tomato paste",
+        "quantityText": "2",
+        "quantityDecimal": 2.0,
+        "unit": "tbsp",
+        "optional": false,
+        "preparation": null,
+        "needsReview": false
+      },
+      {
+        "order": 7,
+        "ingredient": "balsamic vinegar",
+        "displayName": "balsamic vinegar",
+        "quantityText": "1/3",
+        "quantityDecimal": 0.3333333333333333,
+        "unit": "cup",
+        "optional": false,
+        "preparation": null,
+        "needsReview": false
+      },
+      {
+        "order": 8,
+        "ingredient": "low-sodium beef broth",
+        "displayName": "low-sodium beef broth",
+        "quantityText": "3",
+        "quantityDecimal": 3.0,
+        "unit": "cup",
+        "optional": false,
+        "preparation": null,
+        "needsReview": false
+      },
+      {
+        "order": 9,
+        "ingredient": "Worcestershire sauce",
+        "displayName": "Worcestershire sauce",
+        "quantityText": "1",
+        "quantityDecimal": 1.0,
+        "unit": "tbsp",
+        "optional": false,
+        "preparation": null,
+        "needsReview": false
+      },
+      {
+        "order": 10,
+        "ingredient": "fresh rosemary",
+        "displayName": "fresh rosemary",
+        "quantityText": "2",
+        "quantityDecimal": 2.0,
+        "unit": "sprig",
+        "optional": false,
+        "preparation": null,
+        "needsReview": false
+      },
+      {
+        "order": 11,
+        "ingredient": "fresh thyme",
+        "displayName": "fresh thyme",
+        "quantityText": "4",
+        "quantityDecimal": 4.0,
+        "unit": "sprig",
+        "optional": false,
+        "preparation": null,
+        "needsReview": false
+      },
+      {
+        "order": 12,
+        "ingredient": "carrots",
+        "displayName": "carrots",
+        "quantityText": "1",
+        "quantityDecimal": 1.0,
+        "unit": "lb",
+        "optional": false,
+        "preparation": null,
+        "needsReview": false
+      },
+      {
+        "order": 13,
+        "ingredient": "baby Yukon Gold potatoes",
+        "displayName": "baby Yukon Gold potatoes",
+        "quantityText": "1 1/2",
+        "quantityDecimal": 1.5,
+        "unit": "lb",
+        "optional": false,
+        "preparation": null,
+        "needsReview": false
+      },
+      {
+        "order": 14,
+        "ingredient": "celery stalks",
+        "displayName": "celery stalks",
+        "quantityText": "3",
+        "quantityDecimal": 3.0,
+        "unit": "each",
+        "optional": false,
+        "preparation": null,
+        "needsReview": false
+      },
+      {
+        "order": 15,
+        "ingredient": "unsalted butter",
+        "displayName": "unsalted butter",
+        "quantityText": "1",
+        "quantityDecimal": 1.0,
+        "unit": "tbsp",
+        "optional": false,
+        "preparation": null,
+        "needsReview": false
+      }
+    ]
+  },
+  {
+    "name": "Sheet Pan Maple Mustard Sausage, Sweet Potato and Brussels Sprouts",
+    "source": {
+      "type": "barefoodtim",
+      "title": "A Full Week of Meals + A Shopping List",
+      "url": "https://barefoodtim.substack.com/p/a-full-week-of-meals-a-shopping-list-272",
+      "date": "2026-10-09"
+    },
+    "yield": {
+      "quantityText": "6",
+      "quantityDecimal": 6,
+      "unit": "portion"
+    },
+    "freezerFriendly": false,
+    "storageNotes": null,
+    "reheatingNotes": null,
+    "instructions": [],
+    "tags": [
+      "dinner",
+      "meal-prep",
+      "sheet-pan"
+    ],
+    "needsReview": true,
+    "ingredients": [
+      {
+        "order": 0,
+        "ingredient": "sweet potatoes",
+        "displayName": "sweet potatoes",
+        "quantityText": "2",
+        "quantityDecimal": 2.0,
+        "unit": "lb",
+        "optional": false,
+        "preparation": null,
+        "needsReview": false
+      },
+      {
+        "order": 1,
+        "ingredient": "Brussels sprouts",
+        "displayName": "Brussels sprouts",
+        "quantityText": "1 1/2",
+        "quantityDecimal": 1.5,
+        "unit": "lb",
+        "optional": false,
+        "preparation": null,
+        "needsReview": false
+      },
+      {
+        "order": 2,
+        "ingredient": "olive oil",
+        "displayName": "olive or avocado oil",
+        "quantityText": "2",
+        "quantityDecimal": 2.0,
+        "unit": "tbsp",
+        "optional": false,
+        "preparation": null,
+        "needsReview": false
+      },
+      {
+        "order": 3,
+        "ingredient": "kosher salt",
+        "displayName": "kosher salt",
+        "quantityText": "1",
+        "quantityDecimal": 1.0,
+        "unit": "tsp",
+        "optional": false,
+        "preparation": null,
+        "needsReview": false
+      },
+      {
+        "order": 4,
+        "ingredient": "black pepper",
+        "displayName": "black pepper",
+        "quantityText": "1/2",
+        "quantityDecimal": 0.5,
+        "unit": "tsp",
+        "optional": false,
+        "preparation": null,
+        "needsReview": false
+      },
+      {
+        "order": 5,
+        "ingredient": "smoked chicken sausage",
+        "displayName": "smoked chicken sausage or kielbasa",
+        "quantityText": "2",
+        "quantityDecimal": 2.0,
+        "unit": "lb",
+        "optional": false,
+        "preparation": null,
+        "needsReview": false
+      },
+      {
+        "order": 6,
+        "ingredient": "crisp apples",
+        "displayName": "crisp apples",
+        "quantityText": "2",
+        "quantityDecimal": 2.0,
+        "unit": "each",
+        "optional": false,
+        "preparation": null,
+        "needsReview": false
+      },
+      {
+        "order": 7,
+        "ingredient": "whole-grain mustard",
+        "displayName": "whole-grain or Dijon mustard",
+        "quantityText": "3",
+        "quantityDecimal": 3.0,
+        "unit": "tbsp",
+        "optional": false,
+        "preparation": null,
+        "needsReview": false
+      },
+      {
+        "order": 8,
+        "ingredient": "maple syrup",
+        "displayName": "maple syrup",
+        "quantityText": "2",
+        "quantityDecimal": 2.0,
+        "unit": "tbsp",
+        "optional": false,
+        "preparation": null,
+        "needsReview": false
+      },
+      {
+        "order": 9,
+        "ingredient": "apple cider vinegar",
+        "displayName": "apple cider vinegar",
+        "quantityText": "2",
+        "quantityDecimal": 2.0,
+        "unit": "tbsp",
+        "optional": false,
+        "preparation": null,
+        "needsReview": false
+      }
+    ]
+  },
+  {
+    "name": "Italian Grinder Sliders",
+    "source": {
+      "type": "barefoodtim",
+      "title": "A Full Week of Meals + A Shopping List",
+      "url": "https://barefoodtim.substack.com/p/a-full-week-of-meals-a-shopping-list-272",
+      "date": "2026-10-09"
+    },
+    "yield": {
+      "quantityText": "12",
+      "quantityDecimal": 12,
+      "unit": "slider"
+    },
+    "freezerFriendly": true,
+    "storageNotes": "Store grinder salad separately and add after reheating.",
+    "reheatingNotes": "Reheat sliders in the oven; add the salad cold.",
+    "instructions": [],
+    "tags": [
+      "lunch",
+      "meal-prep"
+    ],
+    "needsReview": false,
+    "ingredients": [
+      {
+        "order": 0,
+        "ingredient": "Hawaiian rolls",
+        "displayName": "Hawaiian rolls",
+        "quantityText": "12",
+        "quantityDecimal": 12.0,
+        "unit": "each",
+        "optional": false,
+        "preparation": null,
+        "needsReview": false
+      },
+      {
+        "order": 1,
+        "ingredient": "sliced ham",
+        "displayName": "sliced ham",
+        "quantityText": "8",
+        "quantityDecimal": 8.0,
+        "unit": "oz",
+        "optional": false,
+        "preparation": null,
+        "needsReview": false
+      },
+      {
+        "order": 2,
+        "ingredient": "sliced salami",
+        "displayName": "sliced salami",
+        "quantityText": "6",
+        "quantityDecimal": 6.0,
+        "unit": "oz",
+        "optional": false,
+        "preparation": null,
+        "needsReview": false
+      },
+      {
+        "order": 3,
+        "ingredient": "sliced pepperoni",
+        "displayName": "sliced pepperoni",
+        "quantityText": "4",
+        "quantityDecimal": 4.0,
+        "unit": "oz",
+        "optional": false,
+        "preparation": null,
+        "needsReview": false
+      },
+      {
+        "order": 4,
+        "ingredient": "provolone",
+        "displayName": "provolone",
+        "quantityText": "12",
+        "quantityDecimal": 12.0,
+        "unit": "slice",
+        "optional": false,
+        "preparation": null,
+        "needsReview": false
+      },
+      {
+        "order": 5,
+        "ingredient": "unsalted butter",
+        "displayName": "unsalted butter",
+        "quantityText": "2",
+        "quantityDecimal": 2.0,
+        "unit": "tbsp",
+        "optional": false,
+        "preparation": null,
+        "needsReview": false
+      },
+      {
+        "order": 6,
+        "ingredient": "Italian seasoning",
+        "displayName": "Italian seasoning",
+        "quantityText": "1/2",
+        "quantityDecimal": 0.5,
+        "unit": "tsp",
+        "optional": false,
+        "preparation": null,
+        "needsReview": false
+      },
+      {
+        "order": 7,
+        "ingredient": "lettuce",
+        "displayName": "shredded iceberg or romaine",
+        "quantityText": "3",
+        "quantityDecimal": 3.0,
+        "unit": "cup",
+        "optional": false,
+        "preparation": null,
+        "needsReview": false
+      },
+      {
+        "order": 8,
+        "ingredient": "small red onion",
+        "displayName": "small red onion",
+        "quantityText": "1/4",
+        "quantityDecimal": 0.25,
+        "unit": "each",
+        "optional": false,
+        "preparation": null,
+        "needsReview": false
+      },
+      {
+        "order": 9,
+        "ingredient": "sliced pepperoncini",
+        "displayName": "sliced pepperoncini",
+        "quantityText": "1/2",
+        "quantityDecimal": 0.5,
+        "unit": "cup",
+        "optional": false,
+        "preparation": null,
+        "needsReview": false
+      },
+      {
+        "order": 10,
+        "ingredient": "mayonnaise",
+        "displayName": "mayonnaise",
+        "quantityText": "1/3",
+        "quantityDecimal": 0.3333333333333333,
+        "unit": "cup",
+        "optional": false,
+        "preparation": null,
+        "needsReview": false
+      },
+      {
+        "order": 11,
+        "ingredient": "red wine vinegar",
+        "displayName": "red wine vinegar or pepperoncini brine",
+        "quantityText": "1",
+        "quantityDecimal": 1.0,
+        "unit": "tbsp",
+        "optional": false,
+        "preparation": null,
+        "needsReview": false
+      },
+      {
+        "order": 12,
+        "ingredient": "Dijon mustard",
+        "displayName": "Dijon mustard",
+        "quantityText": "1",
+        "quantityDecimal": 1.0,
+        "unit": "tsp",
+        "optional": false,
+        "preparation": null,
+        "needsReview": false
+      },
+      {
+        "order": 13,
+        "ingredient": "dried oregano",
+        "displayName": "dried oregano",
+        "quantityText": "1/2",
+        "quantityDecimal": 0.5,
+        "unit": "tsp",
+        "optional": false,
+        "preparation": null,
+        "needsReview": false
+      },
+      {
+        "order": 14,
+        "ingredient": "black pepper",
+        "displayName": "black pepper",
+        "quantityText": "1/4",
+        "quantityDecimal": 0.25,
+        "unit": "tsp",
+        "optional": false,
+        "preparation": null,
+        "needsReview": false
+      },
+      {
+        "order": 15,
+        "ingredient": "Parmesan",
+        "displayName": "Parmesan, grated",
+        "quantityText": "2",
+        "quantityDecimal": 2.0,
+        "unit": "tbsp",
+        "optional": false,
+        "preparation": "grated",
+        "needsReview": false
+      }
+    ]
+  },
+  {
+    "name": "Monster Cookie Protein Bites",
+    "source": {
+      "type": "barefoodtim",
+      "title": "A Full Week of Meals + A Shopping List",
+      "url": "https://barefoodtim.substack.com/p/a-full-week-of-meals-a-shopping-list-272",
+      "date": "2026-10-09"
+    },
+    "yield": {
+      "quantityText": "24",
+      "quantityDecimal": 24,
+      "unit": "bite"
+    },
+    "freezerFriendly": true,
+    "storageNotes": "Fridge, airtight.",
+    "reheatingNotes": null,
+    "instructions": [],
+    "tags": [
+      "snack",
+      "meal-prep",
+      "no-bake"
+    ],
+    "needsReview": false,
+    "ingredients": [
+      {
+        "order": 0,
+        "ingredient": "old-fashioned rolled oats",
+        "displayName": "old-fashioned rolled oats",
+        "quantityText": "2",
+        "quantityDecimal": 2.0,
+        "unit": "cup",
+        "optional": false,
+        "preparation": null,
+        "needsReview": false
+      },
+      {
+        "order": 1,
+        "ingredient": "creamy peanut butter",
+        "displayName": "creamy peanut butter",
+        "quantityText": "1",
+        "quantityDecimal": 1.0,
+        "unit": "cup",
+        "optional": false,
+        "preparation": null,
+        "needsReview": false
+      },
+      {
+        "order": 2,
+        "ingredient": "honey",
+        "displayName": "honey",
+        "quantityText": "1/2",
+        "quantityDecimal": 0.5,
+        "unit": "cup",
+        "optional": false,
+        "preparation": null,
+        "needsReview": false
+      },
+      {
+        "order": 3,
+        "ingredient": "protein powder",
+        "displayName": "vanilla or unflavored protein powder",
+        "quantityText": "1/2",
+        "quantityDecimal": 0.5,
+        "unit": "cup",
+        "optional": false,
+        "preparation": null,
+        "needsReview": false
+      },
+      {
+        "order": 4,
+        "ingredient": "mini M&M’s",
+        "displayName": "mini M&M’s",
+        "quantityText": "1/2",
+        "quantityDecimal": 0.5,
+        "unit": "cup",
+        "optional": false,
+        "preparation": null,
+        "needsReview": false
+      },
+      {
+        "order": 5,
+        "ingredient": "mini chocolate chips",
+        "displayName": "mini chocolate chips",
+        "quantityText": "1/3",
+        "quantityDecimal": 0.3333333333333333,
+        "unit": "cup",
+        "optional": false,
+        "preparation": null,
+        "needsReview": false
+      },
+      {
+        "order": 6,
+        "ingredient": "vanilla extract",
+        "displayName": "vanilla extract",
+        "quantityText": "1",
+        "quantityDecimal": 1.0,
+        "unit": "tsp",
+        "optional": false,
+        "preparation": null,
+        "needsReview": false
+      },
+      {
+        "order": 7,
+        "ingredient": "kosher salt",
+        "displayName": "kosher salt",
+        "quantityText": "1/2",
+        "quantityDecimal": 0.5,
+        "unit": "tsp",
+        "optional": false,
+        "preparation": null,
+        "needsReview": false
+      }
+    ]
+  },
+  {
+    "name": "Salisbury Steak Meatballs with Mashed Potatoes",
+    "source": {
+      "type": "barefoodtim",
+      "title": "A Full Week of Meals + A Shopping List: 9/18",
+      "url": null,
+      "date": "2026-09-18"
+    },
+    "yield": {
+      "quantityText": "6",
+      "quantityDecimal": 6,
+      "unit": "portion"
+    },
+    "freezerFriendly": true,
+    "storageNotes": "Freezes well with the meatballs and potatoes stored separately.",
+    "reheatingNotes": null,
+    "instructions": [],
+    "tags": [
+      "dinner",
+      "meal-prep",
+      "comfort-food"
+    ],
+    "needsReview": false,
+    "ingredients": [
+      {
+        "order": 0,
+        "ingredient": "ground beef",
+        "displayName": "ground beef",
+        "quantityText": "2",
+        "quantityDecimal": 2.0,
+        "unit": "lb",
+        "optional": false,
+        "preparation": null,
+        "needsReview": false
+      },
+      {
+        "order": 1,
+        "ingredient": "plain breadcrumbs",
+        "displayName": "plain breadcrumbs",
+        "quantityText": "1",
+        "quantityDecimal": 1.0,
+        "unit": "cup",
+        "optional": false,
+        "preparation": null,
+        "needsReview": false
+      },
+      {
+        "order": 2,
+        "ingredient": "whole milk",
+        "displayName": "whole milk",
+        "quantityText": "1/2",
+        "quantityDecimal": 0.5,
+        "unit": "cup",
+        "optional": false,
+        "preparation": null,
+        "needsReview": false
+      },
+      {
+        "order": 3,
+        "ingredient": "large eggs",
+        "displayName": "large egg",
+        "quantityText": "1",
+        "quantityDecimal": 1.0,
+        "unit": "each",
+        "optional": false,
+        "preparation": null,
+        "needsReview": false
+      },
+      {
+        "order": 4,
+        "ingredient": "Worcestershire sauce",
+        "displayName": "Worcestershire sauce",
+        "quantityText": "3",
+        "quantityDecimal": 3.0,
+        "unit": "tbsp",
+        "optional": false,
+        "preparation": null,
+        "needsReview": false
+      },
+      {
+        "order": 5,
+        "ingredient": "Dijon mustard",
+        "displayName": "Dijon mustard",
+        "quantityText": "1",
+        "quantityDecimal": 1.0,
+        "unit": "tbsp",
+        "optional": false,
+        "preparation": null,
+        "needsReview": false
+      },
+      {
+        "order": 6,
+        "ingredient": "Dijon mustard",
+        "displayName": "Dijon mustard",
+        "quantityText": "1",
+        "quantityDecimal": 1.0,
+        "unit": "tsp",
+        "optional": false,
+        "preparation": null,
+        "needsReview": false
+      },
+      {
+        "order": 7,
+        "ingredient": "flat leaf parsley",
+        "displayName": "flat leaf parsley",
+        "quantityText": "2",
+        "quantityDecimal": 2.0,
+        "unit": "tbsp",
+        "optional": false,
+        "preparation": null,
+        "needsReview": false
+      },
+      {
+        "order": 8,
+        "ingredient": "kosher salt",
+        "displayName": "kosher salt",
+        "quantityText": "3",
+        "quantityDecimal": 3.0,
+        "unit": "tsp",
+        "optional": false,
+        "preparation": null,
+        "needsReview": false
+      },
+      {
+        "order": 9,
+        "ingredient": "garlic powder",
+        "displayName": "garlic powder",
+        "quantityText": "1",
+        "quantityDecimal": 1.0,
+        "unit": "tsp",
+        "optional": false,
+        "preparation": null,
+        "needsReview": false
+      },
+      {
+        "order": 10,
+        "ingredient": "onion powder",
+        "displayName": "onion powder",
+        "quantityText": "1",
+        "quantityDecimal": 1.0,
+        "unit": "tsp",
+        "optional": false,
+        "preparation": null,
+        "needsReview": false
+      },
+      {
+        "order": 11,
+        "ingredient": "black pepper",
+        "displayName": "black pepper",
+        "quantityText": "1/2",
+        "quantityDecimal": 0.5,
+        "unit": "tsp",
+        "optional": false,
+        "preparation": null,
+        "needsReview": false
+      },
+      {
+        "order": 12,
+        "ingredient": "unsalted butter",
+        "displayName": "unsalted butter",
+        "quantityText": "9",
+        "quantityDecimal": 9.0,
+        "unit": "tbsp",
+        "optional": false,
+        "preparation": null,
+        "needsReview": false
+      },
+      {
+        "order": 13,
+        "ingredient": "yellow onion",
+        "displayName": "yellow onions",
+        "quantityText": "2",
+        "quantityDecimal": 2.0,
+        "unit": "each",
+        "optional": false,
+        "preparation": null,
+        "needsReview": false
+      },
+      {
+        "order": 14,
+        "ingredient": "cremini mushrooms",
+        "displayName": "cremini mushrooms",
+        "quantityText": "16",
+        "quantityDecimal": 16.0,
+        "unit": "oz",
+        "optional": false,
+        "preparation": null,
+        "needsReview": false
+      },
+      {
+        "order": 15,
+        "ingredient": "garlic cloves",
+        "displayName": "garlic cloves",
+        "quantityText": "4",
+        "quantityDecimal": 4.0,
+        "unit": "each",
+        "optional": false,
+        "preparation": null,
+        "needsReview": false
+      },
+      {
+        "order": 16,
+        "ingredient": "dried thyme",
+        "displayName": "dried thyme",
+        "quantityText": "1",
+        "quantityDecimal": 1.0,
+        "unit": "tsp",
+        "optional": false,
+        "preparation": null,
+        "needsReview": false
+      },
+      {
+        "order": 17,
+        "ingredient": "all-purpose flour",
+        "displayName": "all-purpose flour",
+        "quantityText": "1/4",
+        "quantityDecimal": 0.25,
+        "unit": "cup",
+        "optional": false,
+        "preparation": null,
+        "needsReview": false
+      },
+      {
+        "order": 18,
+        "ingredient": "low-sodium beef broth",
+        "displayName": "low-sodium beef broth",
+        "quantityText": "4",
+        "quantityDecimal": 4.0,
+        "unit": "cup",
+        "optional": false,
+        "preparation": null,
+        "needsReview": false
+      },
+      {
+        "order": 19,
+        "ingredient": "Yukon Gold potatoes",
+        "displayName": "Yukon Gold potatoes",
+        "quantityText": "3",
+        "quantityDecimal": 3.0,
+        "unit": "lb",
+        "optional": false,
+        "preparation": null,
+        "needsReview": false
+      },
+      {
+        "order": 20,
+        "ingredient": "whole milk",
+        "displayName": "whole milk",
+        "quantityText": "3/4",
+        "quantityDecimal": 0.75,
+        "unit": "cup",
+        "optional": false,
+        "preparation": null,
+        "needsReview": false
+      },
+      {
+        "order": 21,
+        "ingredient": "sour cream",
+        "displayName": "sour cream",
+        "quantityText": "1/2",
+        "quantityDecimal": 0.5,
+        "unit": "cup",
+        "optional": false,
+        "preparation": null,
+        "needsReview": false
+      }
+    ]
+  }
+]

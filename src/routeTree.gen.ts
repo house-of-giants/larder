@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as JoinRouteImport } from './routes/join'
+import { Route as AppPantryRouteImport } from './routes/_app/pantry'
 import { Route as AppSettingsRouteImport } from './routes/_app/settings'
 import { Route as AppWeekRouteImport } from './routes/_app/week'
 import { Route as SignInSplatRouteImport } from './routes/sign-in.$'
@@ -30,6 +31,11 @@ const JoinRoute = JoinRouteImport.update({
   id: '/join',
   path: '/join',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AppPantryRoute = AppPantryRouteImport.update({
+  id: '/pantry',
+  path: '/pantry',
+  getParentRoute: () => AppRoute,
 } as any)
 const AppSettingsRoute = AppSettingsRouteImport.update({
   id: '/settings',
@@ -55,6 +61,7 @@ const SignUpSplatRoute = SignUpSplatRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/join': typeof JoinRoute
+  '/pantry': typeof AppPantryRoute
   '/settings': typeof AppSettingsRoute
   '/week': typeof AppWeekRoute
   '/sign-in/$': typeof SignInSplatRoute
@@ -63,6 +70,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/join': typeof JoinRoute
+  '/pantry': typeof AppPantryRoute
   '/settings': typeof AppSettingsRoute
   '/week': typeof AppWeekRoute
   '/sign-in/$': typeof SignInSplatRoute
@@ -73,6 +81,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_app': typeof AppRouteWithChildren
   '/join': typeof JoinRoute
+  '/_app/pantry': typeof AppPantryRoute
   '/_app/settings': typeof AppSettingsRoute
   '/_app/week': typeof AppWeekRoute
   '/sign-in/$': typeof SignInSplatRoute
@@ -80,14 +89,29 @@ export interface FileRoutesById {
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/join' | '/settings' | '/week' | '/sign-in/$' | '/sign-up/$'
+  fullPaths:
+    | '/'
+    | '/join'
+    | '/pantry'
+    | '/settings'
+    | '/week'
+    | '/sign-in/$'
+    | '/sign-up/$'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/join' | '/settings' | '/week' | '/sign-in/$' | '/sign-up/$'
+  to:
+    | '/'
+    | '/join'
+    | '/pantry'
+    | '/settings'
+    | '/week'
+    | '/sign-in/$'
+    | '/sign-up/$'
   id:
     | '__root__'
     | '/'
     | '/_app'
     | '/join'
+    | '/_app/pantry'
     | '/_app/settings'
     | '/_app/week'
     | '/sign-in/$'
@@ -125,6 +149,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof JoinRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_app/pantry': {
+      id: '/_app/pantry'
+      path: '/pantry'
+      fullPath: '/pantry'
+      preLoaderRoute: typeof AppPantryRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/settings': {
       id: '/_app/settings'
       path: '/settings'
@@ -157,11 +188,13 @@ declare module '@tanstack/react-router' {
 }
 
 interface AppRouteChildren {
+  AppPantryRoute: typeof AppPantryRoute
   AppSettingsRoute: typeof AppSettingsRoute
   AppWeekRoute: typeof AppWeekRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppPantryRoute: AppPantryRoute,
   AppSettingsRoute: AppSettingsRoute,
   AppWeekRoute: AppWeekRoute,
 }

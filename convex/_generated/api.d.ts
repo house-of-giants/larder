@@ -11,9 +11,13 @@
 import type * as events from "../events.js";
 import type * as health from "../health.js";
 import type * as households from "../households.js";
+import type * as ingredients from "../ingredients.js";
 import type * as lib_auth from "../lib/auth.js";
 import type * as lib_household from "../lib/household.js";
 import type * as lib_ledger from "../lib/ledger.js";
+import type * as lib_pantry from "../lib/pantry.js";
+import type * as pantry from "../pantry.js";
+import type * as seed from "../seed.js";
 import type * as test_helpers from "../test_helpers.js";
 
 import type {
@@ -26,9 +30,13 @@ declare const fullApi: ApiFromModules<{
   events: typeof events;
   health: typeof health;
   households: typeof households;
+  ingredients: typeof ingredients;
   "lib/auth": typeof lib_auth;
   "lib/household": typeof lib_household;
   "lib/ledger": typeof lib_ledger;
+  "lib/pantry": typeof lib_pantry;
+  pantry: typeof pantry;
+  seed: typeof seed;
   test_helpers: typeof test_helpers;
 }>;
 

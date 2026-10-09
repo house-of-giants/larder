@@ -1,0 +1,452 @@
+[
+  {
+    "ingredient": "broccoli florets",
+    "location": "fridge",
+    "purchaseNote": null,
+    "count": {
+      "quantityText": "24",
+      "quantityDecimal": 24.0,
+      "unit": "oz"
+    }
+  },
+  {
+    "ingredient": "baby spinach",
+    "location": "fridge",
+    "purchaseNote": null,
+    "count": {
+      "quantityText": "5",
+      "quantityDecimal": 5.0,
+      "unit": "oz"
+    }
+  },
+  {
+    "ingredient": "lettuce",
+    "location": "fridge",
+    "purchaseNote": null,
+    "count": {
+      "quantityText": "3",
+      "quantityDecimal": 3.0,
+      "unit": "cup"
+    }
+  },
+  {
+    "ingredient": "small red onion",
+    "location": "counter",
+    "purchaseNote": "buy 1 small red onion",
+    "count": {
+      "quantityText": "1/4",
+      "quantityDecimal": 0.25,
+      "unit": "each"
+    }
+  },
+  {
+    "ingredient": "fresh ginger",
+    "location": "fridge",
+    "purchaseNote": "buy 1 knob",
+    "level": "full"
+  },
+  {
+    "ingredient": "bacon",
+    "location": "fridge",
+    "purchaseNote": null,
+    "count": {
+      "quantityText": "10",
+      "quantityDecimal": 10.0,
+      "unit": "slice"
+    }
+  },
+  {
+    "ingredient": "ground beef",
+    "location": "pantry",
+    "purchaseNote": null,
+    "count": {
+      "quantityText": "2",
+      "quantityDecimal": 2.0,
+      "unit": "lb"
+    }
+  },
+  {
+    "ingredient": "sliced ham",
+    "location": "fridge",
+    "purchaseNote": null,
+    "count": {
+      "quantityText": "8",
+      "quantityDecimal": 8.0,
+      "unit": "oz"
+    }
+  },
+  {
+    "ingredient": "sliced salami",
+    "location": "fridge",
+    "purchaseNote": null,
+    "count": {
+      "quantityText": "6",
+      "quantityDecimal": 6.0,
+      "unit": "oz"
+    }
+  },
+  {
+    "ingredient": "sliced pepperoni",
+    "location": "fridge",
+    "purchaseNote": null,
+    "count": {
+      "quantityText": "4",
+      "quantityDecimal": 4.0,
+      "unit": "oz"
+    }
+  },
+  {
+    "ingredient": "large eggs",
+    "location": "fridge",
+    "purchaseNote": "buy 18-count; recipes use 14 whole eggs + 1 extra yolk",
+    "count": {
+      "quantityText": "15",
+      "quantityDecimal": 15.0,
+      "unit": "each"
+    }
+  },
+  {
+    "ingredient": "full-fat cottage cheese",
+    "location": "fridge",
+    "purchaseNote": "buy 16 oz tub",
+    "count": {
+      "quantityText": "1 1/2",
+      "quantityDecimal": 1.5,
+      "unit": "cup"
+    }
+  },
+  {
+    "ingredient": "Gruyère",
+    "location": "fridge",
+    "purchaseNote": null,
+    "count": {
+      "quantityText": "1",
+      "quantityDecimal": 1.0,
+      "unit": "cup"
+    }
+  },
+  {
+    "ingredient": "Monterey Jack",
+    "location": "fridge",
+    "purchaseNote": null,
+    "count": {
+      "quantityText": "1/2",
+      "quantityDecimal": 0.5,
+      "unit": "cup"
+    }
+  },
+  {
+    "ingredient": "provolone",
+    "location": "fridge",
+    "purchaseNote": null,
+    "count": {
+      "quantityText": "12",
+      "quantityDecimal": 12.0,
+      "unit": "slice"
+    }
+  },
+  {
+    "ingredient": "cream cheese",
+    "location": "fridge",
+    "purchaseNote": "buy 8 oz block",
+    "count": {
+      "quantityText": "6",
+      "quantityDecimal": 6.0,
+      "unit": "oz"
+    }
+  },
+  {
+    "ingredient": "heavy cream",
+    "location": "fridge",
+    "purchaseNote": null,
+    "count": {
+      "quantityText": "1",
+      "quantityDecimal": 1.0,
+      "unit": "cup"
+    }
+  },
+  {
+    "ingredient": "whole milk",
+    "location": "fridge",
+    "purchaseNote": null,
+    "count": {
+      "quantityText": "1/4",
+      "quantityDecimal": 0.25,
+      "unit": "cup"
+    }
+  },
+  {
+    "ingredient": "cheese tortellini",
+    "location": "fridge",
+    "purchaseNote": "18–20 oz packages",
+    "count": {
+      "quantityText": "2",
+      "quantityDecimal": 2.0,
+      "unit": "package"
+    }
+  },
+  {
+    "ingredient": "Hawaiian rolls",
+    "location": "pantry",
+    "purchaseNote": "12-count pack",
+    "count": {
+      "quantityText": "12",
+      "quantityDecimal": 12.0,
+      "unit": "each"
+    }
+  },
+  {
+    "ingredient": "pumpkin purée",
+    "location": "pantry",
+    "purchaseNote": "buy 15 oz can",
+    "count": {
+      "quantityText": "1",
+      "quantityDecimal": 1.0,
+      "unit": "cup"
+    }
+  },
+  {
+    "ingredient": "crushed tomatoes",
+    "location": "pantry",
+    "purchaseNote": null,
+    "count": {
+      "quantityText": "28",
+      "quantityDecimal": 28.0,
+      "unit": "oz"
+    }
+  },
+  {
+    "ingredient": "tomato paste",
+    "location": "pantry",
+    "purchaseNote": null,
+    "level": "full"
+  },
+  {
+    "ingredient": "sliced pepperoncini",
+    "location": "fridge",
+    "purchaseNote": null,
+    "level": "full"
+  },
+  {
+    "ingredient": "ground flaxseed",
+    "location": "pantry",
+    "purchaseNote": "health bump for pumpkin muffins; add to dry ingredients",
+    "level": "full"
+  },
+  {
+    "ingredient": "all-purpose flour",
+    "location": "pantry",
+    "purchaseNote": "bulk flour okay if used in 6–12 months or frozen",
+    "level": "full"
+  },
+  {
+    "ingredient": "light brown sugar",
+    "location": "pantry",
+    "purchaseNote": "includes optional muffin batter reduction to 2/3 cup; original total would be 9/8 cup",
+    "level": "full"
+  },
+  {
+    "ingredient": "granulated sugar",
+    "location": "pantry",
+    "purchaseNote": null,
+    "level": "full"
+  },
+  {
+    "ingredient": "creamy peanut butter",
+    "location": "pantry",
+    "purchaseNote": null,
+    "level": "full"
+  },
+  {
+    "ingredient": "mini M&M’s",
+    "location": "pantry",
+    "purchaseNote": null,
+    "level": "full"
+  },
+  {
+    "ingredient": "neutral oil",
+    "location": "pantry",
+    "purchaseNote": null,
+    "level": "full"
+  },
+  {
+    "ingredient": "rice vinegar",
+    "location": "pantry",
+    "purchaseNote": null,
+    "level": "full"
+  },
+  {
+    "ingredient": "cornstarch",
+    "location": "pantry",
+    "purchaseNote": null,
+    "level": "full"
+  },
+  {
+    "ingredient": "baking soda",
+    "location": "pantry",
+    "purchaseNote": null,
+    "level": "full"
+  },
+  {
+    "ingredient": "baking powder",
+    "location": "pantry",
+    "purchaseNote": null,
+    "level": "full"
+  },
+  {
+    "ingredient": "pumpkin pie spice",
+    "location": "pantry",
+    "purchaseNote": null,
+    "level": "full"
+  },
+  {
+    "ingredient": "garlic powder",
+    "location": "pantry",
+    "purchaseNote": null,
+    "level": "full"
+  },
+  {
+    "ingredient": "onion powder",
+    "location": "pantry",
+    "purchaseNote": null,
+    "level": "full"
+  },
+  {
+    "ingredient": "dried oregano",
+    "location": "pantry",
+    "purchaseNote": null,
+    "level": "full"
+  },
+  {
+    "ingredient": "black pepper",
+    "location": "pantry",
+    "purchaseNote": null,
+    "level": "full"
+  },
+  {
+    "ingredient": "sesame seeds",
+    "location": "pantry",
+    "purchaseNote": null,
+    "level": "full"
+  },
+  {
+    "ingredient": "elk Italian sausage",
+    "location": "freezer",
+    "purchaseNote": null,
+    "count": {
+      "quantityText": "1",
+      "quantityDecimal": 1.0,
+      "unit": "lb"
+    }
+  },
+  {
+    "ingredient": "Parmesan",
+    "location": "fridge",
+    "purchaseNote": "from Parmesan wedge; plus topping as desired",
+    "level": "half"
+  },
+  {
+    "ingredient": "unsalted butter",
+    "location": "fridge",
+    "purchaseNote": null,
+    "count": {
+      "quantityText": "5",
+      "quantityDecimal": 5.0,
+      "unit": "tbsp"
+    }
+  },
+  {
+    "ingredient": "cooked jasmine rice",
+    "location": "fridge",
+    "purchaseNote": "rice amount is cooked yield needed",
+    "count": {
+      "quantityText": "6",
+      "quantityDecimal": 6.0,
+      "unit": "cup"
+    }
+  },
+  {
+    "ingredient": "olive oil",
+    "location": "pantry",
+    "purchaseNote": null,
+    "level": "half"
+  },
+  {
+    "ingredient": "mayonnaise",
+    "location": "fridge",
+    "purchaseNote": "Kewpie is okay 1:1",
+    "level": "half"
+  },
+  {
+    "ingredient": "low-sodium soy sauce",
+    "location": "pantry",
+    "purchaseNote": "user has soy sauce; not confirmed low-sodium",
+    "level": "half"
+  },
+  {
+    "ingredient": "sesame oil",
+    "location": "pantry",
+    "purchaseNote": null,
+    "level": "half"
+  },
+  {
+    "ingredient": "Dijon mustard",
+    "location": "fridge",
+    "purchaseNote": null,
+    "level": "low"
+  },
+  {
+    "ingredient": "vanilla extract",
+    "location": "pantry",
+    "purchaseNote": null,
+    "level": "half"
+  },
+  {
+    "ingredient": "ground cinnamon",
+    "location": "pantry",
+    "purchaseNote": null,
+    "level": "low"
+  },
+  {
+    "ingredient": "Italian seasoning",
+    "location": "pantry",
+    "purchaseNote": null,
+    "level": "full"
+  },
+  {
+    "ingredient": "old-fashioned rolled oats",
+    "location": "pantry",
+    "purchaseNote": null,
+    "level": "half"
+  },
+  {
+    "ingredient": "honey",
+    "location": "pantry",
+    "purchaseNote": null,
+    "level": "half"
+  },
+  {
+    "ingredient": "protein powder",
+    "location": "pantry",
+    "purchaseNote": null,
+    "level": "half"
+  },
+  {
+    "ingredient": "mini chocolate chips",
+    "location": "pantry",
+    "purchaseNote": null,
+    "level": "half"
+  },
+  {
+    "ingredient": "kosher salt",
+    "location": "pantry",
+    "purchaseNote": "reduce/adjust if elk sausage is salty",
+    "level": "full"
+  },
+  {
+    "ingredient": "red wine vinegar",
+    "location": "pantry",
+    "purchaseNote": null,
+    "level": "half"
+  }
+]
