@@ -1,3 +1,5 @@
+/// <reference types="vite-plugin-pwa/vanillajs" />
+
 interface ImportMetaEnv {
   /** Convex deployment URL. `bunx convex dev` writes it to .env.local. */
   readonly VITE_CONVEX_URL?: string;

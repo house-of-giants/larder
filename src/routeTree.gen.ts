@@ -17,6 +17,7 @@ import { Route as AppSettingsRouteImport } from './routes/_app/settings'
 import { Route as AppWeekRouteImport } from './routes/_app/week'
 import { Route as SignInSplatRouteImport } from './routes/sign-in.$'
 import { Route as SignUpSplatRouteImport } from './routes/sign-up.$'
+import { Route as AppListIndexRouteImport } from './routes/_app/list/index'
 import { Route as AppRecipesIndexRouteImport } from './routes/_app/recipes/index'
 import { Route as AppRecipesNewRouteImport } from './routes/_app/recipes/new'
 import { Route as AppRecipesRecipeIdIndexRouteImport } from './routes/_app/recipes/$recipeId/index'
@@ -61,6 +62,11 @@ const SignUpSplatRoute = SignUpSplatRouteImport.update({
   path: '/sign-up/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AppListIndexRoute = AppListIndexRouteImport.update({
+  id: '/list/',
+  path: '/list/',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppRecipesIndexRoute = AppRecipesIndexRouteImport.update({
   id: '/recipes/',
   path: '/recipes/',
@@ -91,6 +97,7 @@ export interface FileRoutesByFullPath {
   '/sign-in/$': typeof SignInSplatRoute
   '/sign-up/$': typeof SignUpSplatRoute
   '/recipes/new': typeof AppRecipesNewRoute
+  '/list/': typeof AppListIndexRoute
   '/recipes/': typeof AppRecipesIndexRoute
   '/recipes/$recipeId/edit': typeof AppRecipesRecipeIdEditRoute
   '/recipes/$recipeId/': typeof AppRecipesRecipeIdIndexRoute
@@ -104,6 +111,7 @@ export interface FileRoutesByTo {
   '/sign-in/$': typeof SignInSplatRoute
   '/sign-up/$': typeof SignUpSplatRoute
   '/recipes/new': typeof AppRecipesNewRoute
+  '/list': typeof AppListIndexRoute
   '/recipes': typeof AppRecipesIndexRoute
   '/recipes/$recipeId/edit': typeof AppRecipesRecipeIdEditRoute
   '/recipes/$recipeId': typeof AppRecipesRecipeIdIndexRoute
@@ -119,6 +127,7 @@ export interface FileRoutesById {
   '/sign-in/$': typeof SignInSplatRoute
   '/sign-up/$': typeof SignUpSplatRoute
   '/_app/recipes/new': typeof AppRecipesNewRoute
+  '/_app/list/': typeof AppListIndexRoute
   '/_app/recipes/': typeof AppRecipesIndexRoute
   '/_app/recipes/$recipeId/edit': typeof AppRecipesRecipeIdEditRoute
   '/_app/recipes/$recipeId/': typeof AppRecipesRecipeIdIndexRoute
@@ -134,6 +143,7 @@ export interface FileRouteTypes {
     | '/sign-in/$'
     | '/sign-up/$'
     | '/recipes/new'
+    | '/list/'
     | '/recipes/'
     | '/recipes/$recipeId/edit'
     | '/recipes/$recipeId/'
@@ -147,6 +157,7 @@ export interface FileRouteTypes {
     | '/sign-in/$'
     | '/sign-up/$'
     | '/recipes/new'
+    | '/list'
     | '/recipes'
     | '/recipes/$recipeId/edit'
     | '/recipes/$recipeId'
@@ -161,6 +172,7 @@ export interface FileRouteTypes {
     | '/sign-in/$'
     | '/sign-up/$'
     | '/_app/recipes/new'
+    | '/_app/list/'
     | '/_app/recipes/'
     | '/_app/recipes/$recipeId/edit'
     | '/_app/recipes/$recipeId/'
@@ -232,6 +244,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SignUpSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_app/list/': {
+      id: '/_app/list/'
+      path: '/list'
+      fullPath: '/list/'
+      preLoaderRoute: typeof AppListIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/recipes/': {
       id: '/_app/recipes/'
       path: '/recipes'
@@ -268,6 +287,7 @@ interface AppRouteChildren {
   AppSettingsRoute: typeof AppSettingsRoute
   AppWeekRoute: typeof AppWeekRoute
   AppRecipesNewRoute: typeof AppRecipesNewRoute
+  AppListIndexRoute: typeof AppListIndexRoute
   AppRecipesIndexRoute: typeof AppRecipesIndexRoute
   AppRecipesRecipeIdEditRoute: typeof AppRecipesRecipeIdEditRoute
   AppRecipesRecipeIdIndexRoute: typeof AppRecipesRecipeIdIndexRoute
@@ -278,6 +298,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppSettingsRoute: AppSettingsRoute,
   AppWeekRoute: AppWeekRoute,
   AppRecipesNewRoute: AppRecipesNewRoute,
+  AppListIndexRoute: AppListIndexRoute,
   AppRecipesIndexRoute: AppRecipesIndexRoute,
   AppRecipesRecipeIdEditRoute: AppRecipesRecipeIdEditRoute,
   AppRecipesRecipeIdIndexRoute: AppRecipesRecipeIdIndexRoute,
