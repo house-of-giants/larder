@@ -49,13 +49,14 @@ function readQuantity(s: string): number | null {
   return null;
 }
 
-const denominators = [2, 3, 4, 8] as const;
+// The kitchen's usual fractions first, so 0.5 is "1/2", never "5/10".
+const denominators = [2, 3, 4, 8, 5, 6, 10, 16] as const;
 // Close enough to call a fraction exact: 0.3333 is a third, 1.37 is not 1 3/8.
 const tolerance = 1e-3;
 
 /**
  * The shortest way to write a number the way a recipe would: a whole number or a mixed
- * number over 2, 3, 4, or 8 ("1 1/2", "1/3"), else up to two decimals ("1.37"). Not a
+ * number over 2, 3, 4, 8, 5, 6, 10, or 16 ("1 1/2", "1/3", "3/16"), else up to two decimals ("1.37"). Not a
  * finite number: an empty string.
  */
 export function formatQuantity(decimal: number): string {

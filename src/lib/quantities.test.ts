@@ -66,7 +66,13 @@ describe("formatQuantity", () => {
     [2.375, "2 3/8"],
     [1.37, "1.37"],
     [1.375, "1 3/8"],
-    [0.1, "0.1"],
+    [0.1, "1/10"],
+    [0.2, "1/5"],
+    [0.1875, "3/16"],
+    [1 / 6, "1/6"],
+    [0.3, "3/10"],
+    [0.6, "3/5"],
+    [0.0625, "1/16"],
     [1.234, "1.23"],
     [1.999, "2"],
   ])("writes %d as %j", (decimal, expected) => {
@@ -74,7 +80,7 @@ describe("formatQuantity", () => {
   });
 
   it("round-trips what it writes", () => {
-    for (const text of ["1/2", "1 1/2", "2/3", "3/8", "22"]) {
+    for (const text of ["1/2", "1 1/2", "2/3", "3/8", "22", "1/5", "3/16", "5/6"]) {
       expect(formatQuantity(parseQuantity(text) ?? Number.NaN)).toBe(text);
     }
   });

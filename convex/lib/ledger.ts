@@ -23,11 +23,13 @@ export type InventoryEventInput = {
   refs: Infer<typeof inventoryRefs>;
   payload: unknown;
   undoesEventId?: Id<"inventoryEvents">;
+  /** When it happened, if not now: an offline tap replayed later carries its own time. */
+  at?: number;
 };
 
 export async function recordInventoryEvent(
   ctx: MutationCtx,
   event: InventoryEventInput,
 ): Promise<Id<"inventoryEvents">> {
-  return await ctx.db.insert("inventoryEvents", { ...event, at: Date.now() });
+  return await ctx.db.insert("inventoryEvents", { ...event, at: event.at ?? Date.now() });
 }
