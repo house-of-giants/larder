@@ -2,8 +2,6 @@ import { convexTest } from "convex-test";
 import type { FunctionReference } from "convex/server";
 import { describe, expect, it } from "vitest";
 import { api } from "./_generated/api";
-import * as events from "./events";
-import * as households from "./households";
 import schema from "./schema";
 
 const modules = import.meta.glob("./**/*.ts");
@@ -37,19 +35,35 @@ const cases: Case[] = [
   { name: "events.recent", kind: "query", fn: api.events.recent, args: {} },
 ];
 
-// Public functions per module; health.ping is deliberately open (it reports signed-in state).
-const scopedModules = { households, events };
-
+// Every Convex function module, so a public function added in any phase must be listed
+// above. Not function modules: schema, auth config, generated code, shared helpers in
+// lib/, tests and their helpers. health.ping is deliberately open: it reports whether
+// the caller is signed in.
+const functionModules = import.meta.glob<Record<string, unknown>>(
+  [
+    "./**/*.ts",
+    "!./_generated/**",
+    "!./lib/**",
+    "!./**/*.test.ts",
+    "!./test_helpers.ts",
+    "!./schema.ts",
+    // Throws at import without CLERK_JWT_ISSUER_DOMAIN; it holds no functions.
+    "!./auth.config.ts",
+    "!./health.ts",
+  ],
+  { eager: true },
+);
 function publicFunctionNames() {
-  return Object.entries(scopedModules).flatMap(([module, exports]) =>
-    Object.entries(exports)
-      .filter(([, value]) => (value as { isPublic?: boolean }).isPublic === true)
-      .map(([name]) => `${module}.${name}`),
-  );
+  return Object.entries(functionModules).flatMap(([path, exports]) => {
+    const module = path.replace(/^\.\//, "").replace(/\.ts$/, "");
+    return Object.entries(exports)
+      .filter(([, value]) => (value as { isPublic?: boolean } | null)?.isPublic === true)
+      .map(([name]) => `${module}.${name}`);
+  });
 }
 
 describe("isolation registry", () => {
-  it("lists every public function in the household-scoped modules", () => {
+  it("lists every public function in every Convex function module", () => {
     expect(cases.map((c) => c.name).sort()).toEqual(publicFunctionNames().sort());
   });
 });

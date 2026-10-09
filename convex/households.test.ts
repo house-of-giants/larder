@@ -131,6 +131,7 @@ describe("household isolation", () => {
     const a = await createHousehold(t, { who: "Alice", name: "A" });
     const b = await createHousehold(t, { who: "Bob", name: "B" });
     await a.as.mutation(api.households.rename, { name: "A2" });
+    expect((await t.run((ctx) => ctx.db.get(a.householdId)))?.name).toBe("A2");
     expect((await t.run((ctx) => ctx.db.get(b.householdId)))?.name).toBe("B");
   });
 });

@@ -1,11 +1,11 @@
 import { Navigate, createFileRoute } from "@tanstack/react-router";
 import { PageSkeleton } from "#/components/page-skeleton";
 import { useHousehold } from "#/hooks/use-household";
-import { requireSignedIn } from "#/lib/auth-gate";
+import { requireSignedIn, returnTo } from "#/lib/auth-gate";
 
 // The front door: sign-in is checked on the server, the household on the client.
 export const Route = createFileRoute("/")({
-  beforeLoad: () => requireSignedIn(),
+  beforeLoad: ({ location }) => requireSignedIn({ data: returnTo(location) }),
   component: Home,
 });
 

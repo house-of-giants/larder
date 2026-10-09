@@ -3,7 +3,7 @@ import { CalendarDays, Settings } from "lucide-react";
 import { PageSkeleton } from "#/components/page-skeleton";
 import { TabBar, type Tab } from "#/components/tab-bar";
 import { useHousehold } from "#/hooks/use-household";
-import { requireSignedIn } from "#/lib/auth-gate";
+import { requireSignedIn, returnTo } from "#/lib/auth-gate";
 
 // Later phases add List, Pantry, Recipes, and Leftovers here.
 const tabs: readonly Tab[] = [
@@ -12,7 +12,7 @@ const tabs: readonly Tab[] = [
 ];
 
 export const Route = createFileRoute("/_app")({
-  beforeLoad: () => requireSignedIn(),
+  beforeLoad: ({ location }) => requireSignedIn({ data: returnTo(location) }),
   component: AppShell,
 });
 

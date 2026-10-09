@@ -77,47 +77,60 @@ describe("events.recent", () => {
     expect(seenByA.map((e) => e.payload)).toEqual([{ n: "a" }]);
   });
 
-  it("returns newest first and honors limit", async () => {
+  it("returns newest first by `at`, whatever order the rows were written in", async () => {
     const t = convexTest(schema, modules);
     const { as, householdId } = await createHousehold(t, { who: "Alice", name: "A" });
     const memberId = await memberIdOf(t, "Alice");
-    // Distinct `at` values regardless of clock resolution.
-    await t.run(async (ctx) => {
-      for (const n of [1, 2, 3, 4, 5]) {
-        await ctx.db.insert("inventoryEvents", {
-          householdId,
-          type: "adjustment",
-          at: 1_000 * n,
-          actor: { kind: "member", memberId },
-          refs: {},
-          payload: { n },
-        });
-      }
-    });
+    // Written out of order, so neither insertion order nor _creationTime matches `at`.
+    await insertEvents(t, householdId, memberId, [3, 1, 5, 2, 4]);
 
-    const three = await as.query(api.events.recent, { limit: 3 });
-    expect(three.map((e) => e.payload.n)).toEqual([5, 4, 3]);
     const all = await as.query(api.events.recent, {});
-    expect(all.map((e) => e.payload.n)).toEqual([5, 4, 3, 2, 1]);
+    expect(all.map((e) => e.at)).toEqual([5, 4, 3, 2, 1]);
+    const three = await as.query(api.events.recent, { limit: 3 });
+    expect(three.map((e) => e.at)).toEqual([5, 4, 3]);
   });
 
-  it("caps limit at 200", async () => {
-    const t = convexTest(schema, modules);
-    const { as, householdId } = await createHousehold(t, { who: "Alice", name: "A" });
-    const memberId = await memberIdOf(t, "Alice");
-    await t.run(async (ctx) => {
-      for (let n = 0; n < 205; n++) {
-        await ctx.db.insert("inventoryEvents", {
-          householdId,
-          type: "adjustment",
-          at: n,
-          actor: { kind: "member", memberId },
-          refs: {},
-          payload: { n },
-        });
-      }
+  describe("limit", () => {
+    // 205 events with `at` 0..204 written in a scrambled order.
+    const ats = Array.from({ length: 205 }, (_, i) => (i * 7) % 205);
+    const newest = (n: number) => Array.from({ length: n }, (_, i) => 204 - i);
+
+    it.each([
+      ["omitted", undefined, newest(50)],
+      ["NaN", Number.NaN, newest(50)],
+      ["Infinity", Number.POSITIVE_INFINITY, newest(50)],
+      ["0.5", 0.5, newest(1)],
+      ["0", 0, newest(1)],
+      ["-1", -1, newest(1)],
+      ["3", 3, newest(3)],
+      ["1000", 1000, newest(200)],
+    ])("%s returns the newest rows it allows", async (_label, limit, expected) => {
+      const t = convexTest(schema, modules);
+      const { as, householdId } = await createHousehold(t, { who: "Alice", name: "A" });
+      await insertEvents(t, householdId, await memberIdOf(t, "Alice"), ats);
+
+      const events = await as.query(api.events.recent, limit === undefined ? {} : { limit });
+      expect(events.map((e) => e.at)).toEqual(expected);
     });
-    expect(await as.query(api.events.recent, { limit: 1_000 })).toHaveLength(200);
-    expect(await as.query(api.events.recent, {})).toHaveLength(50);
   });
 });
+
+async function insertEvents(
+  t: Test,
+  householdId: Id<"households">,
+  memberId: Id<"members">,
+  ats: number[],
+) {
+  await t.run(async (ctx) => {
+    for (const at of ats) {
+      await ctx.db.insert("inventoryEvents", {
+        householdId,
+        type: "adjustment",
+        at,
+        actor: { kind: "member", memberId },
+        refs: {},
+        payload: { at },
+      });
+    }
+  });
+}

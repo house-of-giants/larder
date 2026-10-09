@@ -66,6 +66,8 @@ function HouseholdName({ name }: { name: string }) {
   const [draft, setDraft] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const discard = useRef(false);
+  // Only the newest save may set or clear the error line.
+  const latestSave = useRef(0);
 
   async function commit() {
     if (discard.current) {
@@ -78,13 +80,16 @@ function HouseholdName({ name }: { name: string }) {
       setError(null);
       return;
     }
+    const submitted = draft;
+    const save = ++latestSave.current;
     try {
-      await rename({ name: draft });
-      setDraft(null);
-      setError(null);
+      await rename({ name: submitted });
+      // Text typed while this save was in flight is a newer draft; keep it.
+      setDraft((current) => (current === submitted ? null : current));
+      if (save === latestSave.current) setError(null);
       toast("Saved");
     } catch (e) {
-      setError(errorMessage(e));
+      if (save === latestSave.current) setError(errorMessage(e));
     }
   }
 

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { returnTo, signInRedirectHref } from "#/lib/redirect";
 import { getRouter } from "#/router";
 
 // Clerk's <SignIn /> and <SignUp /> use path routing and push nested steps such as
@@ -17,5 +18,28 @@ describe("auth routes", () => {
     // A path nothing matches ends at the root match, so the leaf routeId is the whole check.
     const matches = router.matchRoutes(pathname, {});
     expect(matches.at(-1)?.routeId).toBe(routeId);
+  });
+});
+
+describe("invite links through sign-in", () => {
+  const router = getRouter();
+
+  it("the gate sends /join?code=abc to sign-in with the link as redirect_url", () => {
+    const location = router.buildLocation({ to: "/join", search: { code: "abc" } });
+    expect(signInRedirectHref(returnTo(location).returnTo)).toBe(
+      "/sign-in?redirect_url=%2Fjoin%3Fcode%3Dabc",
+    );
+  });
+
+  it.each(["/sign-in", "/sign-up"])("%s keeps a local redirect_url", (path) => {
+    const leaf = router.matchRoutes(path, { redirect_url: "/join?code=abc" }).at(-1);
+    expect(leaf?.search).toMatchObject({ redirect_url: "/join?code=abc" });
+  });
+
+  it.each(["/sign-in", "/sign-up"])("%s drops a redirect_url to another site", (path) => {
+    // `search` is what Route.useSearch() hands the screen, raw params merged in.
+    const leaf = router.matchRoutes(path, { redirect_url: "//evil.com" }).at(-1);
+    expect(leaf?.routeId).toBe(`${path}/$`);
+    expect(leaf?.search).toHaveProperty("redirect_url", undefined);
   });
 });

@@ -29,6 +29,12 @@ test.describe("with Clerk keys", () => {
     await expect(page.locator('[data-screen="sign-in"]')).toBeVisible();
   });
 
+  test("an invite link survives the trip through sign-in", async ({ page }) => {
+    await page.goto("/join?code=abc123");
+    await expect(page).toHaveURL(/\/sign-in\?redirect_url=%2Fjoin%3Fcode%3Dabc123/);
+    await expect(page.locator('[data-screen="sign-in"]')).toBeVisible();
+  });
+
   test("a nested sign-in step still renders the sign-in screen", async ({ page }) => {
     const response = await page.goto("/sign-in/verify/factor-one");
     expect(response?.status()).toBe(200);
