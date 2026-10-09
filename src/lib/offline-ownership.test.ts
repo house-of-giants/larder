@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { canShowOffline, resolveIdentity } from "./ownership";
+import { canShowOffline, resolveIdentity } from "./offline-ownership";
 
 describe("canShowOffline", () => {
   it("shows a saved copy owned by the last verified user", () => {

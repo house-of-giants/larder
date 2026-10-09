@@ -1,7 +1,7 @@
 import { useAuth } from "@clerk/tanstack-react-start";
 import { del, get, set } from "idb-keyval";
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import { resolveIdentity } from "./ownership";
+import { resolveIdentity } from "#/lib/offline-ownership";
 
 const LAST_VERIFIED = "auth:lastVerifiedUserId";
 // Everything this phone keeps for one user: the saved list, the check-off queue, and
