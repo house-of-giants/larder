@@ -6,9 +6,9 @@ import { Button } from "#/components/ui/button";
 import { Input } from "#/components/ui/input";
 import { Label } from "#/components/ui/label";
 import { errorMessage } from "#/lib/errors";
+import { type PickEvent, multiplierChange, pickState } from "#/lib/multiplier";
 import { parseQuantity } from "#/lib/quantities";
 import { cn } from "#/lib/utils";
-import { multiplierChange } from "./multiplier";
 
 const quickPicks = ["1/2", "1", "2"] as const;
 const badMultiplier = "Use a number like 1/2, 1 or 2.";
@@ -36,6 +36,9 @@ export function MultiplierField({
   // Set while a quick pick is pressed: the field's blur then drops its draft, so the tap
   // decides the value instead of racing the typed text.
   const picking = useRef(false);
+  const onPick = (event: PickEvent) => {
+    picking.current = pickState(picking.current, event);
+  };
   const id = `multiplier-${recipeId}`;
 
   async function save(multiplierText: string) {
@@ -111,14 +114,12 @@ export function MultiplierField({
             size="sm"
             aria-pressed={text === pick}
             className={cn("num h-10 min-w-11", text === pick && "border-primary text-primary")}
-            onPointerDown={() => {
-              picking.current = true;
-            }}
-            onPointerCancel={() => {
-              picking.current = false;
-            }}
+            onPointerDown={() => onPick("pointerdown")}
+            onPointerUp={() => onPick("pointerup")}
+            onPointerCancel={() => onPick("pointercancel")}
+            onBlur={() => onPick("blur")}
             onClick={() => {
-              picking.current = false;
+              onPick("click");
               setDraft(null);
               void save(pick);
             }}

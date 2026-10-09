@@ -369,7 +369,7 @@ describe("un-check after the pantry moved on", () => {
     expect((await pantryOf(t, ingredientId))?.level).toBe("half");
   });
 
-  it("restores a count in another unit only while the row still holds what was bought", async () => {
+  it("restores a count in another unit only while the row holds exactly what was bought", async () => {
     const t = newTest();
     const { as, householdId } = await seededList(t);
     const bacon = await planItem(t, householdId, "bacon");
@@ -381,13 +381,47 @@ describe("un-check after the pantry moved on", () => {
       quantityDecimal: 10,
       unit: "slice",
     });
+  });
+
+  it("takes the bought amount back out of a replaced-unit row edited in that unit since", async () => {
+    const t = newTest();
+    const { as, householdId } = await seededList(t);
+    const bacon = await planItem(t, householdId, "bacon");
+    const ingredientId = bacon.ingredientId!;
 
     await as.mutation(api.lists.setItemStatus, { listItemId: bacon._id, status: "checked" });
     await as.mutation(api.pantry.setCount, { ingredientId, quantityText: "12", unit: "oz" });
     await as.mutation(api.lists.setItemStatus, { listItemId: bacon._id, status: "needed" });
-    expect((await pantryOf(t, ingredientId))?.count).toMatchObject({
-      quantityDecimal: 12,
+    expect((await pantryOf(t, ingredientId))?.count).toEqual({
+      quantityText: "4",
+      quantityDecimal: 4,
       unit: "oz",
+    });
+  });
+
+  it("puts back only the level on un-check, keeping where the row was moved", async () => {
+    const t = newTest();
+    const { as, householdId } = await seededList(t);
+    const tsp = await planItem(t, householdId, "Dijon mustard", "tsp");
+    const ingredientId = tsp.ingredientId!;
+    expect((await pantryOf(t, ingredientId))?.location).toBe("fridge");
+
+    await as.mutation(api.lists.setItemStatus, { listItemId: tsp._id, status: "checked" });
+    await as.mutation(api.pantry.setLevel, { ingredientId, level: "full", location: "pantry" });
+    await t.run(async (ctx) => {
+      const row = await ctx.db
+        .query("pantryItems")
+        .filter((q) => q.eq(q.field("ingredientId"), ingredientId))
+        .first();
+      await ctx.db.patch(row!._id, { purchaseNote: "the big jar", expiresAt: 9_000 });
+    });
+    await as.mutation(api.lists.setItemStatus, { listItemId: tsp._id, status: "needed" });
+
+    expect(await pantryOf(t, ingredientId)).toMatchObject({
+      level: "low",
+      location: "pantry",
+      purchaseNote: "the big jar",
+      expiresAt: 9_000,
     });
   });
 });

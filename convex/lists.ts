@@ -471,18 +471,28 @@ async function undoneRow(
   const untouched = (await latestEvent(ctx, householdId, { pantryItemId: existing._id }))?._id;
   const touchedSince = untouched !== purchase._id;
 
-  // A level: back to what it was, only while it is still the full the check-off set.
+  // A level: back to what it was, only while it is still the full the check-off set. Only
+  // the level changes; where the row lives, its note, and its expiry stay as edited since.
   if (payload.added === undefined) {
-    return existing.level === payload.after.level ? payload.before : undefined;
+    if (existing.level !== payload.after.level) return undefined;
+    if (payload.before === null) {
+      // The check-off made the row: gone again if untouched, else out (no row meant out).
+      return touchedSince ? pantrySnapshot({ ...existing, level: "out" }) : null;
+    }
+    return pantrySnapshot({ ...existing, level: payload.before.level });
   }
 
   const added = payload.added;
   const count = existing.count;
   if (count === undefined || count.unit.trim() !== added.unit) return undefined;
 
-  // Another unit was replaced: put it back only while the row holds just what was bought.
-  if (payload.replacedCount !== undefined) {
-    return sameAmount(count.quantityDecimal, added.quantityDecimal) ? payload.before : undefined;
+  // Another unit was replaced: put it back only while the row holds exactly what was bought;
+  // edited since in the bought unit, the purchase is taken back out like any other.
+  if (
+    payload.replacedCount !== undefined &&
+    sameAmount(count.quantityDecimal, added.quantityDecimal)
+  ) {
+    return pantrySnapshot({ ...existing, count: payload.before?.count });
   }
 
   // A row the check-off created, untouched since: it goes away again.

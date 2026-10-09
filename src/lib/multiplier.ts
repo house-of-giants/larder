@@ -10,3 +10,14 @@ export function multiplierChange(
   const text = next.trim();
   return text === (inFlight ?? saved) ? null : text;
 }
+
+export type PickEvent = "pointerdown" | "pointerup" | "pointercancel" | "blur" | "click";
+
+/**
+ * Whether a quick pick is being pressed. Pressing one blurs the typed field first, and that
+ * blur must drop the draft instead of saving it; any other event on the pick (released,
+ * canceled, focus gone, clicked) ends the press, so a later typed draft saves normally.
+ */
+export function pickState(_picking: boolean, event: PickEvent): boolean {
+  return event === "pointerdown";
+}
