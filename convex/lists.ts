@@ -524,8 +524,11 @@ async function undoneRow(
   });
 }
 
-/** Un-check of a plan item: reverses its latest purchase event, if it has one standing. */
-async function reversePurchase(
+/**
+ * Un-check of a plan item: reverses its latest purchase event, if it has one standing.
+ * Exported for the undo drawer, which un-checks through this same path.
+ */
+export async function reversePurchase(
   ctx: MutationCtx,
   { householdId, memberId, item, ingredient, at }: Tap,
 ) {

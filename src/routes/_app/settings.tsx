@@ -10,6 +10,7 @@ import { Button } from "#/components/ui/button";
 import { Input } from "#/components/ui/input";
 import { Label } from "#/components/ui/label";
 import { Separator } from "#/components/ui/separator";
+import { UndoDrawer } from "#/components/undo/undo-drawer";
 import { useHousehold } from "#/hooks/use-household";
 import { errorMessage } from "#/lib/errors";
 import { inviteUrl } from "#/lib/invite";
@@ -53,6 +54,8 @@ function Settings() {
           ))}
         </ul>
       </section>
+
+      <UndoDrawer />
 
       <Separator />
 

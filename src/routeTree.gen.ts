@@ -12,6 +12,8 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as JoinRouteImport } from './routes/join'
+import { Route as AppCloseoutRouteImport } from './routes/_app/closeout'
+import { Route as AppLeftoversRouteImport } from './routes/_app/leftovers'
 import { Route as AppPantryRouteImport } from './routes/_app/pantry'
 import { Route as AppSettingsRouteImport } from './routes/_app/settings'
 import { Route as SignInSplatRouteImport } from './routes/sign-in.$'
@@ -38,6 +40,16 @@ const JoinRoute = JoinRouteImport.update({
   id: '/join',
   path: '/join',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AppCloseoutRoute = AppCloseoutRouteImport.update({
+  id: '/closeout',
+  path: '/closeout',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppLeftoversRoute = AppLeftoversRouteImport.update({
+  id: '/leftovers',
+  path: '/leftovers',
+  getParentRoute: () => AppRoute,
 } as any)
 const AppPantryRoute = AppPantryRouteImport.update({
   id: '/pantry',
@@ -103,6 +115,8 @@ const AppRecipesRecipeIdEditRoute = AppRecipesRecipeIdEditRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/join': typeof JoinRoute
+  '/closeout': typeof AppCloseoutRoute
+  '/leftovers': typeof AppLeftoversRoute
   '/pantry': typeof AppPantryRoute
   '/settings': typeof AppSettingsRoute
   '/sign-in/$': typeof SignInSplatRoute
@@ -119,6 +133,8 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/join': typeof JoinRoute
+  '/closeout': typeof AppCloseoutRoute
+  '/leftovers': typeof AppLeftoversRoute
   '/pantry': typeof AppPantryRoute
   '/settings': typeof AppSettingsRoute
   '/sign-in/$': typeof SignInSplatRoute
@@ -137,6 +153,8 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_app': typeof AppRouteWithChildren
   '/join': typeof JoinRoute
+  '/_app/closeout': typeof AppCloseoutRoute
+  '/_app/leftovers': typeof AppLeftoversRoute
   '/_app/pantry': typeof AppPantryRoute
   '/_app/settings': typeof AppSettingsRoute
   '/sign-in/$': typeof SignInSplatRoute
@@ -155,6 +173,8 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/join'
+    | '/closeout'
+    | '/leftovers'
     | '/pantry'
     | '/settings'
     | '/sign-in/$'
@@ -171,6 +191,8 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/join'
+    | '/closeout'
+    | '/leftovers'
     | '/pantry'
     | '/settings'
     | '/sign-in/$'
@@ -188,6 +210,8 @@ export interface FileRouteTypes {
     | '/'
     | '/_app'
     | '/join'
+    | '/_app/closeout'
+    | '/_app/leftovers'
     | '/_app/pantry'
     | '/_app/settings'
     | '/sign-in/$'
@@ -232,6 +256,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/join'
       preLoaderRoute: typeof JoinRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_app/closeout': {
+      id: '/_app/closeout'
+      path: '/closeout'
+      fullPath: '/closeout'
+      preLoaderRoute: typeof AppCloseoutRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/leftovers': {
+      id: '/_app/leftovers'
+      path: '/leftovers'
+      fullPath: '/leftovers'
+      preLoaderRoute: typeof AppLeftoversRouteImport
+      parentRoute: typeof AppRoute
     }
     '/_app/pantry': {
       id: '/_app/pantry'
@@ -321,6 +359,8 @@ declare module '@tanstack/react-router' {
 }
 
 interface AppRouteChildren {
+  AppCloseoutRoute: typeof AppCloseoutRoute
+  AppLeftoversRoute: typeof AppLeftoversRoute
   AppPantryRoute: typeof AppPantryRoute
   AppSettingsRoute: typeof AppSettingsRoute
   AppListReconcileRoute: typeof AppListReconcileRoute
@@ -334,6 +374,8 @@ interface AppRouteChildren {
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppCloseoutRoute: AppCloseoutRoute,
+  AppLeftoversRoute: AppLeftoversRoute,
   AppPantryRoute: AppPantryRoute,
   AppSettingsRoute: AppSettingsRoute,
   AppListReconcileRoute: AppListReconcileRoute,

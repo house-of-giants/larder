@@ -4,6 +4,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { api } from "../../../../../convex/_generated/api";
 import { ConfirmDialog } from "#/components/confirm-dialog";
+import { MadeItButton } from "#/components/cook/made-it-button";
 import { PageSkeleton } from "#/components/page-skeleton";
 import { CheckMarker } from "#/components/recipes/check-marker";
 import { RecipeNotHere } from "#/components/recipes/recipe-not-here";
@@ -175,8 +176,9 @@ function Actions({ recipe }: { recipe: Recipe }) {
   }
 
   return (
-    <div className="flex gap-2">
-      <Button asChild>
+    <div className="flex flex-wrap gap-2">
+      {!archived && <MadeItButton recipeId={recipe._id} recipeName={recipe.name} />}
+      <Button asChild variant={archived ? "default" : "outline"}>
         <Link to="/recipes/$recipeId/edit" params={{ recipeId: recipe._id }}>
           Edit
         </Link>

@@ -2,6 +2,7 @@ import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { useState } from "react";
 import { api } from "../../../../convex/_generated/api";
+import { MadeItButton } from "#/components/cook/made-it-button";
 import { PageSkeleton } from "#/components/page-skeleton";
 import { Button } from "#/components/ui/button";
 import { type CurrentWeek } from "#/components/week/labels";
@@ -59,6 +60,8 @@ function NoWeek() {
 
 function ThisWeek({ week }: { week: CurrentWeek }) {
   const selected = week.recipes.filter((r) => r.status === "selected");
+  const cooked = useQuery(api.cooking.forWeek, { weekId: week._id });
+  const madeAt = new Map((cooked ?? []).map((c) => [c.recipeId, c]));
 
   return (
     <main className="mx-auto flex max-w-2xl flex-col gap-6 px-4 py-6">
@@ -78,29 +81,58 @@ function ThisWeek({ week }: { week: CurrentWeek }) {
 
       {selected.length > 0 && (
         <ul className="flex flex-col gap-3">
-          {selected.map((r) => (
-            <li
-              key={r.weekRecipeId}
-              className="flex items-center justify-between gap-4 rounded-lg border bg-card px-4 py-3"
-            >
-              <div className="flex min-w-0 flex-col gap-0.5">
-                <span className="font-medium">{r.name}</span>
-                {r.multiplier.text !== "1" && (
-                  <span className="num text-sm text-muted-foreground">
-                    {r.multiplier.text} batches
-                  </span>
-                )}
-              </div>
-              {/* Phase 4 wires cooking. */}
-              <Button variant="outline" size="sm" disabled className="shrink-0">
-                Made it
-              </Button>
-            </li>
-          ))}
+          {selected.map((r) => {
+            const made = madeAt.get(r.recipeId);
+            return (
+              <li
+                key={r.weekRecipeId}
+                className="flex items-center justify-between gap-4 rounded-lg border bg-card px-4 py-3"
+              >
+                <div className="flex min-w-0 flex-col gap-0.5">
+                  <span className="font-medium">{r.name}</span>
+                  {r.multiplier.text !== "1" && (
+                    <span className="num text-sm text-muted-foreground">
+                      {r.multiplier.text} batches
+                    </span>
+                  )}
+                  {made && (
+                    <span className="num text-sm text-primary">
+                      {madeLabel(made.cookedAt, made.times)}
+                    </span>
+                  )}
+                </div>
+                <MadeItButton
+                  recipeId={r.recipeId}
+                  recipeName={r.name}
+                  weekId={week._id}
+                  defaultMultiplier={r.multiplier.text}
+                  made={made !== undefined}
+                  className="h-11 shrink-0"
+                />
+              </li>
+            );
+          })}
         </ul>
+      )}
+
+      {week.status !== "planning" && (
+        <Button asChild variant="outline" className="self-start">
+          <Link to="/closeout">Close the week</Link>
+        </Button>
       )}
     </main>
   );
+}
+
+/** "Made Sat 2:14 PM", or "Made twice, last Sat 2:14 PM". */
+function madeLabel(cookedAt: number, times: number): string {
+  const when = new Date(cookedAt).toLocaleString(undefined, {
+    weekday: "short",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+  if (times === 1) return `Made ${when}`;
+  return `Made ${times === 2 ? "twice" : `${times} times`}, last ${when}`;
 }
 
 function WeekActions({ week, selectedCount }: { week: CurrentWeek; selectedCount: number }) {

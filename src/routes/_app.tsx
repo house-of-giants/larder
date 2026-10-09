@@ -1,15 +1,15 @@
 import { Link, Navigate, Outlet, createFileRoute } from "@tanstack/react-router";
-import { BookOpen, CalendarDays, Refrigerator, Settings, ShoppingBasket } from "lucide-react";
+import { BookOpen, CalendarDays, Refrigerator, Settings, ShoppingBasket, Soup } from "lucide-react";
 import { PageSkeleton } from "#/components/page-skeleton";
 import { TabBar, type Tab } from "#/components/tab-bar";
 import { useHousehold } from "#/hooks/use-household";
 import { requireSignedIn, returnTo } from "#/lib/auth-gate";
 import { isOffline, useOnline } from "#/offline/use-online";
 
-// Later phases add Leftovers here.
 const tabs: readonly Tab[] = [
   { to: "/week", label: "Week", icon: CalendarDays },
   { to: "/list", label: "List", icon: ShoppingBasket },
+  { to: "/leftovers", label: "Leftovers", icon: Soup },
   { to: "/pantry", label: "Pantry", icon: Refrigerator },
   { to: "/recipes", label: "Recipes", icon: BookOpen },
   { to: "/settings", label: "Settings", icon: Settings },
