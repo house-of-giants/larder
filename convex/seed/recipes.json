@@ -617,7 +617,7 @@
       "lunch",
       "meal-prep"
     ],
-    "needsReview": false,
+    "needsReview": true,
     "ingredients": [
       {
         "order": 0,
@@ -819,7 +819,7 @@
       "meal-prep",
       "no-bake"
     ],
-    "needsReview": false,
+    "needsReview": true,
     "ingredients": [
       {
         "order": 0,
@@ -933,7 +933,7 @@
       "meal-prep",
       "comfort-food"
     ],
-    "needsReview": false,
+    "needsReview": true,
     "ingredients": [
       {
         "order": 0,

@@ -43,6 +43,7 @@ function SheetBody({ row, close }: { row: PantryRowData; close: () => void }) {
   const markOut = useMutation(api.pantry.markOut);
   const remove = useMutation(api.pantry.remove);
   const [error, setError] = useState<string | null>(null);
+  // One flag for Save, Out, and Remove: while any of them is writing, the others wait.
   const [pending, setPending] = useState(false);
 
   async function run(action: () => Promise<unknown>) {
@@ -70,6 +71,8 @@ function SheetBody({ row, close }: { row: PantryRowData; close: () => void }) {
           level: row.level ?? "full",
           location: row.location,
         }}
+        busy={pending}
+        onPendingChange={setPending}
         onSave={async (values) => {
           await saveStock(row.ingredientId, values);
           close();

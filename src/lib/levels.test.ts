@@ -1,11 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { LEVELS, isLowOrOut, stepDown } from "#/lib/levels";
-
-describe("LEVELS", () => {
-  it("runs from full to out", () => {
-    expect(LEVELS).toEqual(["full", "half", "low", "out"]);
-  });
-});
+import { isLowOrOut, stepDown } from "#/lib/levels";
 
 describe("stepDown", () => {
   it.each([

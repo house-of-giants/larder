@@ -41,7 +41,11 @@ export const list = query({
     const joined = [];
     for (const row of rows) {
       const ingredient = await ctx.db.get(row.ingredientId);
-      if (ingredient === null) continue;
+      // A row that points outside the household is corrupt; never show the other side.
+      if (ingredient === null || ingredient.householdId !== householdId) {
+        console.warn(`pantry.list skipped ${row._id}: its ingredient is not in the household`);
+        continue;
+      }
       joined.push({
         pantryItemId: row._id,
         ingredientId: row.ingredientId,

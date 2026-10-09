@@ -420,12 +420,14 @@ describe("recipes.createIngredientInline", () => {
     });
   });
 
-  it("rejects a name already on the list, ignoring case and spaces", async () => {
+  it("reuses the ingredient a name resolves to instead of making a duplicate", async () => {
     const t = newTest();
-    const { as, householdId } = await kitchen(t);
-    await expect(
-      as.mutation(api.recipes.createIngredientInline, { name: " Large Eggs " }),
-    ).rejects.toMatchObject({ data: '"large eggs" is already on the ingredient list.' });
+    const { as, householdId, eggs } = await kitchen(t);
+    await t.run((ctx) => ctx.db.patch("ingredients", eggs, { aliases: ["eggs"] }));
+
+    for (const name of [" Large Eggs ", "large  eggs", "eggs", "large egg"]) {
+      await expect(as.mutation(api.recipes.createIngredientInline, { name })).resolves.toBe(eggs);
+    }
     await expect(
       as.mutation(api.recipes.createIngredientInline, { name: "   " }),
     ).rejects.toMatchObject({ data: "Give the ingredient a name." });
@@ -440,11 +442,79 @@ describe("recipes.createIngredientInline", () => {
     expect(names.sort()).toEqual(["egg yolk", "kosher salt", "large eggs"]);
   });
 
+  it("stores a new name single-spaced", async () => {
+    const t = newTest();
+    const { as } = await kitchen(t);
+    const id = await as.mutation(api.recipes.createIngredientInline, { name: " pepper   jack " });
+    expect((await t.run((ctx) => ctx.db.get("ingredients", id)))?.name).toBe("pepper jack");
+  });
+
   it("allows a name another household already uses", async () => {
     const t = newTest();
     await kitchen(t, "Alice");
     const b = await createHousehold(t, { who: "Bob", name: "Bob's" });
     const id = await b.as.mutation(api.recipes.createIngredientInline, { name: "large eggs" });
     expect((await t.run((ctx) => ctx.db.get("ingredients", id)))?.householdId).toBe(b.householdId);
+  });
+});
+
+describe("joins never cross households", () => {
+  it("counts, shows, and replaces only the household's own ingredient rows", async () => {
+    const t = newTest();
+    const a = await kitchen(t, "Alice");
+    const b = await kitchen(t, "Bob");
+    const recipeId = await a.as.mutation(api.recipes.upsert, a.base);
+    // A corrupt row: B's household, pointing at A's recipe.
+    const planted = await t.run((ctx) =>
+      ctx.db.insert("recipeIngredients", {
+        householdId: b.householdId,
+        recipeId,
+        order: 1,
+        ingredientId: b.eggs,
+        quantityText: "99",
+        unit: "each",
+        optional: false,
+        needsReview: false,
+      }),
+    );
+
+    const listed = await a.as.query(api.recipes.list, {});
+    expect(listed.map((r) => [r._id, r.ingredientCount])).toEqual([[recipeId, 1]]);
+
+    const got = await a.as.query(api.recipes.get, { id: recipeId });
+    expect(got?.ingredients.map((r) => [r.ingredientId, r.quantityText])).toEqual([[a.eggs, "2"]]);
+
+    await a.as.mutation(api.recipes.upsert, { ...a.base, id: recipeId });
+    expect(await t.run((ctx) => ctx.db.get("recipeIngredients", planted))).not.toBeNull();
+    const got2 = await a.as.query(api.recipes.get, { id: recipeId });
+    expect(got2?.ingredients.map((r) => r.ingredientId)).toEqual([a.eggs]);
+  });
+
+  it("never returns another household's ingredient name through a recipe row", async () => {
+    const t = newTest();
+    const a = await kitchen(t, "Alice");
+    const b = await createHousehold(t, { who: "Bob", name: "B" });
+    const secret = await addIngredient(t, b.householdId, "Bob's secret sauce", "level");
+    const recipeId = await a.as.mutation(api.recipes.upsert, a.base);
+    // A corrupt row: A's household and recipe, B's ingredient.
+    await t.run((ctx) =>
+      ctx.db.insert("recipeIngredients", {
+        householdId: a.householdId,
+        recipeId,
+        order: 1,
+        ingredientId: secret,
+        quantityText: "1",
+        unit: "tbsp",
+        optional: false,
+        needsReview: false,
+      }),
+    );
+
+    const got = await a.as.query(api.recipes.get, { id: recipeId });
+    expect(got?.ingredients.map((r) => [r.ingredientName, r.needsReview])).toEqual([
+      ["large eggs", false],
+      ["unknown ingredient", true],
+    ]);
+    expect(JSON.stringify(got)).not.toContain("secret");
   });
 });

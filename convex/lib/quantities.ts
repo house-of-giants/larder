@@ -22,10 +22,15 @@ const vulgarPattern = new RegExp(`^(?:(\\d+)\\s*)?([${Object.keys(vulgarFraction
 
 /**
  * The number in a recipe amount: "12", "1/2", "2 1/2", "1.5", "½", "1 ⅓". Anything else
- * ("as needed", "1 knob", "a pinch", "") has no number and returns null.
+ * ("as needed", "1 knob", "a pinch", "") has no number and returns null, and so does a
+ * number too large to hold.
  */
 export function parseQuantity(text: string): number | null {
-  const s = text.trim();
+  const value = readQuantity(text.trim());
+  return value !== null && Number.isFinite(value) ? value : null;
+}
+
+function readQuantity(s: string): number | null {
   if (decimalPattern.test(s)) return Number(s);
 
   const fraction = fractionPattern.exec(s);
@@ -50,9 +55,11 @@ const tolerance = 1e-3;
 
 /**
  * The shortest way to write a number the way a recipe would: a whole number or a mixed
- * number over 2, 3, 4, or 8 ("1 1/2", "1/3"), else up to two decimals ("1.37").
+ * number over 2, 3, 4, or 8 ("1 1/2", "1/3"), else up to two decimals ("1.37"). Not a
+ * finite number: an empty string.
  */
 export function formatQuantity(decimal: number): string {
+  if (!Number.isFinite(decimal)) return "";
   if (decimal < 0) return `-${formatQuantity(-decimal)}`;
   const whole = Math.floor(decimal);
   const rest = decimal - whole;

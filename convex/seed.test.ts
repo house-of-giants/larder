@@ -2,6 +2,7 @@ import { convexTest } from "convex-test";
 import { describe, expect, it } from "vitest";
 import { api, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
+import { householdScopedTables } from "./lib/household";
 import schema from "./schema";
 import { createHousehold, type Test } from "./test_helpers";
 
@@ -187,5 +188,93 @@ describe("seed.load", () => {
         .collect(),
     );
     expect(members).toHaveLength(1);
+  });
+});
+
+describe("seed.load leaves other households alone", () => {
+  /** Every row household B owns, table by table. */
+  async function everythingOf(t: Test, householdId: Id<"households">) {
+    return await t.run(async (ctx) => {
+      const rows: Record<string, unknown[]> = {};
+      for (const table of householdScopedTables) {
+        rows[table] = await ctx.db
+          .query(table)
+          .withIndex("by_householdId", (q) => q.eq("householdId", householdId))
+          .collect();
+      }
+      return rows;
+    });
+  }
+
+  it("keeps every row of a stocked household B through two loads of A", async () => {
+    const t = convexTest(schema, modules);
+    const a = await createHousehold(t, { who: "Alice", name: "A" });
+    const b = await createHousehold(t, { who: "Bob", name: "B" });
+
+    const eggs = await b.as.mutation(api.ingredients.upsert, {
+      name: "large eggs",
+      kind: "count",
+      category: "dairy_refrigerated",
+      aliases: ["eggs"],
+      tracked: true,
+    });
+    const salt = await b.as.mutation(api.ingredients.upsert, {
+      name: "kosher salt",
+      kind: "level",
+      category: "baking_pantry_condiments",
+      aliases: [],
+      tracked: true,
+    });
+    await b.as.mutation(api.pantry.setCount, {
+      ingredientId: eggs,
+      quantityText: "6",
+      unit: "each",
+    });
+    await b.as.mutation(api.pantry.setLevel, { ingredientId: salt, level: "half" });
+    const recipeId = await b.as.mutation(api.recipes.upsert, {
+      name: "Eggs on toast",
+      instructions: ["Fry."],
+      tags: [],
+      ingredients: [
+        { ingredientId: eggs, quantityText: "2", unit: "each", optional: false },
+        { ingredientId: salt, quantityText: "a pinch", unit: "", optional: false },
+      ],
+    });
+    await t.run(async (ctx) => {
+      const weekId = await ctx.db.insert("weeks", {
+        householdId: b.householdId,
+        weekOf: "2026-10-09",
+        status: "planning",
+        sourceUrls: [],
+        createdAt: 1,
+      });
+      await ctx.db.insert("weekRecipes", {
+        householdId: b.householdId,
+        weekId,
+        recipeId,
+        status: "selected",
+        multiplier: { text: "1", decimal: 1 },
+      });
+    });
+
+    const before = await everythingOf(t, b.householdId);
+    expect(
+      Object.fromEntries(Object.entries(before).map(([table, rows]) => [table, rows.length])),
+    ).toMatchObject({
+      members: 1,
+      ingredients: 2,
+      pantryItems: 2,
+      inventoryEvents: 2,
+      recipes: 1,
+      recipeIngredients: 2,
+      weeks: 1,
+      weekRecipes: 1,
+    });
+
+    await t.mutation(internal.seed.load, { householdId: a.householdId });
+    await t.mutation(internal.seed.load, { householdId: a.householdId });
+
+    expect(await everythingOf(t, b.householdId)).toEqual(before);
+    expect(await countsFor(t, a.householdId)).toEqual(seeded);
   });
 });

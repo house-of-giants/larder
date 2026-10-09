@@ -2,6 +2,7 @@ import { ConvexError, v, type Infer } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
 import { mutation, query, type MutationCtx, type QueryCtx } from "./_generated/server";
 import { requireMember } from "./lib/auth";
+import { resolveIngredient } from "../src/lib/aliases";
 import { parseQuantity } from "./lib/quantities";
 import schema from "./schema";
 
@@ -114,12 +115,16 @@ async function requireOwnIngredient(
   return ingredient;
 }
 
-function rowsOf(ctx: QueryCtx, recipeId: Id<"recipes">) {
-  return ctx.db
+/** The recipe's ingredient rows that belong to the household; never another's. */
+async function rowsOf(ctx: QueryCtx, householdId: Id<"households">, recipeId: Id<"recipes">) {
+  const rows = await ctx.db
     .query("recipeIngredients")
     .withIndex("by_recipeId", (q) => q.eq("recipeId", recipeId))
     .collect();
+  return rows.filter((row) => row.householdId === householdId);
 }
+
+const unknownIngredient = "unknown ingredient";
 
 export const list = query({
   args: { includeArchived: v.optional(v.boolean()) },
@@ -148,7 +153,7 @@ export const list = query({
       shown.map(async (r) => ({
         _id: r._id,
         name: r.name,
-        ingredientCount: (await rowsOf(ctx, r._id)).length,
+        ingredientCount: (await rowsOf(ctx, householdId, r._id)).length,
         yield: r.yield,
         tags: r.tags,
         needsReview: r.needsReview,
@@ -177,16 +182,22 @@ export const get = query({
     const recipe = await ownRecipe(ctx, householdId, id);
     if (recipe === null) return null;
 
-    const rows = await rowsOf(ctx, id);
+    const rows = await rowsOf(ctx, householdId, id);
     rows.sort((a, b) => a.order - b.order);
     const ingredients = await Promise.all(
       rows.map(async ({ householdId: _h, recipeId: _r, _creationTime: _c, ...row }) => {
         const ingredient = await ctx.db.get("ingredients", row.ingredientId);
-        return {
-          ...row,
-          ingredientName: ingredient?.name ?? "Unknown ingredient",
-          ingredientKind: ingredient?.kind ?? ("count" as const),
-        };
+        // A missing or foreign ingredient shows as unknown and asks for review; its name
+        // and kind never leave the other household.
+        if (ingredient === null || ingredient.householdId !== householdId) {
+          return {
+            ...row,
+            ingredientName: unknownIngredient,
+            ingredientKind: "count" as const,
+            needsReview: true,
+          };
+        }
+        return { ...row, ingredientName: ingredient.name, ingredientKind: ingredient.kind };
       }),
     );
     return { ...recipe, ingredients };
@@ -262,7 +273,7 @@ export const upsert = mutation({
       recipeId = existing._id;
       // Patch, not replace, so fields this editor does not own (sourceText) survive.
       await ctx.db.patch("recipes", recipeId, fields);
-      for (const row of await rowsOf(ctx, recipeId)) {
+      for (const row of await rowsOf(ctx, householdId, recipeId)) {
         await ctx.db.delete("recipeIngredients", row._id);
       }
     }
@@ -303,18 +314,17 @@ export const createIngredientInline = mutation({
   returns: v.id("ingredients"),
   handler: async (ctx, args) => {
     const { householdId } = await requireMember(ctx);
-    const name = text(args.name);
+    const name = text(args.name)?.replace(/\s+/g, " ");
     if (name === undefined) throw new ConvexError("Give the ingredient a name.");
 
-    const key = name.toLowerCase();
+    // Same policy as adding to the pantry: a name that resolves to one ingredient (any
+    // case or spacing, an alias, a plural) is that ingredient; never a near spelling.
     const ingredients = await ctx.db
       .query("ingredients")
       .withIndex("by_householdId", (q) => q.eq("householdId", householdId))
       .collect();
-    const same = ingredients.find((i) => i.name.trim().toLowerCase() === key);
-    if (same !== undefined) {
-      throw new ConvexError(`"${same.name}" is already on the ingredient list.`);
-    }
+    const resolved = resolveIngredient(name, ingredients);
+    if (resolved.kind === "match") return resolved.ingredientId;
 
     return await ctx.db.insert("ingredients", {
       householdId,

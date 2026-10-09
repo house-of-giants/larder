@@ -126,7 +126,9 @@ function isBlankRow(row: DraftIngredient): boolean {
     blank(row.quantityText) &&
     blank(row.unit) &&
     blank(row.displayName) &&
-    blank(row.preparation)
+    blank(row.preparation) &&
+    row.deductionIngredientId === null &&
+    blank(row.deductionNote)
   );
 }
 
@@ -161,7 +163,8 @@ export function draftToArgs(
   const title = optionalText(draft.sourceTitle);
   const url = optionalText(draft.sourceUrl);
   const { type, author, date } = draft.sourceKept;
-  const hasSource = [title, url, author, date].some((part) => part !== undefined);
+  // A kept type counts: a recipe saved as { type: "manual" } keeps its source.
+  const hasSource = [type, title, url, author, date].some((part) => part !== undefined);
 
   return {
     ok: true,

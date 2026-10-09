@@ -35,7 +35,25 @@ describe("parseQuantity", () => {
   );
 });
 
+describe("parseQuantity overflow", () => {
+  it.each([
+    ["9".repeat(400)],
+    [`${"9".repeat(400)}/1`],
+    [`1 ${"9".repeat(400)}/1`],
+    [`${"9".repeat(400)} ½`],
+  ])("has no number for a value too large to hold (%#)", (text) => {
+    expect(parseQuantity(text)).toBeNull();
+  });
+});
+
 describe("formatQuantity", () => {
+  it.each([[Number.POSITIVE_INFINITY], [Number.NEGATIVE_INFINITY], [Number.NaN]])(
+    "writes nothing for %d",
+    (decimal) => {
+      expect(formatQuantity(decimal)).toBe("");
+    },
+  );
+
   it.each([
     [22, "22"],
     [0, "0"],

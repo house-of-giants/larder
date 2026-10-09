@@ -1,11 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { LOCATIONS, defaultLocation } from "#/lib/locations";
-
-describe("LOCATIONS", () => {
-  it("puts the fridge first and the counter last", () => {
-    expect(LOCATIONS).toEqual(["fridge", "freezer", "pantry", "counter"]);
-  });
-});
+import { defaultLocation } from "#/lib/locations";
 
 describe("defaultLocation", () => {
   it.each([

@@ -1,6 +1,7 @@
 import { useId, useState, type ReactNode } from "react";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { Input } from "#/components/ui/input";
+import { resolveIngredient } from "#/lib/aliases";
 import { errorMessage } from "#/lib/errors";
 import { cn } from "#/lib/utils";
 import { matchIngredients, type IngredientOption } from "./recipe-text";
@@ -43,10 +44,9 @@ export function IngredientPicker({
   const open = query !== null;
   const matches = open ? matchIngredients(options, query) : [];
   const typed = query?.trim() ?? "";
+  // Offered only when the name resolves to no ingredient, the same rule the server uses.
   const canCreate =
-    onCreate !== undefined &&
-    typed !== "" &&
-    !options.some((o) => o.name.toLowerCase() === typed.toLowerCase());
+    onCreate !== undefined && typed !== "" && resolveIngredient(typed, options).kind === "none";
   const choiceCount = matches.length + (canCreate ? 1 : 0);
 
   function pick(next: Id<"ingredients">) {
@@ -90,7 +90,9 @@ export function IngredientPicker({
         autoComplete="off"
         placeholder={placeholder}
         value={query ?? picked}
-        disabled={pending}
+        // Read-only, not disabled, while creating: focus and the open list survive.
+        readOnly={pending}
+        aria-busy={pending}
         onFocus={(e) => {
           if (query !== null) return;
           setQuery(picked);

@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 import seedIngredients from "../../convex/seed/ingredients.json";
-import { normalizeName, resolveIngredient, singularize, suggestIngredients } from "#/lib/aliases";
+import {
+  normalizeName,
+  resolveIngredient,
+  singularForms,
+  singularize,
+  suggestIngredients,
+} from "#/lib/aliases";
 
 // The seed dictionary, keyed by name so a match reads as the ingredient it found.
 const dictionary = seedIngredients.map((i) => ({ _id: i.name, name: i.name, aliases: i.aliases }));
@@ -142,5 +148,46 @@ describe("suggestIngredients", () => {
 
   it("suggests nothing for a blank name", () => {
     expect(suggestIngredients("  ", dictionary)).toEqual([]);
+  });
+});
+
+describe("singularForms", () => {
+  it.each([
+    ["berries", ["berry", "berrie"]],
+    ["pies", ["py", "pie"]],
+    ["eggs", ["egg"]],
+    ["egg", ["egg"]],
+    ["glass", ["glass"]],
+  ])("%s -> %j", (word, forms) => {
+    expect(singularForms(word)).toEqual(forms);
+  });
+});
+
+describe("resolveIngredient with -ies plurals", () => {
+  const sweets = [
+    { _id: "pie", name: "apple pie", aliases: [] },
+    { _id: "cookie", name: "sugar cookie", aliases: [] },
+    { _id: "brownie", name: "brownie", aliases: [] },
+    { _id: "berry", name: "blueberry", aliases: [] },
+    { _id: "cherries", name: "cherries", aliases: [] },
+  ];
+
+  it.each([
+    ["apple pies", "pie"],
+    ["sugar cookies", "cookie"],
+    ["brownies", "brownie"],
+    ["blueberries", "berry"],
+    ["cherry", "cherries"],
+  ])("%j -> %s by plural", (query, ingredientId) => {
+    expect(resolveIngredient(query, sweets)).toEqual({
+      kind: "match",
+      ingredientId,
+      how: "plural",
+    });
+  });
+
+  it("still never merges a near spelling", () => {
+    expect(resolveIngredient("apple pi", sweets)).toMatchObject({ kind: "none" });
+    expect(resolveIngredient("brownys", sweets)).toMatchObject({ kind: "none" });
   });
 });

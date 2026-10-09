@@ -109,6 +109,20 @@ describe("draft round trip", () => {
   });
 });
 
+describe("draft round trip for a manual source", () => {
+  it("keeps a source that is only { type: manual }", () => {
+    const manual: Recipe = { ...sliders, source: { type: "manual" } };
+    const result = draftToArgs(draftFromRecipe(manual), recipeId);
+    expect(result.ok && result.args.source).toEqual({
+      type: "manual",
+      title: undefined,
+      url: undefined,
+      author: undefined,
+      date: undefined,
+    });
+  });
+});
+
 describe("draftToArgs", () => {
   it("splits comma tags, drops blank steps and fully blank ingredient lines", () => {
     const draft = {
@@ -141,6 +155,21 @@ describe("draftToArgs", () => {
       ingredients: [
         { ...emptyIngredient(), ingredientId: eggs, quantityText: "6" },
         { ...emptyIngredient(), quantityText: "1/2", unit: "cup" },
+      ],
+    };
+    expect(draftToArgs(draft)).toEqual({ ok: false, error: "Pick an ingredient for line 2." });
+  });
+
+  it.each([
+    ["a redirect", { deductionIngredientId: yolks }],
+    ["a deduction note", { deductionNote: "Yolks only." }],
+  ])("keeps a line that has only %s and asks for its ingredient", (_what, fields) => {
+    const draft = {
+      ...emptyDraft(),
+      name: "Biscuits",
+      ingredients: [
+        { ...emptyIngredient(), ingredientId: eggs, quantityText: "6" },
+        { ...emptyIngredient(), ...fields },
       ],
     };
     expect(draftToArgs(draft)).toEqual({ ok: false, error: "Pick an ingredient for line 2." });

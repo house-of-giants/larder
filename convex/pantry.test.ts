@@ -124,6 +124,21 @@ describe("pantry.setCount", () => {
     await expect(eventsOf(t, householdId)).resolves.toEqual([]);
   });
 
+  it("refuses a number too large to hold", async () => {
+    const t = newTest();
+    const { as, householdId } = await createHousehold(t, { who: "Alice", name: "Elm" });
+    const eggs = await addIngredient(t, householdId, { name: "large eggs", kind: "count" });
+    await expect(
+      as.mutation(api.pantry.setCount, {
+        ingredientId: eggs,
+        quantityText: "9".repeat(400),
+        unit: "each",
+      }),
+    ).rejects.toMatchObject({ data: "Use a number or a fraction." });
+    await expect(as.query(api.pantry.list, {})).resolves.toEqual([]);
+    await expect(eventsOf(t, householdId)).resolves.toEqual([]);
+  });
+
   it("refuses a level ingredient", async () => {
     const t = newTest();
     const { as, householdId } = await createHousehold(t, { who: "Alice", name: "Elm" });
@@ -321,5 +336,39 @@ describe("pantry.list", () => {
       b.as.mutation(api.pantry.setCount, { ingredientId: eggs, quantityText: "6", unit: "each" }),
     ).rejects.toMatchObject({ data: "That ingredient is not in this household." });
     await expect(a.as.query(api.pantry.list, {})).resolves.toEqual([]);
+  });
+});
+
+describe("pantry.list joins", () => {
+  it("skips a row whose ingredient belongs to another household", async () => {
+    const t = newTest();
+    const a = await createHousehold(t, { who: "Alice", name: "A" });
+    const b = await createHousehold(t, { who: "Bob", name: "B" });
+    const eggs = await addIngredient(t, a.householdId, { name: "large eggs", kind: "count" });
+    const secret = await addIngredient(t, b.householdId, {
+      name: "Bob's secret sauce",
+      kind: "level",
+      category: "bob_only",
+    });
+    await a.as.mutation(api.pantry.setCount, {
+      ingredientId: eggs,
+      quantityText: "6",
+      unit: "each",
+    });
+    // A corrupt row: A's household, B's ingredient.
+    await t.run((ctx) =>
+      ctx.db.insert("pantryItems", {
+        householdId: a.householdId,
+        ingredientId: secret,
+        location: "fridge",
+        level: "full",
+        updatedAt: 1,
+      }),
+    );
+
+    const rows = await a.as.query(api.pantry.list, {});
+    expect(rows.map((r) => [r.ingredientId, r.name])).toEqual([[eggs, "large eggs"]]);
+    expect(JSON.stringify(rows)).not.toContain("secret");
+    expect(JSON.stringify(rows)).not.toContain("bob_only");
   });
 });

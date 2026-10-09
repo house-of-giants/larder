@@ -56,6 +56,8 @@ export function StockForm({
   initial,
   submitLabel = "Save",
   onSave,
+  busy = false,
+  onPendingChange,
 }: {
   idPrefix: string;
   name: string;
@@ -64,6 +66,10 @@ export function StockForm({
   submitLabel?: string;
   /** Runs on Save. A thrown error stays under the Save button as a plain sentence. */
   onSave: (values: StockValues) => Promise<void>;
+  /** Something else in the same sheet is writing; hold Save until it finishes. */
+  busy?: boolean;
+  /** Told when a Save starts and ends, so the sheet can hold its other buttons. */
+  onPendingChange?: (pending: boolean) => void;
 }) {
   const [quantityText, setQuantityText] = useState(initial.quantityText);
   const [unit, setUnit] = useState(initial.unit);
@@ -72,10 +78,16 @@ export function StockForm({
   const [quantityError, setQuantityError] = useState<string | null>(null);
   const [unitError, setUnitError] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
-  const [pending, setPending] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const pending = saving || busy;
+  function setPending(next: boolean) {
+    setSaving(next);
+    onPendingChange?.(next);
+  }
 
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (pending) return;
     setSaveError(null);
     if (kind === "count") {
       const badQuantity = parseQuantity(quantityText) === null;

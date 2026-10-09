@@ -33,17 +33,29 @@ export function normalizeName(s: string): string {
   return prepared ? prepared[1] : name;
 }
 
-/** The singular of the last word: "large eggs" -> "large egg", "berries" -> "berry". */
-export function singularize(s: string): string {
-  return s.replace(/[^\s]+$/, singularWord);
+/**
+ * Every plausible singular of the last word. "-ies" is ambiguous ("berries" -> "berry",
+ * "pies" -> "pie"), so it yields both; the resolver accepts whichever one an ingredient
+ * actually has. Words ending in "ss" or "us" are left alone.
+ */
+export function singularForms(s: string): string[] {
+  const match = /^(.*?)([^\s]+)$/.exec(s);
+  if (match === null) return [s];
+  const [, head, word] = match;
+  return singularWords(word).map((w) => head + w);
 }
 
-function singularWord(word: string): string {
-  if (word.length < 3 || word.endsWith("ss") || word.endsWith("us")) return word;
-  if (word.endsWith("ies")) return `${word.slice(0, -3)}y`;
-  if (word.endsWith("oes")) return word.slice(0, -2);
-  if (word.endsWith("s")) return word.slice(0, -1);
-  return word;
+/** The first singular form: "large eggs" -> "large egg", "berries" -> "berry". */
+export function singularize(s: string): string {
+  return singularForms(s)[0];
+}
+
+function singularWords(word: string): string[] {
+  if (word.length < 3 || word.endsWith("ss") || word.endsWith("us")) return [word];
+  if (word.endsWith("ies")) return [`${word.slice(0, -3)}y`, word.slice(0, -1)];
+  if (word.endsWith("oes")) return [word.slice(0, -2)];
+  if (word.endsWith("s")) return [word.slice(0, -1)];
+  return [word];
 }
 
 const maxCandidates = 5;
@@ -56,14 +68,17 @@ export function resolveIngredient<Id>(
   if (query === "") return { kind: "none", candidates: [] };
 
   const raw = name.trim();
-  const singular = singularize(query);
+  const singulars = singularForms(query);
   const terms = (i: Resolvable<Id>) => [i.name, ...i.aliases].map(normalizeName);
 
   const steps: [ResolveHow, (i: Resolvable<Id>) => boolean][] = [
     ["exact", (i) => i.name === raw],
     ["case", (i) => normalizeName(i.name) === query],
     ["alias", (i) => i.aliases.some((alias) => normalizeName(alias) === query)],
-    ["plural", (i) => terms(i).some((term) => singularize(term) === singular)],
+    [
+      "plural",
+      (i) => terms(i).some((term) => singularForms(term).some((f) => singulars.includes(f))),
+    ],
   ];
 
   for (const [how, matches] of steps) {
@@ -75,10 +90,10 @@ export function resolveIngredient<Id>(
     }
   }
 
-  const queryForms = [query, singular];
+  const queryForms = [query, ...singulars];
   const candidates = ingredients.filter((i) =>
     terms(i).some((term) =>
-      [term, singularize(term)].some((form) =>
+      [term, ...singularForms(term)].some((form) =>
         queryForms.some((q) => containsWords(form, q) || containsWords(q, form)),
       ),
     ),
