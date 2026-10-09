@@ -1,0 +1,24 @@
+node_modules
+.DS_Store
+*.local
+coverage
+
+# Build output (Vite, Nitro, Vercel)
+dist
+dist-ssr
+.output
+.nitro
+.tanstack
+.vercel
+
+# Playwright
+playwright-report
+test-results
+
+# Environment files. Only the documented example is committed.
+.env*
+!.env.example
+
+# Local agent scratch: prompts, logs, reports. Never part of this repo.
+.claude/artifacts/
+.claude/settings.local.json
