@@ -13,6 +13,7 @@ import { Separator } from "#/components/ui/separator";
 import { useHousehold } from "#/hooks/use-household";
 import { errorMessage } from "#/lib/errors";
 import { inviteUrl } from "#/lib/invite";
+import { forgetOfflineData } from "#/offline/identity";
 
 export const Route = createFileRoute("/_app/settings")({
   component: Settings,
@@ -195,7 +196,15 @@ function Account({ lastOneHere }: { lastOneHere: boolean }) {
 
   return (
     <section className="flex flex-col items-start gap-3" aria-label="Account">
-      <Button type="button" variant="outline" onClick={() => signOut({ redirectUrl: "/sign-in" })}>
+      <Button
+        type="button"
+        variant="outline"
+        onClick={async () => {
+          // This phone's saved list, queue, and cached pages leave with the user.
+          await forgetOfflineData();
+          await signOut({ redirectUrl: "/sign-in" });
+        }}
+      >
         Sign out
       </Button>
       <ConfirmDialog
@@ -224,6 +233,7 @@ function Account({ lastOneHere }: { lastOneHere: boolean }) {
         confirmLabel="Delete account"
         destructive
         onConfirm={async () => {
+          await forgetOfflineData();
           await leave({});
           // Leaving unmounts this screen, so a failure past this point goes to a toast.
           try {
