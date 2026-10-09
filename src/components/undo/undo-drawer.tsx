@@ -86,6 +86,9 @@ function RecentRow({ row }: { row: Row }) {
         <span className="truncate">{row.line}</span>
         <span className="num text-xs text-muted-foreground">{when(row.at)}</span>
       </div>
+      {!row.canUndo && row.reason && (
+        <span className="shrink-0 text-xs text-muted-foreground">{row.reason}</span>
+      )}
       {row.canUndo &&
         (row.isCook ? (
           <ConfirmDialog

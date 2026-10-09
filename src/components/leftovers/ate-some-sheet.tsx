@@ -2,9 +2,8 @@ import { useMutation } from "convex/react";
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { api } from "../../../convex/_generated/api";
+import { MultiplierPicker } from "#/components/cook/multiplier-picker";
 import { Button } from "#/components/ui/button";
-import { Input } from "#/components/ui/input";
-import { Label } from "#/components/ui/label";
 import {
   Sheet,
   SheetContent,
@@ -82,25 +81,16 @@ function AteSomeForm({ food, close }: { food: Leftover; close: () => void }) {
       noValidate
       className="flex flex-col gap-4 px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]"
     >
-      <div className="flex flex-col gap-2">
-        <Label htmlFor={id}>Ate</Label>
-        <Input
-          id={id}
-          value={quantityText}
-          inputMode="decimal"
-          autoComplete="off"
-          enterKeyHint="done"
-          className="num h-11"
-          aria-invalid={error !== null}
-          aria-describedby={error ? `${id}-error` : undefined}
-          onChange={(e) => setQuantityText(e.target.value)}
-        />
-      </div>
-      {error && (
-        <p id={`${id}-error`} role="alert" className="-mt-2 text-sm text-destructive">
-          {error}
-        </p>
-      )}
+      <MultiplierPicker
+        id={id}
+        label="Ate"
+        value={quantityText}
+        onChange={(text) => {
+          setQuantityText(text);
+          setError(null);
+        }}
+        error={error}
+      />
       <Button type="submit" size="lg" className="h-12" disabled={pending}>
         Save
       </Button>

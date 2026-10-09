@@ -5,27 +5,31 @@ import { cn } from "#/lib/utils";
 
 const quickPicks = ["1/2", "1", "2"] as const;
 
-/** How many batches were made: one tap on 1/2, 1, or 2, or the number typed in. */
+/**
+ * An amount picked with one tap on 1/2, 1, or 2, or typed in: batches made, portions eaten.
+ */
 export function MultiplierPicker({
   id,
   value,
   onChange,
   error,
+  label = "Batches",
 }: {
   id: string;
   value: string;
   onChange: (text: string) => void;
   error: string | null;
+  label?: string;
 }) {
   const trimmed = value.trim();
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center gap-2">
         <Label htmlFor={id} className="mr-auto text-sm text-muted-foreground">
-          Batches
+          {label}
         </Label>
         <fieldset className="flex gap-1.5">
-          <legend className="sr-only">Batches</legend>
+          <legend className="sr-only">{label}</legend>
           {quickPicks.map((pick) => (
             <Button
               key={pick}
@@ -48,7 +52,7 @@ export function MultiplierPicker({
           inputMode="decimal"
           autoComplete="off"
           enterKeyHint="done"
-          aria-label="Batches, typed"
+          aria-label={`${label}, typed`}
           aria-invalid={error !== null}
           aria-describedby={error ? `${id}-error` : undefined}
           className="num h-11 w-20 text-center"

@@ -377,6 +377,9 @@ export const forWeek = query({
     >();
     for (const cook of cooks) {
       if (cook.householdId !== householdId || cook.undoneAt !== undefined) continue;
+      // A cook pointing at another household's recipe is skipped, never shown.
+      const recipe = await ctx.db.get("recipes", cook.recipeId);
+      if (recipe === null || recipe.householdId !== householdId) continue;
       const seen = byRecipe.get(cook.recipeId);
       if (seen === undefined) {
         byRecipe.set(cook.recipeId, {

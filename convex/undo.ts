@@ -1,7 +1,7 @@
 import { ConvexError, v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
 import { type QueryCtx, mutation, query } from "./_generated/server";
-import { reversePurchase } from "./lists";
+import { latestEvent, reversePurchase } from "./lists";
 import { amountWords } from "./lib/amounts";
 import { requireMember } from "./lib/auth";
 import type { PantrySnapshot } from "./lib/pantry";
@@ -10,6 +10,9 @@ import {
   type CloseoutPayload,
   type ConsumptionPayload,
   alreadyUndone,
+  cookBlocker,
+  eventFood,
+  eventNotHere,
   findUndo,
   undoCloseout,
   undoConsumption,
@@ -21,7 +24,6 @@ import schema from "./schema";
 // reverse the ones people take back (a check-off, a cook, a portion eaten, a closeout).
 // Every reversal writes `undo` events; the original events stay.
 
-const eventNotHere = "That event is not here.";
 const defaultLimit = 30;
 const maxLimit = 100;
 // How far back the drawer reads; a cook alone writes one event per ingredient.
@@ -48,6 +50,7 @@ function namer(ctx: QueryCtx, householdId: Id<"households">) {
     return cache.get(id) ?? null;
   }
   return {
+    householdId,
     ingredient: (id: Id<"ingredients"> | undefined) => cached<"ingredients">(id, (r) => r.name),
     recipe: (id: Id<"recipes"> | undefined) => cached<"recipes">(id, (r) => r.name),
     listItem: (id: Id<"listItems"> | undefined) => cached<"listItems">(id, (r) => r.displayName),
@@ -55,8 +58,10 @@ function namer(ctx: QueryCtx, householdId: Id<"households">) {
 }
 type Namer = ReturnType<typeof namer>;
 
+/** The cook behind an event, only if it is this household's; otherwise an unknown line. */
 async function cookLine(ctx: QueryCtx, names: Namer, cookingEventId: Id<"cookingEvents">) {
-  const cook = await ctx.db.get("cookingEvents", cookingEventId);
+  const found = await ctx.db.get("cookingEvents", cookingEventId);
+  const cook = found !== null && found.householdId === names.householdId ? found : null;
   const recipe = cook === null ? null : await names.recipe(cook.recipeId);
   return { cook, line: `Made ${recipe ?? "a recipe"}` };
 }
@@ -124,6 +129,8 @@ export const recent = query({
       type: schema.tables.inventoryEvents.validator.fields.type,
       line: v.string(),
       canUndo: v.boolean(),
+      /** Why a check-off, cook, portion, or closeout can no longer be undone. */
+      reason: v.optional(v.string()),
       /** Undoing a cook takes back every deduction and the leftovers; it asks first. */
       isCook: v.boolean(),
     }),
@@ -139,11 +146,12 @@ export const recent = query({
       type: Doc<"inventoryEvents">["type"];
       line: string;
       canUndo: boolean;
+      reason?: string;
       isCook: boolean;
     };
     const rows: Row[] = [];
-    // Newest first, so an event's undo (always newer) and anything newer on the same list
-    // item are seen before the event itself.
+    // Newest-inserted first, so an event's undo (always inserted after it) and anything newer
+    // on the same list item are seen before the event itself, whatever their `at`.
     const undone = new Set<Id<"inventoryEvents">>();
     const newerOnItem = new Set<Id<"listItems">>();
     const cookRows = new Set<string>();
@@ -151,42 +159,56 @@ export const recent = query({
 
     for await (const event of ctx.db
       .query("inventoryEvents")
-      .withIndex("by_householdId_at", (q) => q.eq("householdId", householdId))
+      .withIndex("by_householdId", (q) => q.eq("householdId", householdId))
       .order("desc")) {
       if (rows.length >= limit || scanned >= scanLimit) break;
       scanned += 1;
       const { listItemId, cookingEventId } = event.refs;
+      const row = { eventId: event._id, at: event.at, type: event.type, isCook: false };
 
       if (cookingEventId !== undefined) {
         // A cook's deductions and its leftovers read as one line, and so does their undo.
-        const key = `${cookingEventId}:${event.type === "undo" ? "undo" : "cook"}`;
+        const isUndo = event.type === "undo";
+        const key = `${cookingEventId}:${isUndo ? "undo" : "cook"}`;
         if (!cookRows.has(key)) {
           cookRows.add(key);
           const { cook, line } = await cookLine(ctx, names, cookingEventId);
-          const isUndo = event.type === "undo";
-          rows.push({
-            eventId: event._id,
-            at: event.at,
-            type: event.type,
-            line: isUndo ? `Undone: ${line}` : line,
-            canUndo: !isUndo && cook !== null && cook.undoneAt === undefined,
-            isCook: !isUndo,
-          });
+          if (isUndo || cook === null) {
+            rows.push({ ...row, line: isUndo ? `Undone: ${line}` : line, canUndo: false });
+          } else {
+            const blocker = await cookBlocker(ctx, cook);
+            rows.push({
+              ...row,
+              line,
+              canUndo: blocker === null,
+              ...(blocker !== null && { reason: blocker.reason }),
+              isCook: true,
+            });
+          }
         }
       } else {
-        let canUndo = false;
-        if (event.type === "purchase" && listItemId !== undefined) {
-          canUndo = !undone.has(event._id) && !newerOnItem.has(listItemId);
-        } else if (event.type === "consumption" || event.type === "closeout") {
-          canUndo = !undone.has(event._id);
+        // The same preconditions undo.event checks, said in a few words.
+        let reason: string | undefined;
+        const undoable =
+          (event.type === "purchase" && listItemId !== undefined) ||
+          event.type === "consumption" ||
+          event.type === "closeout";
+        if (undoable) {
+          if (undone.has(event._id)) reason = "Undone.";
+          else if (listItemId !== undefined && newerOnItem.has(listItemId)) {
+            reason = "Changed since.";
+          } else if (
+            event.type !== "purchase" &&
+            (await eventFood(ctx, householdId, event)) === null
+          ) {
+            reason = "Gone.";
+          }
         }
         rows.push({
-          eventId: event._id,
-          at: event.at,
-          type: event.type,
+          ...row,
           line: await lineOf(ctx, names, event),
-          canUndo,
-          isCook: false,
+          canUndo: undoable && reason === undefined,
+          ...(reason !== undefined && { reason }),
         });
       }
 
@@ -196,22 +218,6 @@ export const recent = query({
     return rows;
   },
 });
-
-/** The list item's newest event, newest first from `since`. */
-async function latestOnItem(
-  ctx: QueryCtx,
-  householdId: Id<"households">,
-  listItemId: Id<"listItems">,
-  since: number,
-) {
-  for await (const event of ctx.db
-    .query("inventoryEvents")
-    .withIndex("by_householdId_at", (q) => q.eq("householdId", householdId).gte("at", since))
-    .order("desc")) {
-    if (event.refs.listItemId === listItemId) return event;
-  }
-  return null;
-}
 
 export const event = mutation({
   args: { eventId: v.id("inventoryEvents") },
@@ -239,7 +245,8 @@ export const event = mutation({
       if (item === null || item.householdId !== householdId) {
         throw new ConvexError(eventNotHere);
       }
-      const latest = await latestOnItem(ctx, householdId, item._id, target.at);
+      // The item's newest-inserted event must be this purchase; anything after it wins.
+      const latest = await latestEvent(ctx, householdId, { listItemId: item._id });
       if (latest?._id !== target._id || item.status !== "checked") {
         throw new ConvexError("That item changed since. Undo the newer one first.");
       }
@@ -247,7 +254,7 @@ export const event = mutation({
       const ingredient =
         item.ingredientId === undefined ? null : await ctx.db.get("ingredients", item.ingredientId);
       if (ingredient !== null && ingredient.householdId === householdId) {
-        await reversePurchase(ctx, { householdId, memberId: member._id, item, ingredient });
+        await reversePurchase(ctx, { householdId, memberId: member._id, item, ingredient }, target);
       }
       await ctx.db.patch("listItems", item._id, { status: "needed", checkedAt: undefined });
       return null;
