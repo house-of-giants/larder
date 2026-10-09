@@ -1,6 +1,6 @@
 import { ConvexError, v } from "convex/values";
 import { LOCATIONS, defaultLocation } from "../src/lib/locations";
-import { parseQuantity } from "../src/lib/quantities";
+import { parseQuantity } from "./lib/quantities";
 import type { Doc, Id } from "./_generated/dataModel";
 import { type MutationCtx, mutation, query } from "./_generated/server";
 import { requireMember } from "./lib/auth";

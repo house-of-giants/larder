@@ -33,6 +33,77 @@ const cases: Case[] = [
   },
   { name: "households.leave", kind: "mutation", fn: api.households.leave, args: {} },
   { name: "events.recent", kind: "query", fn: api.events.recent, args: {} },
+  // Phase 2. convex-test ids are a counter then the table name; these pass `v.id` and
+  // point at nothing, which is fine: the refusal comes first.
+  { name: "ingredients.list", kind: "query", fn: api.ingredients.list, args: {} },
+  { name: "ingredients.get", kind: "query", fn: api.ingredients.get, args: { id: "1ingredients" } },
+  {
+    name: "ingredients.upsert",
+    kind: "mutation",
+    fn: api.ingredients.upsert,
+    args: {
+      name: "salt",
+      kind: "level",
+      category: "baking_pantry_condiments",
+      aliases: [],
+      tracked: true,
+    },
+  },
+  {
+    name: "ingredients.resolve",
+    kind: "query",
+    fn: api.ingredients.resolve,
+    args: { name: "eggs" },
+  },
+  { name: "pantry.list", kind: "query", fn: api.pantry.list, args: {} },
+  {
+    name: "pantry.setCount",
+    kind: "mutation",
+    fn: api.pantry.setCount,
+    args: { ingredientId: "1ingredients", quantityText: "6", unit: "each" },
+  },
+  {
+    name: "pantry.setLevel",
+    kind: "mutation",
+    fn: api.pantry.setLevel,
+    args: { ingredientId: "1ingredients", level: "full" },
+  },
+  {
+    name: "pantry.markOut",
+    kind: "mutation",
+    fn: api.pantry.markOut,
+    args: { ingredientId: "1ingredients" },
+  },
+  {
+    name: "pantry.remove",
+    kind: "mutation",
+    fn: api.pantry.remove,
+    args: { ingredientId: "1ingredients" },
+  },
+  { name: "recipes.list", kind: "query", fn: api.recipes.list, args: {} },
+  { name: "recipes.get", kind: "query", fn: api.recipes.get, args: { id: "1recipes" } },
+  { name: "recipes.ingredientOptions", kind: "query", fn: api.recipes.ingredientOptions, args: {} },
+  {
+    name: "recipes.upsert",
+    kind: "mutation",
+    fn: api.recipes.upsert,
+    args: {
+      name: "Sliders",
+      instructions: [],
+      tags: [],
+      ingredients: [
+        { ingredientId: "1ingredients", quantityText: "1", unit: "each", optional: false },
+      ],
+    },
+  },
+  {
+    name: "recipes.createIngredientInline",
+    kind: "mutation",
+    fn: api.recipes.createIngredientInline,
+    args: { name: "eggs" },
+  },
+  { name: "recipes.archive", kind: "mutation", fn: api.recipes.archive, args: { id: "1recipes" } },
+  { name: "recipes.restore", kind: "mutation", fn: api.recipes.restore, args: { id: "1recipes" } },
 ];
 
 // Every Convex function module, so a public function added in any phase must be listed

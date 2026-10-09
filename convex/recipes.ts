@@ -2,7 +2,7 @@ import { ConvexError, v, type Infer } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
 import { mutation, query, type MutationCtx, type QueryCtx } from "./_generated/server";
 import { requireMember } from "./lib/auth";
-import { quantityDecimal } from "./lib/quantity_text";
+import { parseQuantity } from "./lib/quantities";
 import schema from "./schema";
 
 // Recipes keep the recipe's own words (quantityText, unit, displayName). The decimal beside
@@ -243,7 +243,7 @@ export const upsert = mutation({
           ? undefined
           : {
               quantityText: yieldText,
-              quantityDecimal: quantityDecimal(yieldText),
+              quantityDecimal: parseQuantity(yieldText) ?? undefined,
               unit: args.yield.unit.trim(),
             },
       freezerFriendly: args.freezerFriendly,
@@ -287,7 +287,7 @@ async function insertRows(
       ingredientId: row.ingredientId,
       displayName: text(row.displayName),
       quantityText,
-      quantityDecimal: quantityDecimal(quantityText),
+      quantityDecimal: parseQuantity(quantityText) ?? undefined,
       unit: row.unit.trim(),
       optional: row.optional,
       preparation: text(row.preparation),
