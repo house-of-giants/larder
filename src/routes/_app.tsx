@@ -1,5 +1,5 @@
 import { Link, Navigate, Outlet, createFileRoute } from "@tanstack/react-router";
-import { CalendarDays, Settings } from "lucide-react";
+import { BookOpen, CalendarDays, Settings } from "lucide-react";
 import { PageSkeleton } from "#/components/page-skeleton";
 import { TabBar, type Tab } from "#/components/tab-bar";
 import { useHousehold } from "#/hooks/use-household";
@@ -8,6 +8,7 @@ import { requireSignedIn, returnTo } from "#/lib/auth-gate";
 // Later phases add List, Pantry, Recipes, and Leftovers here.
 const tabs: readonly Tab[] = [
   { to: "/week", label: "Week", icon: CalendarDays },
+  { to: "/recipes", label: "Recipes", icon: BookOpen },
   { to: "/settings", label: "Settings", icon: Settings },
 ];
 
