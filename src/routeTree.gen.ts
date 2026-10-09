@@ -10,6 +10,10 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AppRouteImport } from './routes/_app'
+import { Route as JoinRouteImport } from './routes/join'
+import { Route as AppSettingsRouteImport } from './routes/_app/settings'
+import { Route as AppWeekRouteImport } from './routes/_app/week'
 import { Route as SignInSplatRouteImport } from './routes/sign-in.$'
 import { Route as SignUpSplatRouteImport } from './routes/sign-up.$'
 
@@ -17,6 +21,25 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AppRoute = AppRouteImport.update({
+  id: '/_app',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const JoinRoute = JoinRouteImport.update({
+  id: '/join',
+  path: '/join',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppSettingsRoute = AppSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppWeekRoute = AppWeekRouteImport.update({
+  id: '/week',
+  path: '/week',
+  getParentRoute: () => AppRoute,
 } as any)
 const SignInSplatRoute = SignInSplatRouteImport.update({
   id: '/sign-in/$',
@@ -31,30 +54,50 @@ const SignUpSplatRoute = SignUpSplatRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/join': typeof JoinRoute
+  '/settings': typeof AppSettingsRoute
+  '/week': typeof AppWeekRoute
   '/sign-in/$': typeof SignInSplatRoute
   '/sign-up/$': typeof SignUpSplatRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/join': typeof JoinRoute
+  '/settings': typeof AppSettingsRoute
+  '/week': typeof AppWeekRoute
   '/sign-in/$': typeof SignInSplatRoute
   '/sign-up/$': typeof SignUpSplatRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_app': typeof AppRouteWithChildren
+  '/join': typeof JoinRoute
+  '/_app/settings': typeof AppSettingsRoute
+  '/_app/week': typeof AppWeekRoute
   '/sign-in/$': typeof SignInSplatRoute
   '/sign-up/$': typeof SignUpSplatRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/sign-in/$' | '/sign-up/$'
+  fullPaths: '/' | '/join' | '/settings' | '/week' | '/sign-in/$' | '/sign-up/$'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/sign-in/$' | '/sign-up/$'
-  id: '__root__' | '/' | '/sign-in/$' | '/sign-up/$'
+  to: '/' | '/join' | '/settings' | '/week' | '/sign-in/$' | '/sign-up/$'
+  id:
+    | '__root__'
+    | '/'
+    | '/_app'
+    | '/join'
+    | '/_app/settings'
+    | '/_app/week'
+    | '/sign-in/$'
+    | '/sign-up/$'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AppRoute: typeof AppRouteWithChildren
+  JoinRoute: typeof JoinRoute
   SignInSplatRoute: typeof SignInSplatRoute
   SignUpSplatRoute: typeof SignUpSplatRoute
 }
@@ -67,6 +110,34 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_app': {
+      id: '/_app'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AppRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/join': {
+      id: '/join'
+      path: '/join'
+      fullPath: '/join'
+      preLoaderRoute: typeof JoinRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_app/settings': {
+      id: '/_app/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof AppSettingsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/week': {
+      id: '/_app/week'
+      path: '/week'
+      fullPath: '/week'
+      preLoaderRoute: typeof AppWeekRouteImport
+      parentRoute: typeof AppRoute
     }
     '/sign-in/$': {
       id: '/sign-in/$'
@@ -85,8 +156,22 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AppRouteChildren {
+  AppSettingsRoute: typeof AppSettingsRoute
+  AppWeekRoute: typeof AppWeekRoute
+}
+
+const AppRouteChildren: AppRouteChildren = {
+  AppSettingsRoute: AppSettingsRoute,
+  AppWeekRoute: AppWeekRoute,
+}
+
+const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AppRoute: AppRouteWithChildren,
+  JoinRoute: JoinRoute,
   SignInSplatRoute: SignInSplatRoute,
   SignUpSplatRoute: SignUpSplatRoute,
 }
