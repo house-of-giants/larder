@@ -8,7 +8,7 @@ colors:
   ink: "#2b2622"
   ink-quiet: "#776d63"
   hairline: "#e8e0d2"
-  ring: "#a89d8d"
+  ring: "#978c7e"
   tomato: "#b93a20"
   tomato-pale: "#f6dfd6"
   tomato-ink: "#8e2a14"
@@ -173,13 +173,13 @@ Paper and ink with one tomato; the dark theme is the same kitchen with the light
 - **Ink** (#2b2622 light, #f3ece1 dark): names, titles, body.
 - **Ink Quiet** (#776d63 light, #b3a797 dark): the second line, captions, tab labels at rest, "for Pot roast". At or above 4.5:1 on paper in both themes.
 - **Hairline** (#e8e0d2 light, #3a332c dark): the one-pixel rule between rows and under headings.
-- **Ring** (#a89d8d light, #7a6f64 dark): the unchecked circle's stroke, at or above 3:1 on paper.
+- **Ring** (#978c7e light, #7a6f64 dark): the unchecked circle's stroke and the boundary of every field, at or above 3:1 on paper and on card (the lighter #a89d8d from the lab measured 2.47:1 and was dropped).
 
 ### Named Rules
 
 **The One Tomato Rule.** Tomato appears as at most one control per screen (the pill, or the floating button) plus the amounts and ticks in rows. A second tinted control on the same screen is wrong; demote it to the pale pill, a text link, or an outline.
 **The Warm Dark Rule.** Dark mode keeps the hue of paper (warm brown-black, never blue-black) and lifts the tomato to #ee7757 so it still reads at 13 px. Text on tomato flips to dark ink.
-**The Destructive Rule.** Destructive actions use tomato ink as text or an outline, never a separate red. The confirm dialog carries the consequence in words; colour does not.
+**The Destructive Rule.** Destructive actions use tomato ink (`--destructive` maps to it) as text or an outline, never a filled button and never a separate red. The confirm dialog carries the consequence in words; colour does not.
 
 ## Typography
 
@@ -194,14 +194,14 @@ Paper and ink with one tomato; the dark theme is the same kitchen with the light
 - **Display** (400, 32px, 1.1, serif): the screen title ("Store", "Week of Oct 9"). One per screen.
 - **Title** (400, 22px, 1.2, serif): aisle headings, the Tonight card's recipe name, "This week", the sheet title at 24px.
 - **Body** (400, 17px, 1.3, sans): row names, ingredient lines, sheet rows.
-- **Secondary** (400 or 600, 15px, 1.35, sans): pill labels, filter text, inline actions.
+- **Secondary** (400 or 600, 15px, 1.35, sans; class `text-subhead`, because Tailwind owns `text-secondary` for the colour): pill labels, filter text, inline actions.
 - **Caption** (400, 13px, 1.35, sans): the second line under a row, progress lines ("33 to get · Week of Oct 9"), chips, notes, counts beside headings.
 - **Label** (400, 11px, 1.2, 0.02em, sans): tab labels, the word under a yield numeral ("portions"), nothing else.
 
 ### Named Rules
 
 **The Four Sizes Rule.** Body copy uses 17, 15, 13 and 11 only; display and title are the two serif sizes above them. A seventh size is a mistake.
-**The Amount Rule.** An amount is `quantityText` plus unit in tomato at 600 weight, tabular figures, in the recipe's own words ("1 1/2 lb", "2 sprigs", "as needed" in quiet ink when there is no number). It sits on its own line under the name in lists, and before the name in a sheet row. The unit and the words after it are plain.
+**The Amount Rule.** An amount is `quantityText` plus its unit, both in tomato at 600 weight ("1 1/2 lb", "2 sprigs"), with tabular figures on the numeral only; "as needed" and other amounts with no number are quiet ink. It sits on its own line under the name in lists, and before the name in a sheet row. The words after the amount ("for Pot roast", the ingredient name) are plain.
 **The Plural Rule.** Units are written as the cook would say them: "8 biscuits", "2 sprigs", "1 lb", "3" with no unit when the unit is "each".
 
 ## Layout
@@ -243,7 +243,7 @@ The row that the store list, the pantry, reconcile and the sheet all share.
 
 ### Amount
 
-- **Style:** tomato, 600 weight, tabular figures; unit and following words plain. Quiet ink when the recipe gives no number ("as needed").
+- **Style:** figure and unit in tomato, 600 weight, tabular figures on the figure; the words after it plain. Quiet ink when the recipe gives no number ("as needed").
 
 ### Pills and buttons
 
@@ -251,7 +251,7 @@ The row that the store list, the pantry, reconcile and the sheet all share.
 - **Pale pill:** tomato pale fill with tomato ink text; the "Made it" on the Tonight card, with a 18px pot icon.
 - **Outline:** hairline border, ink text, Paper Card fill. Used for "Made it" on non-leading rows and for the second action in a dialog.
 - **Text action:** tomato ink, Secondary weight 400, no underline, 44px tap height. Secondary actions under the progress line.
-- **Hover / focus:** no hover tint on touch; focus-visible is a 3px tomato ring at 50%.
+- **Hover / focus:** no hover tint on touch; focus-visible is a 2px solid tomato ring with a 2px paper offset (solid, never translucent: a 50% ring measured under 3:1).
 
 ### Chips
 
@@ -263,12 +263,12 @@ The row that the store list, the pantry, reconcile and the sheet all share.
 
 ### Cards
 
-- **Tonight card:** Paper Card, hairline border, 14px radius, 14px/16px padding, a caption kicker line with a 16px icon in tomato, the serif title, a caption meta line with the yield in tomato, then the pale pill and a 44px round ghost button.
+- **Tonight card:** Paper Card, hairline border, 14px radius, 14px/16px padding, the serif title first (no label above a heading), then one caption meta line that opens with "Tonight" and the yield in tomato, then the pale pill and a 44px round ghost button.
 
 ### Inputs / Fields
 
-- **Style:** Paper Card fill, hairline border, 10px radius, 44px tall, Body ink; placeholder in quiet ink and never a plausible value.
-- **Focus:** border goes tomato, 3px ring at 50%.
+- **Style:** Paper Card fill, Ring border (3:1; a hairline is too faint for a field boundary), 10px radius, 44px tall, Body ink; placeholder in quiet ink and never a plausible value.
+- **Focus:** border goes tomato with the same 2px solid ring.
 
 ### Navigation
 

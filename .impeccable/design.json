@@ -51,6 +51,22 @@
           "#e8e0d2",
           "#f3ece1"
         ]
+      },
+      "ring": {
+        "role": "neutral",
+        "displayName": "Ring",
+        "canonical": "#978c7e",
+        "dark": "#7a6f64",
+        "tonalRamp": [
+          "#3a332c",
+          "#5c534a",
+          "#7a6f64",
+          "#978c7e",
+          "#a89d8d",
+          "#c4bbae",
+          "#e8e0d2",
+          "#faf6ee"
+        ]
       }
     },
     "typographyMeta": {
@@ -62,7 +78,10 @@
         "displayName": "Title",
         "purpose": "Aisle headings, the Tonight card, the sheet title (24px), the yield numeral."
       },
-      "body": { "displayName": "Body", "purpose": "Row names and sheet rows." },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Row names and sheet rows."
+      },
       "caption": {
         "displayName": "Caption",
         "purpose": "Second lines, progress lines, chips, counts beside headings."
@@ -96,7 +115,12 @@
         "purpose": "Half sheet rising from the bottom."
       }
     ],
-    "breakpoints": [{ "name": "rail", "value": "1024px" }]
+    "breakpoints": [
+      {
+        "name": "rail",
+        "value": "1024px"
+      }
+    ]
   },
   "components": [
     {
@@ -104,8 +128,8 @@
       "kind": "custom",
       "refersTo": "list-row",
       "description": "The store, pantry, reconcile and sheet row: circle, name, amount in tomato with the recipe after it.",
-      "html": "<div class=\"ds-row\"><span class=\"ds-ck\"></span><span class=\"ds-t\"><span class=\"ds-n\">carrots</span><span class=\"ds-s\"><b>1 lb</b> <i>for Pot roast</i></span></span></div><div class=\"ds-row ds-done\"><span class=\"ds-ck\"><svg viewBox=\"0 0 24 24\" width=\"14\" height=\"14\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"3\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M20 6 9 17l-5-5\"/></svg></span><span class=\"ds-t\"><span class=\"ds-n\">Brussels sprouts</span><span class=\"ds-s\"><b>1 1/2 lb</b> <i>in the cart</i></span></span></div>",
-      "css": ".ds-row{display:flex;align-items:center;gap:12px;min-height:56px;padding:6px 0;border-bottom:1px solid var(--border);color:var(--foreground);font:17px/1.3 -apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif}.ds-ck{width:22px;height:22px;border-radius:50%;border:1.5px solid var(--ring-quiet,#a89d8d);display:flex;align-items:center;justify-content:center;flex:none;color:#fff}.ds-t{display:flex;flex-direction:column;min-width:0}.ds-n{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ds-s{font-size:13px;margin-top:2px}.ds-s b{color:var(--primary);font-weight:600;font-variant-numeric:tabular-nums}.ds-s i{color:var(--muted-foreground);font-style:italic}.ds-done .ds-ck{background:var(--primary);border-color:var(--primary)}.ds-done .ds-n,.ds-done .ds-s b{color:var(--muted-foreground)}"
+      "html": "<div class=\"ds-row\"><span class=\"ds-ck\"></span><span class=\"ds-t\"><span class=\"ds-n\">carrots</span><span class=\"ds-s\"><b><span class=\"n\">1</span> lb</b> <i>for Pot roast</i></span></span></div><div class=\"ds-row ds-done\"><span class=\"ds-ck\"><svg viewBox=\"0 0 24 24\" width=\"14\" height=\"14\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"3\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M20 6 9 17l-5-5\"/></svg></span><span class=\"ds-t\"><span class=\"ds-n\">Brussels sprouts</span><span class=\"ds-s\"><b><span class=\"n\">1 1/2</span> lb</b> <i>in the cart</i></span></span></div>",
+      "css": ".ds-row{display:flex;align-items:center;gap:12px;min-height:56px;padding:6px 0;border-bottom:1px solid var(--border);color:var(--foreground);font:17px/1.3 -apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif}.ds-ck{width:22px;height:22px;border-radius:50%;border:1.5px solid var(--ring-quiet,#978c7e);display:flex;align-items:center;justify-content:center;flex:none;color:#fff}.ds-t{display:flex;flex-direction:column;min-width:0}.ds-n{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ds-s{font-size:13px;margin-top:2px}.ds-s b{color:var(--primary);font-weight:600}.ds-s b .n{font-variant-numeric:tabular-nums}.ds-s i{color:var(--muted-foreground);font-style:italic}.ds-done .ds-ck{background:var(--primary);border-color:var(--primary)}.ds-done .ds-n,.ds-done .ds-s b{color:var(--muted-foreground)}"
     },
     {
       "name": "Aisle heading",
@@ -121,7 +145,7 @@
       "refersTo": "pill-primary",
       "description": "The one tomato control on a screen.",
       "html": "<button class=\"ds-pill\">Make the list</button>",
-      "css": ".ds-pill{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 20px;border:0;border-radius:999px;background:var(--primary);color:var(--primary-foreground);font:600 15px/1 -apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;cursor:pointer}.ds-pill:focus-visible{outline:none;box-shadow:0 0 0 3px color-mix(in oklab,var(--primary) 50%,transparent)}.ds-pill:active{filter:brightness(.95)}"
+      "css": ".ds-pill{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 20px;border:0;border-radius:999px;background:var(--primary);color:var(--primary-foreground);font:600 15px/1 -apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;cursor:pointer}.ds-pill:focus-visible{outline:none;outline:2px solid var(--primary);outline-offset:2px}.ds-pill:active{filter:brightness(.95)}"
     },
     {
       "name": "Pale pill",
@@ -129,7 +153,7 @@
       "refersTo": "pill-pale",
       "description": "Made it on the Tonight card: the accent at half strength.",
       "html": "<button class=\"ds-pill-pale\"><svg viewBox=\"0 0 24 24\" width=\"18\" height=\"18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M2 12h20\"/><path d=\"M20 12v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-8\"/><path d=\"m4 8 16-4\"/></svg>Made it</button>",
-      "css": ".ds-pill-pale{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 20px;border:0;border-radius:999px;background:var(--accent);color:var(--accent-foreground);font:600 15px/1 -apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;cursor:pointer}.ds-pill-pale:focus-visible{outline:none;box-shadow:0 0 0 3px color-mix(in oklab,var(--primary) 50%,transparent)}"
+      "css": ".ds-pill-pale{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 20px;border:0;border-radius:999px;background:var(--accent);color:var(--accent-foreground);font:600 15px/1 -apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;cursor:pointer}.ds-pill-pale:focus-visible{outline:none;outline:2px solid var(--primary);outline-offset:2px}"
     },
     {
       "name": "Chip",
@@ -145,7 +169,7 @@
       "refersTo": "field",
       "description": "Text input: card fill, hairline, tomato focus.",
       "html": "<input class=\"ds-field\" placeholder=\"Household name\">",
-      "css": ".ds-field{height:44px;padding:0 12px;border:1px solid var(--border);border-radius:10px;background:var(--card);color:var(--foreground);font:17px/1.3 -apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;width:100%}.ds-field::placeholder{color:var(--muted-foreground)}.ds-field:focus-visible{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px color-mix(in oklab,var(--primary) 50%,transparent)}"
+      "css": ".ds-field{height:44px;padding:0 12px;border:1px solid var(--ring-quiet,#978c7e);border-radius:10px;background:var(--card);color:var(--foreground);font:17px/1.3 -apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;width:100%}.ds-field::placeholder{color:var(--muted-foreground)}.ds-field:focus-visible{outline:none;border-color:var(--primary);outline:2px solid var(--primary);outline-offset:2px}"
     },
     {
       "name": "Tab bar",
@@ -160,7 +184,7 @@
       "kind": "card",
       "refersTo": "card",
       "description": "The one white card on the week screen.",
-      "html": "<div class=\"ds-card\"><div class=\"ds-k\">Tonight</div><h2 class=\"ds-serif ds-h\">Sheet Pan Maple Mustard Sausage, Sweet Potato and Brussels Sprouts</h2><p class=\"ds-m\"><b>6 portions</b> · elk sausage swapped in</p></div>",
+      "html": "<div class=\"ds-card\"><div class=\"ds-k\">Tonight</div><h2 class=\"ds-serif ds-h\">Sheet Pan Maple Mustard Sausage, Sweet Potato and Brussels Sprouts</h2><p class=\"ds-m\"><b>6 portions</b> \u00b7 elk sausage swapped in</p></div>",
       "css": ".ds-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px 16px;color:var(--foreground)}.ds-k{font:13px/1.35 -apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;color:var(--muted-foreground);margin-bottom:6px}.ds-h{font:400 22px/1.2 'Young Serif',Georgia,serif;margin:0 0 6px}.ds-m{font:13px/1.35 -apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;color:var(--muted-foreground);margin:0}.ds-m b{color:var(--primary);font-weight:600}"
     }
   ],
@@ -187,7 +211,7 @@
       },
       {
         "name": "The Destructive Rule",
-        "body": "Destructive actions use tomato ink as text or an outline, never a separate red. The confirm dialog carries the consequence in words; colour does not.",
+        "body": "Destructive actions use tomato ink (--destructive maps to it) as text or an outline, never a filled button and never a separate red. The confirm dialog carries the consequence in words; colour does not.",
         "section": "colors"
       },
       {
@@ -197,7 +221,7 @@
       },
       {
         "name": "The Amount Rule",
-        "body": "An amount is quantityText plus unit in tomato at 600 weight, tabular figures, in the recipe's own words. It sits on its own line under the name in lists, and before the name in a sheet row. The unit and the words after it are plain.",
+        "body": "An amount is quantityText plus its unit, both in tomato at 600 weight, with tabular figures on the numeral only; amounts with no number are quiet ink. It sits on its own line under the name in lists, and before the name in a sheet row. The words after the amount are plain.",
         "section": "typography"
       },
       {
