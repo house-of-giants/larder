@@ -10,7 +10,8 @@ export type IngredientOption = FunctionReturnType<typeof api.recipes.ingredientO
 
 /** The unit as shown: `each` is the app's word for a plain count, so it stays off screen. */
 export function shownUnit(unit: string): string {
-  return unit.toLowerCase() === "each" ? "" : unit.trim();
+  const trimmed = unit.trim();
+  return trimmed.toLowerCase() === "each" ? "" : trimmed;
 }
 
 /** "12 slider". */
