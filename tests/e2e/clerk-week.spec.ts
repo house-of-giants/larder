@@ -371,11 +371,12 @@ test.describe("a week in one household, signed in with Clerk", () => {
         const sheet = one.getByRole("dialog");
         await expect(sheet.getByRole("list", { name: "Ingredients used" })).toBeVisible();
         await sheet.getByRole("button", { name: "Made it", exact: true }).click();
-        // Tonight moves on to the next recipe while the sheet still says what moved.
-        await expect.soft(tonight.getByRole("heading")).not.toHaveText(BISCUITS);
+        // The sheet stays on its summary while Tonight moves on to the next recipe behind it
+        // (the open sheet hides the page from the accessibility tree, so CSS finds it).
         await expect
-          .soft(sheet.getByText(new RegExp(`^Made ${BISCUITS}\\. 8 biscuits in the`)))
+          .soft(sheet.getByText("8 biscuits in the fridge.", { exact: true }))
           .toBeVisible();
+        await expect.soft(one.locator('section[aria-label="Tonight"] h2')).not.toHaveText(BISCUITS);
         await shot(one, "06a-tonight-summary");
         await sheet.getByRole("button", { name: "Done" }).click();
         // The rows hold no verbs: the biscuits row says when it was made.
