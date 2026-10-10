@@ -6,8 +6,11 @@ import { v } from "convex/values";
 // (convex/lib/auth.ts) and never take a household id from the client.
 //
 // Quantities keep the recipe's words (`quantityText`) beside a number for math
-// (`quantityDecimal`). Pantry items carry `count` or `level`, never both; the
-// mutations enforce that, the schema only allows it.
+// (`quantityDecimal`). A pantry item is a count or a level, never both: the table is a
+// union on `kind`, so the schema refuses a level with a number.
+//
+// Rows under a week, list, or recipe are read through a `["householdId", <parent>]` index,
+// so a read cannot leave out the household.
 
 const quantity = v.object({
   quantityText: v.string(),
@@ -24,6 +27,29 @@ export const level = v.union(
   v.literal("low"),
   v.literal("out"),
 );
+
+export const pantryLocation = v.union(
+  v.literal("pantry"),
+  v.literal("fridge"),
+  v.literal("freezer"),
+  v.literal("counter"),
+);
+
+export const pantryCount = v.object({
+  quantityText: v.string(),
+  quantityDecimal: v.number(),
+  unit: v.string(),
+});
+
+// Repeated in both shapes of a pantry row.
+const pantryCommon = {
+  householdId: v.id("households"),
+  ingredientId: v.id("ingredients"),
+  location: pantryLocation,
+  purchaseNote: v.optional(v.string()),
+  expiresAt: v.optional(v.number()),
+  updatedAt: v.number(),
+};
 
 export const inventoryEventType = v.union(
   v.literal("purchase"),
@@ -77,6 +103,8 @@ export default defineSchema({
   ingredients: defineTable({
     householdId: v.id("households"),
     name: v.string(),
+    // normalizeName(name): what the duplicate check and an exact lookup compare.
+    nameKey: v.string(),
     kind: v.union(v.literal("count"), v.literal("level")),
     category: v.string(),
     defaultUnit: v.optional(v.string()),
@@ -86,25 +114,14 @@ export default defineSchema({
     needsReview: v.boolean(),
   })
     .index("by_householdId", ["householdId"])
-    .index("by_householdId_name", ["householdId", "name"]),
+    .index("by_householdId_nameKey", ["householdId", "nameKey"]),
 
-  pantryItems: defineTable({
-    householdId: v.id("households"),
-    ingredientId: v.id("ingredients"),
-    location: v.union(
-      v.literal("pantry"),
-      v.literal("fridge"),
-      v.literal("freezer"),
-      v.literal("counter"),
+  pantryItems: defineTable(
+    v.union(
+      v.object({ kind: v.literal("count"), count: pantryCount, ...pantryCommon }),
+      v.object({ kind: v.literal("level"), level, ...pantryCommon }),
     ),
-    count: v.optional(
-      v.object({ quantityText: v.string(), quantityDecimal: v.number(), unit: v.string() }),
-    ),
-    level: v.optional(level),
-    purchaseNote: v.optional(v.string()),
-    expiresAt: v.optional(v.number()),
-    updatedAt: v.number(),
-  })
+  )
     .index("by_householdId", ["householdId"])
     .index("by_householdId_ingredientId", ["householdId", "ingredientId"]),
 
@@ -148,7 +165,7 @@ export default defineSchema({
     needsReview: v.boolean(),
   })
     .index("by_householdId", ["householdId"])
-    .index("by_recipeId", ["recipeId"]),
+    .index("by_householdId_recipeId", ["householdId", "recipeId"]),
 
   weeks: defineTable({
     householdId: v.id("households"),
@@ -175,7 +192,7 @@ export default defineSchema({
     multiplier: amount,
   })
     .index("by_householdId", ["householdId"])
-    .index("by_weekId", ["weekId"]),
+    .index("by_householdId_weekId", ["householdId", "weekId"]),
 
   weekAdaptations: defineTable({
     householdId: v.id("households"),
@@ -190,7 +207,7 @@ export default defineSchema({
     unit: v.optional(v.string()),
   })
     .index("by_householdId", ["householdId"])
-    .index("by_weekId", ["weekId"]),
+    .index("by_householdId_weekId", ["householdId", "weekId"]),
 
   lists: defineTable({
     householdId: v.id("households"),
@@ -199,7 +216,7 @@ export default defineSchema({
     generatedAt: v.number(),
   })
     .index("by_householdId", ["householdId"])
-    .index("by_weekId", ["weekId"]),
+    .index("by_householdId_weekId", ["householdId", "weekId"]),
 
   listItems: defineTable({
     householdId: v.id("households"),
@@ -228,7 +245,7 @@ export default defineSchema({
     sourceRecipeIds: v.array(v.id("recipes")),
   })
     .index("by_householdId", ["householdId"])
-    .index("by_listId", ["listId"]),
+    .index("by_householdId_listId", ["householdId", "listId"]),
 
   cookingEvents: defineTable({
     householdId: v.id("households"),
@@ -248,7 +265,7 @@ export default defineSchema({
     undoneAt: v.optional(v.number()),
   })
     .index("by_householdId", ["householdId"])
-    .index("by_weekId", ["weekId"]),
+    .index("by_householdId_weekId", ["householdId", "weekId"]),
 
   preparedFoods: defineTable({
     householdId: v.id("households"),

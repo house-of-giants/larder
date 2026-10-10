@@ -1,11 +1,17 @@
 import { convexTest } from "convex-test";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import schema from "./schema";
+import { normalizeName } from "../src/lib/aliases";
 import { createHousehold, type Test } from "./test_helpers";
 
 const modules = import.meta.glob("./**/*.ts");
+
+// These tests seed the fixture week; seed.load runs only where SEED_ALLOWED is "true".
+beforeEach(() => {
+  vi.stubEnv("SEED_ALLOWED", "true");
+});
 const newTest = (): Test => convexTest(schema, modules);
 
 async function addRecipe(t: Test, householdId: Id<"households">, name: string) {
@@ -26,6 +32,7 @@ async function addIngredient(t: Test, householdId: Id<"households">, name: strin
     ctx.db.insert("ingredients", {
       householdId,
       name,
+      nameKey: normalizeName(name),
       kind: "count",
       category: "produce",
       aliases: [],

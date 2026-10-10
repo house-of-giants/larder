@@ -2,7 +2,7 @@ import { ConvexError, v, type Infer } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
 import { mutation, query, type MutationCtx, type QueryCtx } from "./_generated/server";
 import { requireMember } from "./lib/auth";
-import { resolveIngredient } from "../src/lib/aliases";
+import { normalizeName, resolveIngredient } from "../src/lib/aliases";
 import { parseQuantity } from "./lib/quantities";
 import schema from "./schema";
 
@@ -117,11 +117,12 @@ async function requireOwnIngredient(
 
 /** The recipe's ingredient rows that belong to the household; never another's. */
 async function rowsOf(ctx: QueryCtx, householdId: Id<"households">, recipeId: Id<"recipes">) {
-  const rows = await ctx.db
+  return await ctx.db
     .query("recipeIngredients")
-    .withIndex("by_recipeId", (q) => q.eq("recipeId", recipeId))
+    .withIndex("by_householdId_recipeId", (q) =>
+      q.eq("householdId", householdId).eq("recipeId", recipeId),
+    )
     .collect();
-  return rows.filter((row) => row.householdId === householdId);
 }
 
 const unknownIngredient = "unknown ingredient";
@@ -329,6 +330,7 @@ export const createIngredientInline = mutation({
     return await ctx.db.insert("ingredients", {
       householdId,
       name,
+      nameKey: normalizeName(name),
       kind: "count",
       category: "other",
       aliases: [],

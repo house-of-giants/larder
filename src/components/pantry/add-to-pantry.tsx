@@ -24,6 +24,7 @@ import {
 } from "#/components/ui/sheet";
 import { resolveIngredient, suggestIngredients } from "#/lib/aliases";
 import { defaultLocation } from "#/lib/locations";
+import { countOf, levelOf } from "#/lib/pantry-amount";
 import { categoryLabels, levelLabels, locationLabels } from "./labels";
 import type { PantryRowData } from "./pantry-data";
 import { StockForm, useSaveStock, type StockValues } from "./stock-form";
@@ -93,9 +94,9 @@ function AddBody({ ingredients, rows, close }: Props & { close: () => void }) {
           name={ingredient.name}
           kind={ingredient.kind}
           initial={{
-            quantityText: row?.count?.quantityText ?? "",
-            unit: row?.count?.unit ?? ingredient.defaultUnit ?? "",
-            level: row?.level ?? "full",
+            quantityText: countOf(row)?.quantityText ?? "",
+            unit: countOf(row)?.unit ?? ingredient.defaultUnit ?? "",
+            level: levelOf(row) ?? "full",
             location: row?.location ?? defaultLocation(ingredient.category),
           }}
           submitLabel={row ? "Save" : "Add"}
@@ -189,11 +190,8 @@ function Chosen({ name, onChange }: { name: string; onChange: () => void }) {
 /** Where it is and how much, for an ingredient already on the shelf. */
 function OnShelf({ row }: { row: PantryRowData | undefined }) {
   if (!row) return null;
-  const amount = row.count
-    ? `${row.count.quantityText} ${row.count.unit}`
-    : row.level
-      ? levelLabels[row.level]
-      : "";
+  const amount =
+    row.kind === "count" ? `${row.count.quantityText} ${row.count.unit}` : levelLabels[row.level];
   return (
     <span className="num shrink-0 text-sm text-muted-foreground">
       {locationLabels[row.location]}: {amount}

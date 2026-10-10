@@ -1,6 +1,6 @@
 import { convexTest } from "convex-test";
 import type { FunctionReference } from "convex/server";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import * as lists from "./lists";
@@ -9,6 +9,11 @@ import { createHousehold, identityFor, type Test } from "./test_helpers";
 import * as weeks from "./weeks";
 
 const modules = import.meta.glob("./**/*.ts");
+
+// These tests seed the fixture week; seed.load runs only where SEED_ALLOWED is "true".
+beforeEach(() => {
+  vi.stubEnv("SEED_ALLOWED", "true");
+});
 
 // Every public function in weeks.ts and lists.ts, with arguments that would be valid for a
 // member of the household that owns the targets. Anonymous callers, people who have not

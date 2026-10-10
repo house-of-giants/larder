@@ -1,7 +1,8 @@
 import { convexTest } from "convex-test";
-import { describe, expect, it } from "vitest";
-import { api } from "./_generated/api";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { api, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
+import { sweepBatch } from "./households";
 import { householdScopedTables } from "./lib/household";
 import schema from "./schema";
 import { createHousehold, identityFor, type Test } from "./test_helpers";
@@ -175,6 +176,10 @@ describe("households.rotateInviteCode", () => {
 });
 
 describe("households.leave", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it("removes the member and keeps the household for the others", async () => {
     const t = newTest();
     const { as: alice, householdId } = await createHousehold(t, { who: "Alice", name: "Elm" });
@@ -203,6 +208,7 @@ describe("households.leave", () => {
         await ctx.db.insert("ingredients", {
           householdId,
           name: "eggs",
+          nameKey: "eggs",
           kind: "count",
           category: "dairy",
           aliases: [],
@@ -224,7 +230,24 @@ describe("households.leave", () => {
       }
     });
 
+    vi.useFakeTimers();
     await a.as.mutation(api.households.leave, {});
+
+    // The leave itself removes the household and its last member; the kitchen rows go in
+    // a scheduled sweep, so a long-lived household never overruns one mutation's limits.
+    const atLeave = await t.run(async (ctx) => ({
+      households: await ctx.db.query("households").collect(),
+      members: await ctx.db.query("members").collect(),
+      ingredients: await ctx.db.query("ingredients").collect(),
+    }));
+    expect(atLeave.households.map((h) => h._id)).toEqual([b.householdId]);
+    expect(atLeave.members.map((m) => m.householdId)).toEqual([b.householdId]);
+    expect(atLeave.ingredients.map((i) => i.householdId).sort()).toEqual(
+      [a.householdId, b.householdId].sort(),
+    );
+    await expect(a.as.query(api.households.current, {})).resolves.toBeNull();
+
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
 
     const left = await t.run(async (ctx) => ({
       households: await ctx.db.query("households").collect(),
@@ -237,6 +260,58 @@ describe("households.leave", () => {
     expect(left.ingredients.map((i) => i.householdId)).toEqual([b.householdId]);
     expect(left.events.map((e) => e.householdId)).toEqual([b.householdId]);
     await expect(a.as.query(api.households.current, {})).resolves.toBeNull();
+  });
+
+  it("sweeps a large household in batches until nothing of it is left", async () => {
+    const t = newTest();
+    const a = await createHousehold(t, { who: "Alice", name: "A" });
+    const b = await createHousehold(t, { who: "Bob", name: "B" });
+    // More ledger rows than one sweep batch deletes, plus one row in B to keep.
+    const rowsInA = sweepBatch + 20;
+    await t.run(async (ctx) => {
+      for (const { householdId, n } of [
+        { householdId: a.householdId, n: rowsInA },
+        { householdId: b.householdId, n: 1 },
+      ]) {
+        const member = await ctx.db
+          .query("members")
+          .withIndex("by_householdId", (q) => q.eq("householdId", householdId))
+          .unique();
+        for (let i = 0; i < n; i++) {
+          await ctx.db.insert("inventoryEvents", {
+            householdId,
+            type: "adjustment",
+            at: i,
+            actor: { kind: "member", memberId: member!._id },
+            refs: {},
+            payload: {},
+          });
+        }
+      }
+    });
+
+    vi.useFakeTimers();
+    await a.as.mutation(api.households.leave, {});
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+
+    const { events, sweeps } = await t.run(async (ctx) => ({
+      events: await ctx.db.query("inventoryEvents").collect(),
+      sweeps: await ctx.db.system.query("_scheduled_functions").collect(),
+    }));
+    expect(events.map((e) => e.householdId)).toEqual([b.householdId]);
+    // One batch could not hold it all: the sweep rescheduled itself, and every run finished.
+    expect(sweeps.length).toBeGreaterThanOrEqual(2);
+    expect(sweeps.every((s) => s.name.includes("sweep") && s.state.kind === "success")).toBe(true);
+  });
+
+  it("refuses to sweep a household that still exists", async () => {
+    const t = newTest();
+    const { householdId } = await createHousehold(t, { who: "Alice", name: "A" });
+    await expect(t.mutation(internal.households.sweep, { householdId })).rejects.toThrow(
+      "That household still exists",
+    );
+    const members = await t.run((ctx) => ctx.db.query("members").collect());
+    expect(members.map((m) => m.householdId)).toEqual([householdId]);
   });
 
   it("sweeps every household-scoped table in the schema", () => {

@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 import { api } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import schema from "./schema";
+import { normalizeName } from "../src/lib/aliases";
+import { countOf, levelOf } from "../src/lib/pantry-amount";
 import { createHousehold, type Test } from "./test_helpers";
 
 const modules = import.meta.glob("./**/*.ts");
@@ -20,6 +22,7 @@ async function addIngredient(
       aliases: [],
       tracked: true,
       needsReview: false,
+      nameKey: normalizeName(fields.name),
       ...fields,
     }),
   );
@@ -89,6 +92,7 @@ describe("pantry.setCount", () => {
           after: {
             ingredientId: eggs,
             location: "fridge",
+            kind: "count",
             count: { quantityText: "1 1/2", quantityDecimal: 1.5, unit: "dozen" },
           },
         },
@@ -101,11 +105,13 @@ describe("pantry.setCount", () => {
           before: {
             ingredientId: eggs,
             location: "fridge",
+            kind: "count",
             count: { quantityText: "1 1/2", quantityDecimal: 1.5, unit: "dozen" },
           },
           after: {
             ingredientId: eggs,
             location: "fridge",
+            kind: "count",
             count: { quantityText: "12", quantityDecimal: 12, unit: "each" },
           },
         },
@@ -164,15 +170,18 @@ describe("pantry.setLevel", () => {
     await as.mutation(api.pantry.setLevel, { ingredientId: salt, level: "low" });
 
     const rows = await as.query(api.pantry.list, {});
-    expect(rows.map((r) => [r.name, r.location, r.level, r.count])).toEqual([
+    expect(rows.map((r) => [r.name, r.location, levelOf(r), countOf(r)])).toEqual([
       ["kosher salt", "pantry", "low", undefined],
     ]);
     const events = await eventsOf(t, householdId);
     expect(events.map((e) => e.payload)).toEqual([
-      { before: null, after: { ingredientId: salt, location: "pantry", level: "full" } },
       {
-        before: { ingredientId: salt, location: "pantry", level: "full" },
-        after: { ingredientId: salt, location: "pantry", level: "low" },
+        before: null,
+        after: { ingredientId: salt, location: "pantry", kind: "level", level: "full" },
+      },
+      {
+        before: { ingredientId: salt, location: "pantry", kind: "level", level: "full" },
+        after: { ingredientId: salt, location: "pantry", kind: "level", level: "low" },
       },
     ]);
   });
@@ -204,18 +213,20 @@ describe("pantry.markOut", () => {
     await as.mutation(api.pantry.markOut, { ingredientId: bacon });
 
     const [row] = await as.query(api.pantry.list, {});
-    expect(row.count).toEqual({ quantityText: "0", quantityDecimal: 0, unit: "slice" });
+    expect(countOf(row)).toEqual({ quantityText: "0", quantityDecimal: 0, unit: "slice" });
     const events = await eventsOf(t, householdId);
     expect(events.at(-1)?.type).toBe("adjustment");
     expect(events.at(-1)?.payload).toEqual({
       before: {
         ingredientId: bacon,
         location: "fridge",
+        kind: "count",
         count: { quantityText: "10", quantityDecimal: 10, unit: "slice" },
       },
       after: {
         ingredientId: bacon,
         location: "fridge",
+        kind: "count",
         count: { quantityText: "0", quantityDecimal: 0, unit: "slice" },
       },
     });
@@ -234,11 +245,11 @@ describe("pantry.markOut", () => {
     await as.mutation(api.pantry.markOut, { ingredientId: dijon });
 
     const [row] = await as.query(api.pantry.list, {});
-    expect(row.level).toBe("out");
+    expect(levelOf(row)).toBe("out");
     const events = await eventsOf(t, householdId);
     expect(events.at(-1)?.payload).toEqual({
-      before: { ingredientId: dijon, location: "fridge", level: "low" },
-      after: { ingredientId: dijon, location: "fridge", level: "out" },
+      before: { ingredientId: dijon, location: "fridge", kind: "level", level: "low" },
+      after: { ingredientId: dijon, location: "fridge", kind: "level", level: "out" },
     });
   });
 
@@ -273,7 +284,7 @@ describe("pantry.remove", () => {
       type: "adjustment",
       refs: { pantryItemId: row.pantryItemId },
       payload: {
-        before: { ingredientId: salt, location: "pantry", level: "half" },
+        before: { ingredientId: salt, location: "pantry", kind: "level", level: "half" },
         after: null,
       },
     });
@@ -361,6 +372,7 @@ describe("pantry.list joins", () => {
         householdId: a.householdId,
         ingredientId: secret,
         location: "fridge",
+        kind: "level",
         level: "full",
         updatedAt: 1,
       }),
@@ -370,5 +382,77 @@ describe("pantry.list joins", () => {
     expect(rows.map((r) => [r.ingredientId, r.name])).toEqual([[eggs, "large eggs"]]);
     expect(JSON.stringify(rows)).not.toContain("secret");
     expect(JSON.stringify(rows)).not.toContain("bob_only");
+  });
+});
+
+describe("pantryItems schema", () => {
+  // Plan guardrail: a level item never gets a number. The table is a union on `kind`, so a
+  // row is a count or a level and never both, whatever code writes it.
+  async function insertRaw(t: Test, row: Record<string, unknown>) {
+    return await t.run((ctx) => ctx.db.insert("pantryItems", row as never));
+  }
+
+  async function setUp() {
+    const t = newTest();
+    const { householdId } = await createHousehold(t, { who: "Alice", name: "Elm" });
+    const eggs = await addIngredient(t, householdId, { name: "large eggs", kind: "count" });
+    const salt = await addIngredient(t, householdId, { name: "kosher salt", kind: "level" });
+    const count = { quantityText: "6", quantityDecimal: 6, unit: "each" };
+    return { t, householdId, eggs, salt, count };
+  }
+
+  it("takes a count row and a level row", async () => {
+    const { t, householdId, eggs, salt, count } = await setUp();
+    const common = { householdId, location: "fridge", updatedAt: 1 };
+    await insertRaw(t, { ...common, ingredientId: eggs, kind: "count", count });
+    await insertRaw(t, { ...common, ingredientId: salt, kind: "level", level: "low" });
+
+    const rows = await t.run((ctx) => ctx.db.query("pantryItems").collect());
+    expect(rows.map((r) => r.kind).sort()).toEqual(["count", "level"]);
+  });
+
+  it("refuses a count row that also carries a level", async () => {
+    const { t, householdId, eggs, count } = await setUp();
+    await expect(
+      insertRaw(t, {
+        householdId,
+        ingredientId: eggs,
+        location: "fridge",
+        updatedAt: 1,
+        kind: "count",
+        count,
+        level: "full",
+      }),
+    ).rejects.toThrow(/Validator error: Expected one of object, object/);
+  });
+
+  it("refuses a level row that carries a count", async () => {
+    const { t, householdId, salt, count } = await setUp();
+    await expect(
+      insertRaw(t, {
+        householdId,
+        ingredientId: salt,
+        location: "pantry",
+        updatedAt: 1,
+        kind: "level",
+        level: "half",
+        count,
+      }),
+    ).rejects.toThrow(/Validator error: Expected one of object, object/);
+  });
+
+  it("refuses a row with both a count and a level and no kind", async () => {
+    const { t, householdId, eggs, count } = await setUp();
+    await expect(
+      insertRaw(t, {
+        householdId,
+        ingredientId: eggs,
+        location: "fridge",
+        updatedAt: 1,
+        count,
+        level: "full",
+      }),
+    ).rejects.toThrow(/Validator error: Expected one of object, object/);
+    await expect(t.run((ctx) => ctx.db.query("pantryItems").collect())).resolves.toEqual([]);
   });
 });

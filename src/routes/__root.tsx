@@ -16,6 +16,8 @@ const getShellConfig = createServerFn({ method: "GET" }).handler(() => ({
 }));
 
 export const Route = createRootRoute({
+  // Signed-in pages carry the member's session; no shared cache may keep them.
+  headers: () => ({ "Cache-Control": "private, no-store" }),
   loader: () => getShellConfig(),
   staleTime: Infinity,
   head: () => ({

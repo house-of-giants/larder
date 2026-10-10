@@ -45,11 +45,13 @@ export async function weekRows<T extends "weekRecipes" | "weekAdaptations" | "li
   householdId: Id<"households">,
   weekId: Id<"weeks">,
 ): Promise<Doc<T>[]> {
-  // All three tables share the `by_weekId` index on `weekId`; TypeScript cannot see that
+  // All three tables share the `by_householdId_weekId` index; TypeScript cannot see that
   // through the generic, so the query is typed as one of them.
   const rows = await ctx.db
     .query(table as "weekRecipes")
-    .withIndex("by_weekId", (q) => q.eq("weekId", weekId))
+    .withIndex("by_householdId_weekId", (q) =>
+      q.eq("householdId", householdId).eq("weekId", weekId),
+    )
     .collect();
-  return (rows as unknown as Doc<T>[]).filter((r) => r.householdId === householdId);
+  return rows as unknown as Doc<T>[];
 }

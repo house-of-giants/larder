@@ -64,12 +64,12 @@ function seededWeekInput(): ListInput<string, string> {
   const pantry = new Map<string, ListPantryRow>(
     pantryFixtures.map((p) => [
       ingredientId(p.ingredient),
-      {
-        ...(p.count != null && {
-          count: { quantityDecimal: p.count.quantityDecimal, unit: p.count.unit },
-        }),
-        ...(p.level != null && { level: p.level as Level }),
-      },
+      p.count != null
+        ? {
+            kind: "count" as const,
+            count: { quantityDecimal: p.count.quantityDecimal, unit: p.count.unit },
+          }
+        : { kind: "level" as const, level: p.level as Level },
     ]),
   );
 
@@ -258,7 +258,9 @@ describe("generateList rules", () => {
   it("does not subtract a pantry count kept in a different unit", () => {
     const [line] = only({
       recipes: [recipe("Biscuits", [["butter", 8, "8", "tbsp"]])],
-      pantry: new Map([["butter", { count: { quantityDecimal: 2, unit: "stick" } }]]),
+      pantry: new Map([
+        ["butter", { kind: "count" as const, count: { quantityDecimal: 2, unit: "stick" } }],
+      ]),
     });
     expect(line.purchase).toEqual({ quantityText: "8", quantityDecimal: 8, unit: "tbsp" });
     expect(line.status).toBe("needed");
@@ -267,7 +269,9 @@ describe("generateList rules", () => {
   it("subtracts a same-unit pantry count and says how much is on hand", () => {
     const [line] = only({
       recipes: [recipe("Biscuits", [["butter", 8, "8", "tbsp"]])],
-      pantry: new Map([["butter", { count: { quantityDecimal: 2.5, unit: "tbsp" } }]]),
+      pantry: new Map([
+        ["butter", { kind: "count" as const, count: { quantityDecimal: 2.5, unit: "tbsp" } }],
+      ]),
     });
     expect(line.purchase).toEqual({
       quantityText: "5 1/2",
@@ -306,7 +310,7 @@ describe("generateList rules", () => {
   it("leaves a level item off the list when the pantry has it at half", () => {
     const items = only({
       recipes: [recipe("Roast", [["salt", 1, "1", "tsp"]])],
-      pantry: new Map([["salt", { level: "half" as const }]]),
+      pantry: new Map([["salt", { kind: "level" as const, level: "half" as const }]]),
     });
     expect(items).toEqual([]);
   });
@@ -314,7 +318,7 @@ describe("generateList rules", () => {
   it("puts a low level item on the list with a low note and no subtraction", () => {
     const [line] = only({
       recipes: [recipe("Roast", [["salt", 1, "1", "tsp"]])],
-      pantry: new Map([["salt", { level: "low" as const }]]),
+      pantry: new Map([["salt", { kind: "level" as const, level: "low" as const }]]),
     });
     expect(line.purchase).toEqual({
       quantityText: "1",

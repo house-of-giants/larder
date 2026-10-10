@@ -1,12 +1,19 @@
 import { convexTest } from "convex-test";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import expected from "../src/lib/__fixtures__/seeded-week-expected.json";
 import { api, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import schema from "./schema";
+import { normalizeName } from "../src/lib/aliases";
+import { countOf, levelOf } from "../src/lib/pantry-amount";
 import { createHousehold, type Test } from "./test_helpers";
 
 const modules = import.meta.glob("./**/*.ts");
+
+// These tests seed the fixture week; seed.load runs only where SEED_ALLOWED is "true".
+beforeEach(() => {
+  vi.stubEnv("SEED_ALLOWED", "true");
+});
 const newTest = (): Test => convexTest(schema, modules);
 
 /** Alice's household with the seeded week, its list generated. */
@@ -144,7 +151,7 @@ describe("lists.setItemStatus", () => {
     const butter = await planItem(t, householdId, "unsalted butter");
     expect(butter.purchase).toMatchObject({ quantityDecimal: 17, unit: "tbsp" });
     const before = await pantryOf(t, butter.ingredientId!);
-    expect(before?.count).toMatchObject({ quantityDecimal: 5, unit: "tbsp" });
+    expect(countOf(before)).toMatchObject({ quantityDecimal: 5, unit: "tbsp" });
     const eventsBefore = (await eventsOf(t, householdId)).length;
 
     await as.mutation(api.lists.setItemStatus, {
@@ -153,7 +160,7 @@ describe("lists.setItemStatus", () => {
       at: 1_000,
     });
 
-    expect((await pantryOf(t, butter.ingredientId!))?.count).toEqual({
+    expect(countOf(await pantryOf(t, butter.ingredientId!))).toEqual({
       quantityText: "22",
       quantityDecimal: 22,
       unit: "tbsp",
@@ -175,9 +182,9 @@ describe("lists.setItemStatus", () => {
     const t = newTest();
     const { as, householdId } = await seededList(t);
     const dijon = await planItem(t, householdId, "Dijon mustard", "tsp");
-    expect((await pantryOf(t, dijon.ingredientId!))?.level).toBe("low");
+    expect(levelOf(await pantryOf(t, dijon.ingredientId!))).toBe("low");
     await as.mutation(api.lists.setItemStatus, { listItemId: dijon._id, status: "checked" });
-    expect((await pantryOf(t, dijon.ingredientId!))?.level).toBe("full");
+    expect(levelOf(await pantryOf(t, dijon.ingredientId!))).toBe("full");
   });
 
   it("replaces a count kept in another unit and says so in the event", async () => {
@@ -185,7 +192,7 @@ describe("lists.setItemStatus", () => {
     const { as, householdId } = await seededList(t);
     const bacon = await planItem(t, householdId, "bacon");
     await as.mutation(api.lists.setItemStatus, { listItemId: bacon._id, status: "checked" });
-    expect((await pantryOf(t, bacon.ingredientId!))?.count).toEqual({
+    expect(countOf(await pantryOf(t, bacon.ingredientId!))).toEqual({
       quantityText: "8",
       quantityDecimal: 8,
       unit: "oz",
@@ -226,7 +233,7 @@ describe("lists.setItemStatus", () => {
 
     await as.mutation(api.lists.setItemStatus, { listItemId: butter._id, status: "needed" });
 
-    expect((await pantryOf(t, butter.ingredientId!))?.count).toMatchObject({
+    expect(countOf(await pantryOf(t, butter.ingredientId!))).toMatchObject({
       quantityDecimal: 5,
       unit: "tbsp",
     });
@@ -246,7 +253,7 @@ describe("lists.setItemStatus", () => {
     const carrots = await planItem(t, householdId, "carrots");
     expect(await pantryOf(t, carrots.ingredientId!)).toBeNull();
     await as.mutation(api.lists.setItemStatus, { listItemId: carrots._id, status: "checked" });
-    expect((await pantryOf(t, carrots.ingredientId!))?.count?.quantityDecimal).toBe(1);
+    expect(countOf(await pantryOf(t, carrots.ingredientId!))?.quantityDecimal).toBe(1);
     await as.mutation(api.lists.setItemStatus, { listItemId: carrots._id, status: "needed" });
     expect(await pantryOf(t, carrots.ingredientId!)).toBeNull();
   });
@@ -259,7 +266,7 @@ describe("lists.setItemStatus", () => {
     const events = (await eventsOf(t, householdId)).length;
     await as.mutation(api.lists.setItemStatus, { listItemId: butter._id, status: "checked" });
     expect(await eventsOf(t, householdId)).toHaveLength(events);
-    expect((await pantryOf(t, butter.ingredientId!))?.count?.quantityDecimal).toBe(22);
+    expect(countOf(await pantryOf(t, butter.ingredientId!))?.quantityDecimal).toBe(22);
   });
 
   it("refuses another household's list item", async () => {
@@ -324,7 +331,9 @@ async function ingredientNamed(t: Test, householdId: Id<"households">, name: str
   const ingredient = await t.run((ctx) =>
     ctx.db
       .query("ingredients")
-      .withIndex("by_householdId_name", (q) => q.eq("householdId", householdId).eq("name", name))
+      .withIndex("by_householdId_nameKey", (q) =>
+        q.eq("householdId", householdId).eq("nameKey", normalizeName(name)),
+      )
       .unique(),
   );
   if (ingredient === null) throw new Error(`No ingredient ${name}`);
@@ -346,7 +355,7 @@ describe("un-check after the pantry moved on", () => {
 
     await as.mutation(api.lists.setItemStatus, { listItemId: carrots._id, status: "needed" });
 
-    expect((await pantryOf(t, ingredientId))?.count).toEqual({
+    expect(countOf(await pantryOf(t, ingredientId))).toEqual({
       quantityText: "3",
       quantityDecimal: 3,
       unit: "lb",
@@ -361,12 +370,12 @@ describe("un-check after the pantry moved on", () => {
 
     await as.mutation(api.lists.setItemStatus, { listItemId: tsp._id, status: "checked" });
     await as.mutation(api.lists.setItemStatus, { listItemId: tsp._id, status: "needed" });
-    expect((await pantryOf(t, ingredientId))?.level).toBe("low");
+    expect(levelOf(await pantryOf(t, ingredientId))).toBe("low");
 
     await as.mutation(api.lists.setItemStatus, { listItemId: tsp._id, status: "checked" });
     await as.mutation(api.pantry.setLevel, { ingredientId, level: "half" });
     await as.mutation(api.lists.setItemStatus, { listItemId: tsp._id, status: "needed" });
-    expect((await pantryOf(t, ingredientId))?.level).toBe("half");
+    expect(levelOf(await pantryOf(t, ingredientId))).toBe("half");
   });
 
   it("restores a count in another unit only while the row holds exactly what was bought", async () => {
@@ -377,7 +386,7 @@ describe("un-check after the pantry moved on", () => {
 
     await as.mutation(api.lists.setItemStatus, { listItemId: bacon._id, status: "checked" });
     await as.mutation(api.lists.setItemStatus, { listItemId: bacon._id, status: "needed" });
-    expect((await pantryOf(t, ingredientId))?.count).toMatchObject({
+    expect(countOf(await pantryOf(t, ingredientId))).toMatchObject({
       quantityDecimal: 10,
       unit: "slice",
     });
@@ -392,7 +401,7 @@ describe("un-check after the pantry moved on", () => {
     await as.mutation(api.lists.setItemStatus, { listItemId: bacon._id, status: "checked" });
     await as.mutation(api.pantry.setCount, { ingredientId, quantityText: "12", unit: "oz" });
     await as.mutation(api.lists.setItemStatus, { listItemId: bacon._id, status: "needed" });
-    expect((await pantryOf(t, ingredientId))?.count).toEqual({
+    expect(countOf(await pantryOf(t, ingredientId))).toEqual({
       quantityText: "4",
       quantityDecimal: 4,
       unit: "oz",
@@ -444,7 +453,7 @@ describe("regenerate keeps what someone decided", () => {
       expect.objectContaining({ status: "checked", purchase: tsp.purchase, checkedAt: 500 }),
     ]);
     await as.mutation(api.lists.setItemStatus, { listItemId: tsp._id, status: "needed" });
-    expect((await pantryOf(t, tsp.ingredientId!))?.level).toBe("low");
+    expect(levelOf(await pantryOf(t, tsp.ingredientId!))).toBe("low");
   });
 
   it("buys butter once: check, regenerate, un-check, check ends at 22 tbsp", async () => {
@@ -455,7 +464,7 @@ describe("regenerate keeps what someone decided", () => {
     await as.mutation(api.lists.generate, { weekId });
     await as.mutation(api.lists.setItemStatus, { listItemId: butter._id, status: "needed" });
     await as.mutation(api.lists.setItemStatus, { listItemId: butter._id, status: "checked" });
-    expect((await pantryOf(t, butter.ingredientId!))?.count).toMatchObject({
+    expect(countOf(await pantryOf(t, butter.ingredientId!))).toMatchObject({
       quantityDecimal: 22,
       unit: "tbsp",
     });
@@ -510,6 +519,6 @@ describe("offline replay", () => {
     ]);
     expect(mine[1].undoesEventId).toBe(mine[0]._id);
     expect(mine[3]).toMatchObject({ type: "undo", undoesEventId: mine[2]._id });
-    expect((await pantryOf(t, butter.ingredientId!))?.count?.quantityDecimal).toBe(5);
+    expect(countOf(await pantryOf(t, butter.ingredientId!))?.quantityDecimal).toBe(5);
   });
 });
