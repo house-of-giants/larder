@@ -354,7 +354,7 @@ function WeekRow({ recipe, made }: { recipe: WeekRecipe; made: Cook | undefined 
 /** In thumb reach above the tab bar, on a paper fade, wherever the week is scrolled. */
 function BottomBar({ error, children }: { error: string | null; children: ReactNode }) {
   return (
-    <div className="sticky bottom-[calc(4rem+1px+env(safe-area-inset-bottom))] z-10 -mx-5 mt-auto flex flex-col items-center gap-2 bg-linear-to-b from-transparent to-background to-40% px-5 pt-9 pb-3">
+    <div className="sticky bottom-(--nav-offset) z-10 -mx-5 mt-auto flex flex-col items-center gap-2 bg-linear-to-b from-transparent to-background to-40% px-5 pt-9 pb-3">
       {children}
       {error && (
         <p role="alert" className="text-caption text-destructive">

@@ -177,7 +177,7 @@ Paper and ink with one tomato; the dark theme is the same kitchen with the light
 
 ### Named Rules
 
-**The One Tomato Rule.** Tomato appears as at most one control per screen (the pill, or the floating button) plus the amounts and ticks in rows. A second tinted control on the same screen is wrong; demote it to the pale pill, a text link, or an outline.
+**The One Tomato Rule.** Tomato appears as at most one control per screen (the pill, or the floating button) plus the amounts and ticks in rows. A second tinted control on the same screen is wrong; demote it to the pale pill, a text link, or an outline. Pale fills are demotions and a selected chip is state, not a control; the rule counts saturated tomato controls, of which a screen has at most one.
 **The Warm Dark Rule.** Dark mode keeps the hue of paper (warm brown-black, never blue-black) and lifts the tomato to #ee7757 so it still reads at 13 px. Text on tomato flips to dark ink.
 **The Destructive Rule.** Destructive actions use tomato ink (`--destructive` maps to it) as text or an outline, never a filled button and never a separate red. The confirm dialog carries the consequence in words; colour does not.
 

@@ -201,7 +201,7 @@
     "rules": [
       {
         "name": "The One Tomato Rule",
-        "body": "Tomato appears as at most one control per screen (the pill, or the floating button) plus the amounts and ticks in rows. A second tinted control on the same screen is wrong; demote it to the pale pill, a text link, or an outline.",
+        "body": "Tomato appears as at most one control per screen (the pill, or the floating button) plus the amounts and ticks in rows. A second tinted control on the same screen is wrong; demote it to the pale pill, a text link, or an outline. Pale fills are demotions and a selected chip is state, not a control; the rule counts saturated tomato controls, of which a screen has at most one.",
         "section": "colors"
       },
       {

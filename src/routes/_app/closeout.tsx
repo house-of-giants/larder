@@ -85,7 +85,7 @@ function CloseoutForm({ week, foods }: { week: CurrentWeek; foods: Leftover[] })
         : `Count the leftovers as eaten and start the ${nextWeek}?`;
 
   return (
-    <main className="mx-auto flex min-h-[calc(100dvh-3rem-4rem-2px-env(safe-area-inset-top)-env(safe-area-inset-bottom))] max-w-2xl flex-col px-5 pt-3">
+    <main className="mx-auto flex min-h-[calc(100dvh-3rem-1px-env(safe-area-inset-top)-var(--nav-offset))] max-w-2xl flex-col px-5 pt-3">
       <h1 className="font-display text-display">Close the week</h1>
       <p className="mt-1 text-caption text-muted-foreground">
         {weekOfLabel(week.weekOf)}.{" "}
@@ -108,7 +108,7 @@ function CloseoutForm({ week, foods }: { week: CurrentWeek; foods: Leftover[] })
         </ul>
       )}
       {/* The screen's one pill, pinned over the tab bar on a paper fade (the week's pattern). */}
-      <div className="sticky bottom-[calc(4rem+1px+env(safe-area-inset-bottom))] z-10 -mx-5 mt-auto flex flex-col items-center bg-linear-to-b from-transparent to-background to-40% px-5 pt-9 pb-3">
+      <div className="sticky bottom-(--nav-offset) z-10 -mx-5 mt-auto flex flex-col items-center bg-linear-to-b from-transparent to-background to-40% px-5 pt-9 pb-3">
         <ConfirmDialog
           trigger={
             <Pill type="button" className="min-w-50">

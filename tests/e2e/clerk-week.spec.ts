@@ -169,7 +169,15 @@ test.describe("a week in one household, signed in with Clerk", () => {
         invite = await readInvite(one);
         householdIds.push(householdIdByInviteCode(invite.code));
         // The whole link shows, the code at its end included: nothing scrolls inside the field.
-        const shown = await one.getByLabel("Invite link").evaluate((field) => ({
+        // Measured only once the field is on screen with a size, so a hidden one cannot pass.
+        const inviteField = one.getByLabel("Invite link");
+        await expect(inviteField).toBeVisible();
+        const box = await inviteField.boundingBox();
+        expect.soft(box?.width ?? 0, "the invite field has a width").toBeGreaterThan(0);
+        expect
+          .soft(box?.height ?? 0, "the invite field is at least 44px tall")
+          .toBeGreaterThanOrEqual(44);
+        const shown = await inviteField.evaluate((field) => ({
           wide: field.scrollWidth <= field.clientWidth,
           tall: field.scrollHeight <= field.clientHeight,
         }));

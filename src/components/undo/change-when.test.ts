@@ -14,7 +14,8 @@ describe("changeWhen: an undo row's timestamp carries the day", () => {
     expect(changeWhen(at(10, 5, 7, 3), "en-US")).toBe("Mon Oct 5, 7:03 AM");
   });
 
-  it("tells two Fridays apart", () => {
-    expect(changeWhen(at(10, 2, 9, 0), "en-US")).not.toBe(changeWhen(at(10, 9, 9, 0), "en-US"));
+  it("tells two Fridays apart by their dates", () => {
+    expect(changeWhen(at(10, 2, 9, 0), "en-US")).toBe("Fri Oct 2, 9:00 AM");
+    expect(changeWhen(at(10, 9, 9, 0), "en-US")).toBe("Fri Oct 9, 9:00 AM");
   });
 });

@@ -90,6 +90,13 @@
  * --ring is the focus ring (tomato); --ring-quiet is the unchecked circle's stroke.
  */
 :root {
+  /*
+   * How far bottom-pinned things sit above the page's bottom edge: the tab bar (64px), its
+   * hairline and the home-indicator inset. The shell pads by it; the Fab, the pinned pill
+   * bars, the recipe editor's footer and the closeout bar sit on it. Where the tab bar
+   * leaves (the desktop rail), this drops to the inset alone.
+   */
+  --nav-offset: calc(4rem + 1px + env(safe-area-inset-bottom));
   --radius: 0.75rem;
   --background: #faf6ee;
   --foreground: #2b2622;

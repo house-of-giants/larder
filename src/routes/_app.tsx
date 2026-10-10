@@ -48,8 +48,8 @@ function AppShell() {
   const loading = household === undefined && online;
 
   return (
-    // Clears the tab bar: its 64px, its hairline, and the bottom inset.
-    <div className="min-h-dvh pb-[calc(4rem+1px+env(safe-area-inset-bottom))]">
+    // Clears the tab bar: --nav-offset is its 64px, its hairline, and the bottom inset.
+    <div className="min-h-dvh pb-(--nav-offset)">
       <header className="sticky top-0 z-30 border-b bg-background pt-[env(safe-area-inset-top)]">
         <div className="mx-auto flex h-12 max-w-2xl items-center justify-between gap-4 px-4">
           {loading ? (

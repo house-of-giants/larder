@@ -274,7 +274,7 @@ export function RecipeEditor({ initial, recipeId }: RecipeEditorProps) {
       </Section>
 
       {/* Pinned over the tab bar on its own paper, with a hairline above, in thumb reach. */}
-      <div className="sticky bottom-[calc(4rem+1px+env(safe-area-inset-bottom))] z-10 -mx-5 flex flex-col gap-2 border-t border-border bg-background px-5 py-3">
+      <div className="sticky bottom-(--nav-offset) z-10 -mx-5 flex flex-col gap-2 border-t border-border bg-background px-5 py-3">
         {error && (
           <p role="alert" className="text-caption text-destructive">
             {error}

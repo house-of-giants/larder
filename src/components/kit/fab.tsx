@@ -20,7 +20,7 @@ export function Fab({
     <Comp
       aria-label={label}
       className={cn(
-        "fixed right-4 bottom-[calc(4rem+1rem+env(safe-area-inset-bottom))] z-20 flex size-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-fab outline-none hover:bg-primary/90 focus-ring active:brightness-95",
+        "fixed right-4 bottom-[calc(var(--nav-offset)+1rem)] z-20 flex size-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-fab outline-none hover:bg-primary/90 focus-ring active:brightness-95",
         className,
       )}
       {...(asChild ? {} : { type: "button" as const })}
