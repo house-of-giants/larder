@@ -256,8 +256,11 @@ test.describe("a week in one household, signed in with Clerk", () => {
         await sliders.getByRole("button", { name: "Other…" }).click();
         await batches.fill("2");
         await batches.blur();
+        // A typed amount that is done closes the field; no field is left open on its own.
+        await expect.soft(batches).toBeHidden();
         await expect.soft(pick("2")).toHaveAttribute("aria-pressed", "true");
         await shot(one, "04b-plan-sliders-2");
+        await sliders.getByRole("button", { name: "Other…" }).click();
         await batches.fill("1");
         await batches.blur();
         await expect(pick("1")).toHaveAttribute("aria-pressed", "true");
@@ -446,23 +449,24 @@ test.describe("a week in one household, signed in with Clerk", () => {
         await one.getByRole("button", { name: "Made it", exact: true }).click();
         const roastRows = sheet.getByRole("list", { name: "Ingredients used" });
         await expect(roastRows).toBeVisible();
-        const scroll = await roastRows.evaluate((list) => {
-          let region = list.parentElement;
-          while (region && getComputedStyle(region).overflowY !== "auto") {
-            region = region.parentElement;
-          }
-          const sheetBox = list.closest('[role="dialog"]')!.getBoundingClientRect();
-          return {
-            rows: list.children.length,
-            scrolls: region !== null && region.scrollHeight > region.clientHeight,
-            sheetHeight: sheetBox.height,
-          };
-        });
-        expect.soft(scroll.rows, "the pot roast's rows").toBeGreaterThanOrEqual(14);
+        const body = sheet.locator('[data-slot="half-sheet-body"]');
+        const pill = sheet.getByRole("button", { name: "Made it", exact: true });
+        const pillBefore = await pill.boundingBox();
+        const scroll = await body.evaluate((el) => ({
+          scrolls: el.scrollHeight > el.clientHeight,
+          sheetHeight: el.closest('[role="dialog"]')!.getBoundingClientRect().height,
+        }));
+        expect
+          .soft(await roastRows.locator(":scope > li").count(), "the pot roast's rows")
+          .toBeGreaterThanOrEqual(14);
         expect.soft(scroll.scrolls, "the sheet's body scrolls").toBe(true);
         expect
           .soft(scroll.sheetHeight, "the sheet stays under 92dvh")
           .toBeLessThanOrEqual(844 * 0.92 + 1);
+        // Scrolled to its end, the last row shows and the pill has not moved.
+        await body.evaluate((el) => el.scrollTo(0, el.scrollHeight));
+        await expect.soft(roastRows.locator(":scope > li").last()).toBeInViewport();
+        expect.soft(await pill.boundingBox(), "the Made it pill stays put").toEqual(pillBefore);
         await shot(one, "06c2-long-sheet");
         await sheet.getByRole("button", { name: "Close" }).click();
         await expect(sheet).toBeHidden();
