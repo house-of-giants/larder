@@ -79,7 +79,7 @@ function Pantry() {
                   className="flex items-baseline justify-between text-sm font-medium text-muted-foreground"
                 >
                   {locationLabels[location]}
-                  <span className="num">{here.length}</span>
+                  <span className="tabular">{here.length}</span>
                 </h2>
                 <ul className="flex flex-col divide-y rounded-lg border bg-card">
                   {here.map((row) => (

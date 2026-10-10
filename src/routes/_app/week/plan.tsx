@@ -143,7 +143,7 @@ function Group({
         className="flex items-baseline justify-between text-sm font-medium text-muted-foreground"
       >
         {title}
-        <span className="num">{children.length}</span>
+        <span className="tabular">{children.length}</span>
       </h2>
       {children.length === 0 ? (
         <p className="px-1 text-sm text-muted-foreground">{empty}</p>

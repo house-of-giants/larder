@@ -1,9 +1,9 @@
 import { useMutation } from "convex/react";
-import { useState, type FormEvent } from "react";
+import { Fragment, useState, type FormEvent } from "react";
 import type { FunctionReturnType } from "convex/server";
 import { api } from "../../../convex/_generated/api";
 import { LevelChips } from "#/components/pantry/level-chips";
-import { amountText } from "#/components/recipes/recipe-text";
+import { shownUnit } from "#/components/recipes/recipe-text";
 import { Button } from "#/components/ui/button";
 import { Input } from "#/components/ui/input";
 import { errorMessage } from "#/lib/errors";
@@ -13,8 +13,19 @@ import { parseQuantity } from "#/lib/quantities";
 export type ReconcileItem = FunctionReturnType<typeof api.lists.reconcileItems>[number];
 
 /** "The week needs 22 tbsp" or, for split units, "1 tbsp and 2 tsp". */
-function neededText(item: ReconcileItem): string {
-  return `The week needs ${item.required.map((r) => amountText(r.quantityText, r.unit)).join(" and ")}`;
+function NeededText({ item }: { item: ReconcileItem }) {
+  return (
+    <>
+      The week needs{" "}
+      {item.required.map((r, index) => (
+        <Fragment key={`${r.quantityText} ${r.unit}`}>
+          {index > 0 && " and "}
+          <span className="tabular">{r.quantityText}</span>
+          {shownUnit(r.unit) && ` ${shownUnit(r.unit)}`}
+        </Fragment>
+      ))}
+    </>
+  );
 }
 
 /**
@@ -26,7 +37,9 @@ export function ReconcileRow({ item, onSaved }: { item: ReconcileItem; onSaved: 
     <li className="flex flex-col gap-2 px-4 py-3">
       <div className="flex flex-col gap-0.5">
         <span className="font-medium">{item.name}</span>
-        <span className="num text-sm text-muted-foreground">{neededText(item)}</span>
+        <span className="text-sm text-muted-foreground">
+          <NeededText item={item} />
+        </span>
       </div>
       {item.kind === "count" ? (
         <CountEditor item={item} onSaved={onSaved} />
@@ -80,7 +93,7 @@ function CountEditor({ item, onSaved }: { item: ReconcileItem; onSaved: () => vo
           inputMode="decimal"
           autoComplete="off"
           enterKeyHint="done"
-          className="num h-10 w-24"
+          className="tabular h-10 w-24"
           aria-invalid={error !== null}
           aria-describedby={error ? `${id}-error` : undefined}
           onChange={(e) => setDraft(e.target.value)}

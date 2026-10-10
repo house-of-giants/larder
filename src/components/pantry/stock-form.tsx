@@ -122,7 +122,7 @@ export function StockForm({
               placeholder="1 1/2"
               autoComplete="off"
               enterKeyHint="done"
-              className="num"
+              className="tabular"
               aria-invalid={quantityError !== null}
               aria-describedby={quantityError ? id("quantity-error") : undefined}
               onChange={(e) => setQuantityText(e.target.value)}

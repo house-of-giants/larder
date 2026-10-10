@@ -84,7 +84,7 @@ export function AddSomething({ canSend }: { canSend: boolean }) {
             value={quantity}
             placeholder="2"
             autoComplete="off"
-            className="num h-11"
+            className="tabular h-11"
             onChange={(e) => setQuantity(e.target.value)}
           />
         </div>

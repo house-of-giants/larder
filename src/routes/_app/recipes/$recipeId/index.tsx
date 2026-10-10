@@ -8,12 +8,7 @@ import { MadeItButton } from "#/components/cook/made-it-button";
 import { RecipeSkeleton } from "#/components/page-skeleton";
 import { CheckMarker } from "#/components/recipes/check-marker";
 import { RecipeNotHere } from "#/components/recipes/recipe-not-here";
-import {
-  amountText,
-  ingredientLine,
-  safeHref,
-  type Recipe,
-} from "#/components/recipes/recipe-text";
+import { ingredientLine, safeHref, shownUnit, type Recipe } from "#/components/recipes/recipe-text";
 import { Button } from "#/components/ui/button";
 import { errorMessage } from "#/lib/errors";
 
@@ -45,8 +40,9 @@ function RecipeView({ recipe }: { recipe: Recipe }) {
         )}
         <h1 className="text-2xl font-semibold tracking-tight">{recipe.name}</h1>
         {recipe.yield && (
-          <p className="num text-muted-foreground">
-            Makes {amountText(recipe.yield.quantityText, recipe.yield.unit)}
+          <p className="text-muted-foreground">
+            Makes <span className="tabular">{recipe.yield.quantityText}</span>
+            {shownUnit(recipe.yield.unit) && ` ${shownUnit(recipe.yield.unit)}`}
           </p>
         )}
         {sourceLabel && (
@@ -105,7 +101,7 @@ function RecipeView({ recipe }: { recipe: Recipe }) {
               const { lead, name, tail } = ingredientLine(row);
               return (
                 <li key={row._id} className="flex items-baseline gap-3 px-4 py-2.5">
-                  <span className="num w-20 shrink-0 text-sm">{lead}</span>
+                  <span className="tabular w-20 shrink-0 text-sm">{lead}</span>
                   <span className="flex-1">
                     {name}
                     {tail.length > 0 && (
@@ -144,7 +140,7 @@ function RecipeView({ recipe }: { recipe: Recipe }) {
               // Steps have no ids; their position is their identity.
               // oxlint-disable-next-line react/no-array-index-key
               <li key={index} className="flex gap-3">
-                <span className="num w-6 shrink-0 text-right text-muted-foreground">
+                <span className="tabular w-6 shrink-0 text-right text-muted-foreground">
                   {index + 1}.
                 </span>
                 <span className="whitespace-pre-line">{step}</span>

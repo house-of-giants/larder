@@ -168,7 +168,7 @@ function AdaptationForm({
               placeholder="1 1/2"
               autoComplete="off"
               enterKeyHint="next"
-              className="num"
+              className="tabular"
               onChange={(e) => setQuantityText(e.target.value)}
             />
           </div>

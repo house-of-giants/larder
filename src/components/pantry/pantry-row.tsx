@@ -46,12 +46,15 @@ export function PantryRow({ row }: { row: PantryRowData }) {
           <span className={cn("truncate", out && "text-muted-foreground")}>{row.name}</span>
           {row.kind === "count" && row.count && (
             <span
-              className={cn(
-                "num shrink-0 text-sm",
-                out ? "text-muted-foreground" : "text-foreground",
-              )}
+              className={cn("shrink-0 text-sm", out ? "text-muted-foreground" : "text-foreground")}
             >
-              {out ? "Out" : `${row.count.quantityText} ${row.count.unit}`}
+              {out ? (
+                "Out"
+              ) : (
+                <>
+                  <span className="tabular">{row.count.quantityText}</span> {row.count.unit}
+                </>
+              )}
             </span>
           )}
         </button>

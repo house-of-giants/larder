@@ -37,7 +37,7 @@ export function MultiplierPicker({
               variant="outline"
               aria-pressed={trimmed === pick}
               className={cn(
-                "num h-11 min-w-12",
+                "tabular h-11 min-w-12",
                 trimmed === pick && "border-primary bg-primary/10 text-primary",
               )}
               onClick={() => onChange(pick)}
@@ -55,7 +55,7 @@ export function MultiplierPicker({
           aria-label={`${label}, typed`}
           aria-invalid={error !== null}
           aria-describedby={error ? `${id}-error` : undefined}
-          className="num h-11 w-20 text-center"
+          className="tabular h-11 w-20 text-center"
           onChange={(e) => onChange(e.target.value)}
         />
       </div>

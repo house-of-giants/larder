@@ -14,6 +14,7 @@ import {
 import { amountWords } from "#/lib/amounts";
 import { errorMessage } from "#/lib/errors";
 import { parseQuantity } from "#/lib/quantities";
+import { RemainingWords } from "./leftover-card";
 import type { Leftover } from "./types";
 
 /** "Ate..." for more than one at a time, or half of one. */
@@ -32,11 +33,7 @@ export function AteSomeSheet({
         <SheetHeader>
           <SheetTitle>How many did you eat?</SheetTitle>
           <SheetDescription>
-            {food.name}:{" "}
-            <span className="num">
-              {amountWords(food.remaining.text, food.remaining.decimal, food.unit)}
-            </span>{" "}
-            left
+            {food.name}: <RemainingWords food={food} /> left
           </SheetDescription>
         </SheetHeader>
         {open && <AteSomeForm food={food} close={() => onOpenChange(false)} />}

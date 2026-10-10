@@ -44,8 +44,8 @@ export function LeftoverCard({ food, now }: { food: Leftover; now: number }) {
           {placeLabels[food.location]}
         </span>
       </div>
-      <p className="num text-2xl font-semibold tracking-tight">
-        {amountWords(food.remaining.text, food.remaining.decimal, food.unit)}
+      <p className="text-2xl font-semibold tracking-tight">
+        <RemainingWords food={food} />
         <span className="ml-1.5 text-base font-normal text-muted-foreground">left</span>
       </p>
       <div className="flex flex-wrap gap-2" aria-describedby={error ? errorId : undefined}>
@@ -113,5 +113,18 @@ export function LeftoverCard({ food, now }: { food: Leftover; now: number }) {
       )}
       <AteSomeSheet food={food} open={ateSome} onOpenChange={setAteSome} />
     </li>
+  );
+}
+
+/** "7 sliders", with the figure set apart from the words. */
+export function RemainingWords({ food }: { food: Leftover }) {
+  const { text, decimal } = food.remaining;
+  // amountWords always leads with the recipe's own figure.
+  const unit = amountWords(text, decimal, food.unit).slice(text.length);
+  return (
+    <>
+      <span className="tabular">{text}</span>
+      {unit}
+    </>
   );
 }

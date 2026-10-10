@@ -191,9 +191,15 @@ function Chosen({ name, onChange }: { name: string; onChange: () => void }) {
 function OnShelf({ row }: { row: PantryRowData | undefined }) {
   if (!row) return null;
   const amount =
-    row.kind === "count" ? `${row.count.quantityText} ${row.count.unit}` : levelLabels[row.level];
+    row.kind === "count" ? (
+      <>
+        <span className="tabular">{row.count.quantityText}</span> {row.count.unit}
+      </>
+    ) : (
+      levelLabels[row.level]
+    );
   return (
-    <span className="num shrink-0 text-sm text-muted-foreground">
+    <span className="shrink-0 text-sm text-muted-foreground">
       {locationLabels[row.location]}: {amount}
     </span>
   );
