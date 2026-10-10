@@ -9,6 +9,7 @@ import { errorMessage } from "#/lib/errors";
 import type { Level } from "#/lib/levels";
 import { parseQuantity } from "#/lib/quantities";
 import { NeededText } from "./needed";
+import { afterSave, type SaveTracker } from "./saves";
 
 export type ReconcileItem = FunctionReturnType<typeof api.lists.reconcileItems>[number];
 
@@ -18,10 +19,19 @@ const SAVED_MS = 1500;
 /**
  * One ingredient the list depends on, in the list row's shape without the circle: the
  * name, what the week needs, and what the pantry says. A count saves when the field is
- * left or Enter is pressed; a level saves on tap. Either way "Saved" shows for a moment,
- * and `onSaved` tells the screen the list needs a fresh run.
+ * left or Enter is pressed; a level saves on tap. Either way "Saved" shows for a moment.
+ * Every save goes through `tracker`, so "Looks right" can wait for it and stop on a
+ * failure; `onSaved` tells the screen the list needs a fresh run.
  */
-export function ReconcileRow({ item, onSaved }: { item: ReconcileItem; onSaved: () => void }) {
+export function ReconcileRow({
+  item,
+  tracker,
+  onSaved,
+}: {
+  item: ReconcileItem;
+  tracker: SaveTracker;
+  onSaved: () => void;
+}) {
   const [savedAt, setSavedAt] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const errorId = `reconcile-${item.ingredientId}-error`;
@@ -32,6 +42,10 @@ export function ReconcileRow({ item, onSaved }: { item: ReconcileItem; onSaved: 
     return () => clearTimeout(timer);
   }, [savedAt]);
 
+  const report = (next: string | null) => {
+    setError(next);
+    tracker.failing(item.ingredientId, next !== null);
+  };
   const saved = () => {
     setSavedAt(Date.now());
     onSaved();
@@ -48,12 +62,19 @@ export function ReconcileRow({ item, onSaved }: { item: ReconcileItem; onSaved: 
           </span>
         </div>
         {item.kind === "count" && (
-          <CountEditor item={item} errorId={errorId} onError={setError} onSaved={saved} />
+          <CountEditor
+            item={item}
+            errorId={errorId}
+            invalid={error !== null}
+            tracker={tracker}
+            onError={report}
+            onSaved={saved}
+          />
         )}
       </div>
       {item.kind === "level" && (
         <div className="mt-2 mb-1">
-          <LevelEditor item={item} onError={setError} onSaved={saved} />
+          <LevelEditor item={item} tracker={tracker} onError={report} onSaved={saved} />
         </div>
       )}
       {error && (
@@ -68,44 +89,69 @@ export function ReconcileRow({ item, onSaved }: { item: ReconcileItem; onSaved: 
 function CountEditor({
   item,
   errorId,
+  invalid,
+  tracker,
   onError,
   onSaved,
 }: {
   item: ReconcileItem;
   errorId: string;
+  invalid: boolean;
+  tracker: SaveTracker;
   onError: (error: string | null) => void;
   onSaved: () => void;
 }) {
   const setCount = useMutation(api.pantry.setCount);
   const saved = item.count?.quantityText ?? "";
   const unit = item.count?.unit ?? item.required[0]?.unit ?? item.defaultUnit ?? "";
-  // null until edited, so the field follows the saved count as it changes elsewhere.
-  const [draft, setDraft] = useState<string | null>(null);
-  const [invalid, setInvalid] = useState(false);
-  // Enter then blur would send the same change twice; one save runs at a time.
-  const saving = useRef(false);
+  // null until edited, so the field follows the saved count as it changes elsewhere. The
+  // ref mirrors it for a save that lands after newer typing.
+  const [draft, setDraftState] = useState<string | null>(null);
+  const draftRef = useRef<string | null>(null);
+  const setDraft = (next: string | null) => {
+    draftRef.current = next;
+    setDraftState(next);
+  };
+  // One save at a time; a commit asked for meanwhile runs when it lands.
+  const inflight = useRef<Promise<boolean> | null>(null);
+  const requested = useRef(false);
   const id = `reconcile-${item.ingredientId}`;
 
-  async function commit() {
-    if (draft === null || draft.trim() === saved || saving.current) return;
-    if (parseQuantity(draft) === null) {
-      setInvalid(true);
+  function commit(): Promise<boolean> | null {
+    if (inflight.current) {
+      requested.current = true;
+      return inflight.current;
+    }
+    const sent = draftRef.current;
+    if (sent === null || sent.trim() === saved) {
+      onError(null);
+      return null;
+    }
+    if (parseQuantity(sent) === null) {
       onError("Use a number or a fraction.");
-      return;
+      return null;
     }
-    saving.current = true;
-    setInvalid(false);
     onError(null);
-    try {
-      await setCount({ ingredientId: item.ingredientId, quantityText: draft, unit });
-      setDraft(null);
+    const run = (async () => {
+      try {
+        await setCount({ ingredientId: item.ingredientId, quantityText: sent, unit });
+      } catch (err) {
+        inflight.current = null;
+        requested.current = false;
+        onError(errorMessage(err));
+        return false;
+      }
+      const next = afterSave(sent, draftRef.current, requested.current);
+      inflight.current = null;
+      requested.current = false;
+      setDraft(next.draft);
       onSaved();
-    } catch (err) {
-      setInvalid(true);
-      onError(errorMessage(err));
-    } finally {
-      saving.current = false;
-    }
+      if (!next.commitAgain) return true;
+      return (await commit()) ?? true;
+    })();
+    inflight.current = run;
+    tracker.track(run);
+    return run;
   }
 
   return (
@@ -139,27 +185,34 @@ function CountEditor({
 
 function LevelEditor({
   item,
+  tracker,
   onError,
   onSaved,
 }: {
   item: ReconcileItem;
+  tracker: SaveTracker;
   onError: (error: string | null) => void;
   onSaved: () => void;
 }) {
   const setLevel = useMutation(api.pantry.setLevel);
   const [pending, setPending] = useState(false);
 
-  async function change(level: Level) {
+  function change(level: Level) {
     setPending(true);
     onError(null);
-    try {
-      await setLevel({ ingredientId: item.ingredientId, level });
-      onSaved();
-    } catch (err) {
-      onError(errorMessage(err));
-    } finally {
-      setPending(false);
-    }
+    const run = (async () => {
+      try {
+        await setLevel({ ingredientId: item.ingredientId, level });
+        onSaved();
+        return true;
+      } catch (err) {
+        onError(errorMessage(err));
+        return false;
+      } finally {
+        setPending(false);
+      }
+    })();
+    tracker.track(run);
   }
 
   return <LevelChips name={item.name} value={item.level} onChange={change} disabled={pending} />;
