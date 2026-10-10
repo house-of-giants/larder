@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Id } from "../../../convex/_generated/dataModel";
-import { type Adaptation, adaptationShort, fridgeLine } from "./labels";
+import { type Adaptation, adaptationShort, fridgeCount, fridgeLine } from "./labels";
 
 describe("fridgeLine", () => {
   it("says the fridge is empty with nothing in it", () => {
@@ -10,6 +10,16 @@ describe("fridgeLine", () => {
   it("counts what is in the fridge", () => {
     expect(fridgeLine(1)).toBe("1 in the fridge");
     expect(fridgeLine(3)).toBe("3 in the fridge");
+  });
+});
+
+describe("fridgeCount", () => {
+  it("counts only what is in the fridge, not the freezer", () => {
+    expect(
+      fridgeCount([{ location: "fridge" }, { location: "freezer" }, { location: "fridge" }]),
+    ).toBe(2);
+    expect(fridgeCount([{ location: "freezer" }])).toBe(0);
+    expect(fridgeCount(undefined)).toBeUndefined();
   });
 });
 

@@ -40,6 +40,13 @@ export function adaptationText(a: Adaptation): string {
   }
 }
 
+/** How many leftovers are in the fridge itself; the freezer is not lunch. */
+export function fridgeCount(
+  foods: readonly { location: string }[] | undefined,
+): number | undefined {
+  return foods?.filter((food) => food.location === "fridge").length;
+}
+
 /** The fridge in the week's caption: "fridge empty", "3 in the fridge". */
 export function fridgeLine(count: number): string {
   return count === 0 ? "fridge empty" : `${count} in the fridge`;

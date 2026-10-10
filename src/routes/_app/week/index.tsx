@@ -12,6 +12,7 @@ import {
   type CurrentWeek,
   type WeekRecipe,
   adaptationShort,
+  fridgeCount,
   fridgeLine,
   weekStatusLabels,
 } from "#/components/week/labels";
@@ -36,7 +37,7 @@ function Week() {
 
   if (week === undefined || (week !== null && cooks === undefined)) return <WeekSkeleton />;
   if (week === null) return <NoWeek />;
-  return <ThisWeek week={week} cooks={cooks ?? []} fridgeCount={fridge?.length} />;
+  return <ThisWeek week={week} cooks={cooks ?? []} fridgeCount={fridgeCount(fridge)} />;
 }
 
 function NoWeek() {
