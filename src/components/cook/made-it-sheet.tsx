@@ -1,9 +1,8 @@
 import { Link } from "@tanstack/react-router";
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
-import type { FunctionReturnType } from "convex/server";
+import type { FunctionArgs, FunctionReturnType } from "convex/server";
 import { Check } from "lucide-react";
-import { type FormEvent, type RefObject, useState } from "react";
-import { flushSync } from "react-dom";
+import { type FormEvent, type RefObject, useReducer, useRef, useState } from "react";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { Amount } from "#/components/kit/amount";
@@ -18,6 +17,7 @@ import { errorMessage } from "#/lib/errors";
 import { parseQuantity } from "#/lib/quantities";
 import { cn } from "#/lib/utils";
 import { batchLine } from "./batch-line";
+import { canSubmit, cookSession, openedSession } from "./cook-session";
 import { BatchPicker } from "./batch-picker";
 import { summaryLines } from "./summary";
 
@@ -25,6 +25,7 @@ type SheetData = FunctionReturnType<typeof api.cooking.sheet>;
 type Row = SheetData["rows"][number];
 type Result = FunctionReturnType<typeof api.cooking.madeIt>;
 type Options = FunctionReturnType<typeof api.recipes.ingredientOptions>;
+type CookArgs = Omit<FunctionArgs<typeof api.cooking.madeIt>, "weekId" | "recipeId">;
 
 const badMultiplier = "Use a number like 1/2, 1 or 2.";
 
@@ -42,6 +43,7 @@ export function MadeItSheet({
   open,
   onOpenChange,
   opener,
+  fallbackFocus,
 }: {
   recipeId: Id<"recipes">;
   recipeName: string;
@@ -51,33 +53,53 @@ export function MadeItSheet({
   onOpenChange: (open: boolean) => void;
   /** Whatever opened the sheet; focus goes back there when it closes. */
   opener?: RefObject<HTMLElement | null>;
+  /** Where focus goes when the opener is gone (Tonight's pill, once the week is made). */
+  fallbackFocus?: RefObject<HTMLElement | null>;
 }) {
   const { isAuthenticated } = useConvexAuth();
+  const madeIt = useMutation(api.cooking.madeIt);
   // Each opening is a new session: the form starts again from the recipe. What the last
-  // one showed stays on screen while the sheet slides away.
-  const [session, setSession] = useState(open ? 1 : 0);
+  // one showed stays on screen while the sheet slides away. A cook in flight keeps its
+  // session (cook-session.ts), and the sheet cannot be dismissed until it answers.
+  const [state, dispatch] = useReducer(cookSession<Result>, open, openedSession<Result>);
   const [wasOpen, setWasOpen] = useState(open);
-  const [result, setResult] = useState<Result | null>(null);
-  const [pending, setPending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   if (open !== wasOpen) {
     setWasOpen(open);
-    if (open) {
-      setSession((s) => s + 1);
-      setResult(null);
-      setPending(false);
-      setError(null);
-    }
+    if (open) dispatch({ type: "open" });
   }
+  // The lock across renders: a second tap before the first re-render must not cook twice.
+  const inFlight = useRef(false);
+  const { session, result, error } = state;
+  const pending = state.pending !== null;
   const data = useQuery(api.cooking.sheet, isAuthenticated && session > 0 ? { recipeId } : "skip");
   const formId = `made-it-${recipeId}`;
   const close = () => onOpenChange(false);
 
+  async function cook(args: CookArgs) {
+    if (inFlight.current || !canSubmit(state)) return;
+    inFlight.current = true;
+    const asked = session;
+    dispatch({ type: "submit" });
+    try {
+      const answer = await madeIt({ ...args, weekId, recipeId });
+      dispatch({ type: "done", session: asked, result: answer });
+    } catch (err) {
+      dispatch({ type: "failed", session: asked, error: errorMessage(err) });
+    } finally {
+      inFlight.current = false;
+    }
+  }
+
   return (
     <HalfSheet
       open={open}
-      onOpenChange={onOpenChange}
+      onOpenChange={(next) => {
+        // Escape, the scrim and the X wait while the cook is on its way.
+        if (!next && pending) return;
+        onOpenChange(next);
+      }}
       opener={opener}
+      fallbackFocus={fallbackFocus}
       title={recipeName}
       note={result ? undefined : "Untick what you left out. The pantry follows."}
       footer={
@@ -93,6 +115,7 @@ export function MadeItSheet({
             type={result ? "button" : "submit"}
             form={result ? undefined : formId}
             disabled={!result && (pending || data === undefined)}
+            aria-busy={pending}
             onClick={result ? close : undefined}
           >
             {result ? "Done" : "Made it"}
@@ -114,11 +137,8 @@ export function MadeItSheet({
             key={session}
             id={formId}
             data={data}
-            weekId={weekId}
             defaultMultiplier={defaultMultiplier}
-            onPending={setPending}
-            onError={setError}
-            onDone={setResult}
+            onCook={cook}
           />
         ))}
     </HalfSheet>
@@ -128,21 +148,14 @@ export function MadeItSheet({
 function MadeItForm({
   id,
   data,
-  weekId,
   defaultMultiplier,
-  onPending,
-  onError,
-  onDone,
+  onCook,
 }: {
   id: string;
   data: SheetData;
-  weekId?: Id<"weeks">;
   defaultMultiplier: string;
-  onPending: (pending: boolean) => void;
-  onError: (error: string | null) => void;
-  onDone: (result: Result) => void;
+  onCook: (args: CookArgs) => Promise<void>;
 }) {
-  const madeIt = useMutation(api.cooking.madeIt);
   const [multiplier, setMultiplier] = useState(defaultMultiplier);
   const [multiplierError, setMultiplierError] = useState<string | null>(null);
   const [skipped, setSkipped] = useState<ReadonlySet<Id<"ingredients">>>(new Set());
@@ -181,9 +194,8 @@ function MadeItForm({
       setSwapping(null);
       return;
     }
-    // Synchronously, so the picker's field takes focus inside the tap.
-    flushSync(() => setSwapping(row.rowId));
-    document.getElementById(`${swapId(row)}`)?.focus();
+    // The picker's field takes focus when it mounts (focusField), skeleton or not.
+    setSwapping(row.rowId);
   }
 
   async function submit(e: FormEvent<HTMLFormElement>) {
@@ -194,27 +206,16 @@ function MadeItForm({
       return;
     }
     setMultiplierError(null);
-    onPending(true);
-    onError(null);
-    try {
-      const result = await madeIt({
-        weekId,
-        recipeId: data.recipeId,
-        multiplierText: multiplier.trim(),
-        skippedIngredientIds: [...skipped],
-        substitutions: [...swaps]
-          .filter(([ingredientId]) => !skipped.has(ingredientId))
-          .map(([ingredientId, replacementIngredientId]) => ({
-            ingredientId,
-            replacementIngredientId,
-          })),
-      });
-      onDone(result);
-    } catch (err) {
-      onError(errorMessage(err));
-    } finally {
-      onPending(false);
-    }
+    await onCook({
+      multiplierText: multiplier.trim(),
+      skippedIngredientIds: [...skipped],
+      substitutions: [...swaps]
+        .filter(([ingredientId]) => !skipped.has(ingredientId))
+        .map(([ingredientId, replacementIngredientId]) => ({
+          ingredientId,
+          replacementIngredientId,
+        })),
+    });
   }
 
   const nameOf = (ingredientId: Id<"ingredients">) =>
@@ -232,7 +233,7 @@ function MadeItForm({
         error={multiplierError}
         caption={
           line && (
-            <p className="text-caption text-muted-foreground">
+            <p className="tabular text-caption text-muted-foreground">
               <span>{line.lead}</span>{" "}
               <span className="font-semibold text-primary">{line.made}</span>.
             </p>
@@ -278,7 +279,7 @@ function MadeItForm({
                 setChoosing((c) => !c);
               }}
             >
-              Swap something
+              {choosing ? "Done swapping" : "Swap something"}
             </Pill>
           )}
         </>
@@ -288,6 +289,8 @@ function MadeItForm({
 }
 
 const swapId = (row: Row) => `made-it-row-${row.rowId}-swap`;
+// A stable callback ref: it runs once, when the picker mounts under the row being swapped.
+const focusField = (el: HTMLElement | null) => el?.querySelector("input")?.focus();
 
 /**
  * One ingredient: the circle says whether it went in, the amount leads in tomato, and the
@@ -398,12 +401,13 @@ function IngredientRow({
         )}
       </div>
       {used && swappedFor && (
-        <p className="-mt-1.5 flex items-center gap-2 pb-2.5 pl-[34px] text-caption">
-          <span className="text-primary">Using {swappedFor}</span>
+        // Its own 44px line, so Unswap's target never reaches into the name above it.
+        <p className="flex min-h-11 items-center gap-1 pl-[34px] text-caption">
+          <i className="min-w-0 text-muted-foreground">Using {swappedFor}</i>
           <button
             type="button"
             onClick={() => onSwap(null)}
-            className="relative rounded-sm text-muted-foreground outline-none hover:text-foreground focus-ring after:absolute after:-inset-x-2 after:-inset-y-3.5"
+            className="min-h-11 shrink-0 rounded-full px-2 text-accent-foreground outline-none hover:bg-accent focus-ring"
           >
             Unswap
           </button>
@@ -420,6 +424,8 @@ function IngredientRow({
             <Skeleton className="h-11 w-full" />
           ) : (
             <IngredientPicker
+              ref={focusField}
+              inline
               id={swapId(row)}
               options={options}
               value={null}
@@ -461,7 +467,7 @@ function Summary({ result, close }: { result: Result; close: () => void }) {
                 <Link
                   to="/pantry"
                   onClick={close}
-                  className="relative shrink-0 rounded-sm font-semibold outline-none focus-ring after:absolute after:-inset-x-1 after:-inset-y-3"
+                  className="relative shrink-0 rounded-sm outline-none focus-ring after:absolute after:-inset-x-1 after:-inset-y-3"
                 >
                   Fix in pantry
                 </Link>

@@ -89,6 +89,8 @@ function ThisWeek({
   const [cooking, setCooking] = useState<WeekRecipe | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const opener = useRef<HTMLButtonElement>(null);
+  // Where focus lands when the sheet closes and Tonight's pill is gone (the week is made).
+  const title = useRef<HTMLHeadingElement>(null);
   const madeIt = (recipe: WeekRecipe) => {
     setCooking(recipe);
     setSheetOpen(true);
@@ -132,7 +134,9 @@ function ThisWeek({
 
   return (
     <main className="mx-auto flex max-w-2xl flex-col px-5 pt-3">
-      <h1 className="font-display text-display">{weekOfLabel(week.weekOf)}</h1>
+      <h1 ref={title} tabIndex={-1} className="font-display text-display outline-none">
+        {weekOfLabel(week.weekOf)}
+      </h1>
       <p className="mt-1 text-caption text-muted-foreground">
         <span>
           <span className="tabular">{selected.length}</span>{" "}
@@ -218,6 +222,7 @@ function ThisWeek({
           open={sheetOpen}
           onOpenChange={setSheetOpen}
           opener={opener}
+          fallbackFocus={title}
         />
       )}
     </main>
