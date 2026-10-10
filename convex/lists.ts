@@ -449,7 +449,7 @@ async function applyPurchase(
 }
 
 /** The newest-inserted event for a list item or pantry row (not the newest `at`). */
-async function latestEvent(
+export async function latestEvent(
   ctx: QueryCtx,
   householdId: Id<"households">,
   ref: { listItemId: Id<"listItems"> } | { pantryItemId: Id<"pantryItems"> },
@@ -524,12 +524,17 @@ async function undoneRow(
   });
 }
 
-/** Un-check of a plan item: reverses its latest purchase event, if it has one standing. */
-async function reversePurchase(
+/**
+ * Un-check of a plan item: reverses its latest purchase event, if it has one standing.
+ * Exported for the undo drawer, which un-checks through this same path.
+ */
+export async function reversePurchase(
   ctx: MutationCtx,
   { householdId, memberId, item, ingredient, at }: Tap,
+  /** The purchase to reverse, when the caller already picked it (the undo drawer). */
+  purchase?: Doc<"inventoryEvents">,
 ) {
-  const latest = await latestEvent(ctx, householdId, { listItemId: item._id });
+  const latest = purchase ?? (await latestEvent(ctx, householdId, { listItemId: item._id }));
   if (latest === null || latest.type !== "purchase") return;
 
   const existing = await findPantryRow(ctx, householdId, ingredient._id);

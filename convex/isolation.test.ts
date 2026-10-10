@@ -162,6 +162,58 @@ const cases: Case[] = [
     fn: api.lists.reconcileItems,
     args: { weekId: "1weeks" },
   },
+  // Phase 4.
+  { name: "cooking.sheet", kind: "query", fn: api.cooking.sheet, args: { recipeId: "1recipes" } },
+  {
+    name: "cooking.madeIt",
+    kind: "mutation",
+    fn: api.cooking.madeIt,
+    args: {
+      recipeId: "1recipes",
+      multiplierText: "1",
+      skippedIngredientIds: [],
+      substitutions: [],
+    },
+  },
+  {
+    name: "cooking.undo",
+    kind: "mutation",
+    fn: api.cooking.undo,
+    args: { cookingEventId: "1cookingEvents" },
+  },
+  { name: "cooking.forWeek", kind: "query", fn: api.cooking.forWeek, args: { weekId: "1weeks" } },
+  { name: "leftovers.list", kind: "query", fn: api.leftovers.list, args: {} },
+  {
+    name: "leftovers.consume",
+    kind: "mutation",
+    fn: api.leftovers.consume,
+    args: { preparedFoodId: "1preparedFoods" },
+  },
+  {
+    name: "leftovers.discard",
+    kind: "mutation",
+    fn: api.leftovers.discard,
+    args: { preparedFoodId: "1preparedFoods" },
+  },
+  {
+    name: "leftovers.move",
+    kind: "mutation",
+    fn: api.leftovers.move,
+    args: { preparedFoodId: "1preparedFoods", location: "freezer" },
+  },
+  {
+    name: "closeout.run",
+    kind: "mutation",
+    fn: api.closeout.run,
+    args: { weekId: "1weeks", decisions: [] },
+  },
+  { name: "undo.recent", kind: "query", fn: api.undo.recent, args: {} },
+  {
+    name: "undo.event",
+    kind: "mutation",
+    fn: api.undo.event,
+    args: { eventId: "1inventoryEvents" },
+  },
 ];
 
 // Every Convex function module, so a public function added in any phase must be listed

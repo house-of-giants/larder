@@ -4,7 +4,9 @@ Larder is a House of Giants lab product. Issues and pull requests are welcome.
 
 - Branch from `main`; open a PR with a clear description of the behavior change.
 - `bun run check` must pass. CI runs the same commands plus a Playwright smoke.
-- Pure logic goes in `src/lib` with tests written first.
+- Pure logic shared with Convex lives in `convex/lib` and is re-exported from `src/lib` (Convex
+  functions are bundled from `convex/`); app-only pure logic lives in `src/lib`. Tests are
+  written first.
 - Every Convex function takes its household from the authenticated member or the
   bearer token, never from the client. A missing household filter is a blocking finding.
 - Ad-hoc list items never write to the pantry. Level items never get decimals. No unit
