@@ -2,20 +2,17 @@ import { useMutation } from "convex/react";
 import { useRef, useState } from "react";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
-import { Button } from "#/components/ui/button";
-import { Input } from "#/components/ui/input";
-import { Label } from "#/components/ui/label";
+import { MultiplierPicker } from "#/components/cook/multiplier-picker";
 import { errorMessage } from "#/lib/errors";
 import { type PickEvent, multiplierChange, pickState } from "#/lib/multiplier";
 import { parseQuantity } from "#/lib/quantities";
-import { cn } from "#/lib/utils";
 
-const quickPicks = ["1/2", "1", "2"] as const;
 const badMultiplier = "Use a number like 1/2, 1 or 2.";
 
 /**
- * How many batches of a selected recipe. The field is a draft until it loses focus (or
- * Enter); the quick picks save at once. Shows the words as typed: "1 1/2", not 1.5.
+ * How many batches of a selected recipe: the shared picker (picks, then the typed field)
+ * with the plan's saving. The field is a draft until it loses focus (or Enter); the quick
+ * picks save at once. Shows the words as typed: "1 1/2", not 1.5.
  */
 export function MultiplierField({
   weekId,
@@ -67,72 +64,49 @@ export function MultiplierField({
 
   return (
     <form
-      className="flex flex-col gap-2"
       onSubmit={(e) => {
         e.preventDefault();
         (e.currentTarget.elements.namedItem(id) as HTMLInputElement).blur();
       }}
     >
-      <div className="flex items-center gap-2">
-        <Label htmlFor={id} className="mr-auto text-sm text-muted-foreground">
-          Batches
-        </Label>
-        <Input
-          id={id}
-          name={id}
-          value={draft ?? text}
-          inputMode="decimal"
-          autoComplete="off"
-          enterKeyHint="done"
-          className="tabular h-10 w-20 text-center"
-          aria-invalid={error !== null}
-          aria-describedby={error ? `${id}-error` : undefined}
-          onFocus={() => setDraft((d) => d ?? text)}
-          onChange={(e) => setDraft(e.target.value)}
-          onBlur={() => {
+      <MultiplierPicker
+        id={id}
+        value={draft ?? text}
+        pressed={text}
+        error={error}
+        onChange={setDraft}
+        onPick={(pick) => {
+          onPick("click");
+          setDraft(null);
+          void save(pick);
+        }}
+        fieldProps={{
+          name: id,
+          onFocus: () => setDraft((d) => d ?? text),
+          onBlur: () => {
             if (discard.current || picking.current) {
               discard.current = false;
               setDraft(null);
               return;
             }
             if (draft !== null) void save(draft);
-          }}
-          onKeyDown={(e) => {
+          },
+          onKeyDown: (e) => {
             if (e.key === "Escape") {
               discard.current = true;
               setDraft(null);
               setError(null);
               e.currentTarget.blur();
             }
-          }}
-        />
-        {quickPicks.map((pick) => (
-          <Button
-            key={pick}
-            type="button"
-            variant="outline"
-            size="sm"
-            aria-pressed={text === pick}
-            className={cn("tabular h-10 min-w-11", text === pick && "border-primary text-primary")}
-            onPointerDown={() => onPick("pointerdown")}
-            onPointerUp={() => onPick("pointerup")}
-            onPointerCancel={() => onPick("pointercancel")}
-            onBlur={() => onPick("blur")}
-            onClick={() => {
-              onPick("click");
-              setDraft(null);
-              void save(pick);
-            }}
-          >
-            {pick}
-          </Button>
-        ))}
-      </div>
-      {error && (
-        <p id={`${id}-error`} role="alert" className="text-sm text-destructive">
-          {error}
-        </p>
-      )}
+          },
+        }}
+        pickProps={{
+          onPointerDown: () => onPick("pointerdown"),
+          onPointerUp: () => onPick("pointerup"),
+          onPointerCancel: () => onPick("pointercancel"),
+          onBlur: () => onPick("blur"),
+        }}
+      />
     </form>
   );
 }
