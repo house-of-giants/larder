@@ -4,18 +4,25 @@ import { cn } from "#/lib/utils";
 import { Slot } from "radix-ui";
 
 const buttonVariants = cva(
-  "inline-flex shrink-0 items-center justify-center gap-2 rounded-md text-sm font-medium whitespace-nowrap transition-all outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+  "inline-flex shrink-0 items-center justify-center gap-2 rounded-md text-sm font-medium whitespace-nowrap transition-[color,background-color,border-color,filter] outline-none focus-ring disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
   {
     variants: {
       variant: {
         default: "bg-primary text-primary-foreground hover:bg-primary/90",
-        destructive:
-          "bg-destructive text-white hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:bg-destructive/60 dark:focus-visible:ring-destructive/40",
-        outline:
-          "border bg-background shadow-xs hover:bg-accent hover:text-accent-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50",
+        // Tomato ink as an outline and its words (DESIGN.md, the Destructive Rule); never filled.
+        destructive: "border border-destructive bg-card text-destructive hover:bg-accent",
+        outline: "border border-border bg-card text-foreground hover:bg-secondary",
         secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
-        ghost: "hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50",
+        ghost: "text-foreground hover:bg-secondary",
         link: "text-primary underline-offset-4 hover:underline",
+        // The pills from DESIGN.md; `Pill` in src/components/kit sets these with size="pill".
+        // Disabled, the primary goes to the well: half-strength tomato would read as the pale pill.
+        pill: "rounded-full bg-primary text-subhead font-semibold text-primary-foreground hover:bg-primary/90 active:brightness-95 disabled:bg-muted disabled:text-muted-foreground disabled:opacity-100",
+        "pill-pale":
+          "rounded-full bg-accent text-subhead font-semibold text-accent-foreground hover:brightness-[0.98] active:brightness-95",
+        "pill-outline":
+          "rounded-full border border-border bg-card text-subhead font-semibold text-foreground hover:bg-secondary",
+        "pill-text": "rounded-full text-subhead font-normal text-accent-foreground hover:bg-accent",
       },
       size: {
         default: "h-9 px-4 py-2 has-[>svg]:px-3",
@@ -26,6 +33,9 @@ const buttonVariants = cva(
         "icon-xs": "size-6 rounded-md [&_svg:not([class*='size-'])]:size-3",
         "icon-sm": "size-8",
         "icon-lg": "size-10",
+        pill: "h-11 gap-2 px-5",
+        // The full-width primary in a half sheet's footer, in thumb reach.
+        "pill-sheet": "h-12.5 w-full gap-2 px-5 text-body",
       },
     },
     defaultVariants: {

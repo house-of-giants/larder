@@ -4,7 +4,7 @@ import { Plus } from "lucide-react";
 import { useState } from "react";
 import { api } from "../../../../convex/_generated/api";
 import { CheckMarker } from "#/components/recipes/check-marker";
-import { amountText } from "#/components/recipes/recipe-text";
+import { shownUnit } from "#/components/recipes/recipe-text";
 import { Button } from "#/components/ui/button";
 import { RowsSkeleton } from "#/components/page-skeleton";
 import { cn } from "#/lib/utils";
@@ -47,10 +47,6 @@ function Recipes() {
       ) : (
         <ul className="flex flex-col divide-y rounded-lg border bg-card">
           {recipes.map((r) => {
-            const meta = [
-              r.yield ? amountText(r.yield.quantityText, r.yield.unit) : null,
-              `${r.ingredientCount} ${r.ingredientCount === 1 ? "ingredient" : "ingredients"}`,
-            ].filter((part) => part !== null);
             return (
               <li key={r._id}>
                 <Link
@@ -69,7 +65,17 @@ function Recipes() {
                       r.needsReview && <CheckMarker />
                     )}
                   </span>
-                  <span className="num text-sm text-muted-foreground">{meta.join(" · ")}</span>
+                  <span className="text-sm text-muted-foreground">
+                    {r.yield && (
+                      <>
+                        <span className="tabular">{r.yield.quantityText}</span>
+                        {shownUnit(r.yield.unit) && ` ${shownUnit(r.yield.unit)}`}
+                        {" · "}
+                      </>
+                    )}
+                    <span className="tabular">{r.ingredientCount}</span>{" "}
+                    {r.ingredientCount === 1 ? "ingredient" : "ingredients"}
+                  </span>
                   {r.tags.length > 0 && (
                     <span className="flex flex-wrap gap-1.5">
                       {r.tags.map((tag) => (

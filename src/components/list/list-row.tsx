@@ -81,7 +81,7 @@ export function ListRow({
             (checked || putBack) && "text-muted-foreground",
           )}
         >
-          <span className="num">{amount(item).quantityText}</span> {amount(item).unit}
+          <span className="tabular">{amount(item).quantityText}</span> {amount(item).unit}
         </span>
       </button>
       {onSkip && (

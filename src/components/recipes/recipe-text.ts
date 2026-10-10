@@ -8,10 +8,15 @@ export type Recipe = NonNullable<FunctionReturnType<typeof api.recipes.get>>;
 export type RecipeRow = Recipe["ingredients"][number];
 export type IngredientOption = FunctionReturnType<typeof api.recipes.ingredientOptions>[number];
 
-/** "12 slider". `each` is the app's word for a plain count, so it stays off screen. */
+/** The unit as shown: `each` is the app's word for a plain count, so it stays off screen. */
+export function shownUnit(unit: string): string {
+  const trimmed = unit.trim();
+  return trimmed.toLowerCase() === "each" ? "" : trimmed;
+}
+
+/** "12 slider". */
 export function amountText(quantityText: string, unit: string): string {
-  const shownUnit = unit.toLowerCase() === "each" ? "" : unit;
-  return [quantityText, shownUnit].filter((part) => part.trim() !== "").join(" ");
+  return [quantityText, shownUnit(unit)].filter((part) => part.trim() !== "").join(" ");
 }
 
 /**

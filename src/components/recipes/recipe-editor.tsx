@@ -137,7 +137,7 @@ export function RecipeEditor({ initial, recipeId }: RecipeEditorProps) {
           <Field label="Makes" htmlFor="recipe-yield">
             <Input
               id="recipe-yield"
-              className="num"
+              className="tabular"
               placeholder="12"
               value={draft.yieldText}
               autoComplete="off"
@@ -215,7 +215,10 @@ export function RecipeEditor({ initial, recipeId }: RecipeEditorProps) {
         <ol className="flex flex-col gap-3">
           {draft.steps.map((step, index) => (
             <li key={step.key} className="flex items-start gap-2">
-              <Label htmlFor={`step-${step.key}`} className="num mt-2.5 w-6 shrink-0 justify-end">
+              <Label
+                htmlFor={`step-${step.key}`}
+                className="tabular mt-2.5 w-6 shrink-0 justify-end"
+              >
                 {index + 1}.
               </Label>
               <Textarea
@@ -321,7 +324,9 @@ function IngredientRow({
   return (
     <li className="flex flex-col gap-3 rounded-lg border bg-card p-3">
       <div className="flex items-center justify-between gap-2">
-        <span className="num text-sm text-muted-foreground">Line {line}</span>
+        <span className="text-sm text-muted-foreground">
+          Line <span className="tabular">{line}</span>
+        </span>
         <div className="flex">
           <Button
             type="button"
@@ -371,7 +376,7 @@ function IngredientRow({
         <Field label="Amount" htmlFor={id("quantity")}>
           <Input
             id={id("quantity")}
-            className="num"
+            className="tabular"
             placeholder="1/2"
             value={row.quantityText}
             autoComplete="off"

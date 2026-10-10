@@ -77,7 +77,7 @@ export function StoreView({
               )}
             >
               {sectionLabel(section.category)}
-              <span className="num">{section.needed.length}</span>
+              <span className="tabular">{section.needed.length}</span>
             </h2>
             {section.needed.length > 0 && (
               <ul className="flex flex-col divide-y rounded-lg border bg-card">
@@ -144,7 +144,7 @@ function Shell({
           <h1 className="text-2xl font-semibold tracking-tight">Store</h1>
           {toGet !== undefined && (
             <p className="text-lg font-medium">
-              <span className="num">{toGet}</span> to get
+              <span className="tabular">{toGet}</span> to get
             </p>
           )}
         </div>
@@ -165,7 +165,7 @@ function Shell({
 function SyncPill({ online, pending }: { online: boolean; pending: number }) {
   const queued = pending > 0 && (
     <>
-      <span className="num">{pending}</span> queued
+      <span className="tabular">{pending}</span> queued
     </>
   );
   return (
@@ -247,7 +247,7 @@ function Group({
           ›
         </span>
         <span>
-          {label} (<span className="num">{items.length}</span>)
+          {label} (<span className="tabular">{items.length}</span>)
         </span>
       </summary>
       <ul className="flex flex-col divide-y rounded-lg border bg-card">

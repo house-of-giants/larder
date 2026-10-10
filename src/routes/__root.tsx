@@ -1,4 +1,5 @@
 import { ClerkProvider, useAuth } from "@clerk/tanstack-react-start";
+import { dark } from "@clerk/ui/themes";
 import {
   HeadContent,
   Scripts,
@@ -13,7 +14,7 @@ import { ErrorScreen, NotFound } from "#/components/route-states";
 import { Toaster } from "#/components/ui/sonner";
 import { clerkConfigured } from "#/lib/clerk-config";
 import { convex } from "#/lib/convex";
-import { useThemeSync } from "#/hooks/use-theme";
+import { useTheme, useThemeSync } from "#/hooks/use-theme";
 import { themeScript } from "#/lib/theme";
 import { OfflineIdentityProvider } from "#/offline/identity";
 import { registerServiceWorker } from "#/offline/register-sw";
@@ -43,6 +44,14 @@ export const Route = createRootRoute({
     ],
     links: [
       { rel: "stylesheet", href: appCss },
+      // The serif names every screen; fetch it with the stylesheet, not after it.
+      {
+        rel: "preload",
+        href: "/fonts/youngserif-latin.woff2",
+        as: "font",
+        type: "font/woff2",
+        crossOrigin: "anonymous",
+      },
       { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
       { rel: "apple-touch-icon", sizes: "180x180", href: "/apple-touch-icon.png" },
       { rel: "manifest", href: "/manifest.webmanifest" },
@@ -93,8 +102,14 @@ function RootDocument({ children }: { children: ReactNode }) {
 }
 
 function Providers({ children }: { children: ReactNode }) {
+  // Clerk's dark base theme under the app's dark tokens: the variables below follow the
+  // page, and the base theme darkens what they do not reach (shadows, hover shades).
+  const theme = useTheme();
   return (
-    <ClerkProvider appearance={clerkAppearance} allowedRedirectOrigins={allowedRedirectOrigins()}>
+    <ClerkProvider
+      appearance={{ ...clerkAppearance, theme: theme === "dark" ? dark : undefined }}
+      allowedRedirectOrigins={allowedRedirectOrigins()}
+    >
       <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
         <OfflineIdentityProvider>{children}</OfflineIdentityProvider>
         <Toaster position="top-center" />
@@ -111,8 +126,8 @@ function allowedRedirectOrigins(): string[] | undefined {
   return typeof window === "undefined" ? undefined : [window.location.origin];
 }
 
-// Clerk's sign-in and sign-up cards drawn from the app's own tokens, so they follow the
-// theme with it (no @clerk/themes needed).
+// Clerk's sign-in and sign-up cards drawn from the app's own tokens (src/styles.css), so
+// they follow the theme with it: paper card, tomato primary, fields at 10px.
 const clerkAppearance = {
   variables: {
     colorPrimary: "var(--primary)",
@@ -122,13 +137,16 @@ const clerkAppearance = {
     colorMuted: "var(--muted)",
     colorMutedForeground: "var(--muted-foreground)",
     colorNeutral: "var(--foreground)",
-    colorInput: "var(--background)",
+    colorInput: "var(--card)",
     colorInputForeground: "var(--foreground)",
     colorBorder: "var(--border)",
     colorRing: "var(--ring)",
     colorDanger: "var(--destructive)",
+    // One accent: Clerk's own green and orange would be a second and third.
+    colorSuccess: "var(--primary)",
+    colorWarning: "var(--accent-foreground)",
     fontFamily: "var(--font-sans)",
-    borderRadius: "var(--radius)",
+    borderRadius: "0.625rem",
   },
 };
 

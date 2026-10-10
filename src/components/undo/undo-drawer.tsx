@@ -84,7 +84,7 @@ function RecentRow({ row }: { row: Row }) {
     <li className="flex min-h-14 items-center justify-between gap-3 py-2">
       <div className="flex min-w-0 flex-col">
         <span className="truncate">{row.line}</span>
-        <span className="num text-xs text-muted-foreground">{when(row.at)}</span>
+        <span className="tabular text-xs text-muted-foreground">{when(row.at)}</span>
       </div>
       {!row.canUndo && row.reason && (
         <span className="shrink-0 text-xs text-muted-foreground">{row.reason}</span>

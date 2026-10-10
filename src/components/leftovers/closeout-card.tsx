@@ -1,4 +1,4 @@
-import { amountWords } from "#/lib/amounts";
+import { RemainingWords } from "./leftover-card";
 import { cn } from "#/lib/utils";
 import { type Leftover, placeLabels } from "./types";
 
@@ -25,9 +25,8 @@ export function CloseoutCard({
     <li className="flex flex-col gap-3 rounded-lg border bg-card px-4 py-3">
       <div className="flex items-baseline justify-between gap-3">
         <h2 className="min-w-0 font-medium">{food.name}</h2>
-        <span className="num shrink-0 text-sm text-muted-foreground">
-          {amountWords(food.remaining.text, food.remaining.decimal, food.unit)},{" "}
-          {placeLabels[food.location].toLowerCase()}
+        <span className="shrink-0 text-sm text-muted-foreground">
+          <RemainingWords food={food} />, {placeLabels[food.location].toLowerCase()}
         </span>
       </div>
       <fieldset className="grid grid-cols-3 gap-1 rounded-lg bg-muted p-1">

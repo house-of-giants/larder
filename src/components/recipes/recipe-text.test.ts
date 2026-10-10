@@ -5,6 +5,7 @@ import {
   ingredientLine,
   matchIngredients,
   safeHref,
+  shownUnit,
   type IngredientOption,
   type RecipeRow,
 } from "./recipe-text";
@@ -31,6 +32,12 @@ describe("amountText", () => {
     expect(amountText("2 1/2", "cup")).toBe("2 1/2 cup");
     expect(amountText("6", "each")).toBe("6");
     expect(amountText("as needed", "")).toBe("as needed");
+  });
+
+  it("hides the plain-count unit whatever its spacing or case", () => {
+    expect(shownUnit(" each ")).toBe("");
+    expect(shownUnit("Each")).toBe("");
+    expect(amountText("6", " each ")).toBe("6");
   });
 });
 

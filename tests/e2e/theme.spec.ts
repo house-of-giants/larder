@@ -8,10 +8,10 @@ const clerkConfigured = Boolean(
 );
 
 const THEME_KEY = "larder:theme";
-const LIGHT = "#f6f3ec";
-const DARK = "#080811";
+const LIGHT = "#faf6ee";
+const DARK = "#1e1a16";
 // --background in src/styles.css, as the browser reports the body's computed color.
-const BACKGROUND = { light: "oklch(0.97 0.008 85)", dark: "oklch(0.14 0.02 280)" };
+const BACKGROUND = { light: "rgb(250, 246, 238)", dark: "rgb(30, 26, 22)" };
 
 type Screen = { path: string; ready: (page: Page) => Promise<void> };
 
@@ -159,6 +159,36 @@ function themeTests(screen: Screen) {
   }
 }
 
+// Clerk draws its card from the app's tokens over its own dark base theme; the card must
+// follow the page into dark, and the app's tomato must win over the base theme's white
+// primary.
+function clerkCardTests() {
+  for (const theme of ["light", "dark"] as const) {
+    test(`Clerk's card follows the page, ${theme}`, async ({ page }) => {
+      await page.emulateMedia({ colorScheme: theme });
+      await open(page, signInScreen, theme);
+      const card = page.locator(".cl-card").first();
+      await expect(card).toBeVisible();
+      const colors = () =>
+        page.evaluate(() => {
+          const css = (selector: string) => {
+            const el = document.querySelector(selector);
+            return el ? getComputedStyle(el).backgroundColor : "";
+          };
+          return { card: css(".cl-card"), primary: css(".cl-formButtonPrimary") };
+        });
+      // Paper Card and Tomato for the theme, exactly; Clerk restyles as it mounts, so retry.
+      await expect
+        .poll(colors)
+        .toEqual(
+          theme === "dark"
+            ? { card: "rgb(38, 33, 28)", primary: "rgb(238, 119, 87)" }
+            : { card: "rgb(255, 253, 248)", primary: "rgb(185, 58, 32)" },
+        );
+    });
+  }
+}
+
 test.describe("theme, without Clerk keys", () => {
   test.skip(clerkConfigured, "Clerk keys are set; the sign-in suite runs instead.");
   themeTests(setupScreen);
@@ -167,4 +197,5 @@ test.describe("theme, without Clerk keys", () => {
 test.describe("theme, with Clerk keys", () => {
   test.skip(!clerkConfigured, "No Clerk keys; the setup-screen suite runs instead.");
   themeTests(signInScreen);
+  clerkCardTests();
 });

@@ -75,7 +75,7 @@ function ThisWeek({ week }: { week: CurrentWeek }) {
             "No recipes picked yet."
           ) : (
             <>
-              <span className="num">{selected.length}</span>{" "}
+              <span className="tabular">{selected.length}</span>{" "}
               {selected.length === 1 ? "recipe" : "recipes"}
             </>
           )}
@@ -97,11 +97,11 @@ function ThisWeek({ week }: { week: CurrentWeek }) {
                   <span className="font-medium">{r.name}</span>
                   {r.multiplier.text !== "1" && (
                     <span className="text-sm text-muted-foreground">
-                      <span className="num">{r.multiplier.text}</span> batches
+                      <span className="tabular">{r.multiplier.text}</span> batches
                     </span>
                   )}
                   {made && (
-                    <span className="num text-sm text-primary">
+                    <span className="tabular text-sm text-primary">
                       {madeLabel(made.cookedAt, made.times)}
                     </span>
                   )}

@@ -9,9 +9,9 @@ export const DARK_QUERY = "(prefers-color-scheme: dark)";
 
 /**
  * The page background in each theme (--background in src/styles.css), for the
- * theme-color meta and the manifest. Hex, because not every browser chrome reads oklch.
+ * theme-color meta and the manifest.
  */
-export const themeColors: Record<Theme, string> = { light: "#f6f3ec", dark: "#080811" };
+export const themeColors: Record<Theme, string> = { light: "#faf6ee", dark: "#1e1a16" };
 
 export function parsePreference(value: string | null): ThemePreference {
   return value === "light" || value === "dark" ? value : "system";

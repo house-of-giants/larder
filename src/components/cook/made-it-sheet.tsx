@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { IngredientPicker } from "#/components/recipes/ingredient-picker";
-import { amountText } from "#/components/recipes/recipe-text";
+import { amountText, shownUnit } from "#/components/recipes/recipe-text";
 import { Button } from "#/components/ui/button";
 import { Skeleton } from "#/components/ui/skeleton";
 import {
@@ -262,7 +262,16 @@ function IngredientRow({
   const amount = amountText(row.quantityText, row.unit);
   const words = (
     <>
-      {amount && <span className="num mr-1.5">{amount}</span>}
+      {amount && (
+        <span className="mr-1.5">
+          {parseQuantity(row.quantityText) === null ? (
+            row.quantityText
+          ) : (
+            <span className="tabular">{row.quantityText}</span>
+          )}
+          {shownUnit(row.unit) && ` ${shownUnit(row.unit)}`}
+        </span>
+      )}
       <span>{row.name}</span>
     </>
   );

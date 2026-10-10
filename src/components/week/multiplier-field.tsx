@@ -84,7 +84,7 @@ export function MultiplierField({
           inputMode="decimal"
           autoComplete="off"
           enterKeyHint="done"
-          className="num h-10 w-20 text-center"
+          className="tabular h-10 w-20 text-center"
           aria-invalid={error !== null}
           aria-describedby={error ? `${id}-error` : undefined}
           onFocus={() => setDraft((d) => d ?? text)}
@@ -113,7 +113,7 @@ export function MultiplierField({
             variant="outline"
             size="sm"
             aria-pressed={text === pick}
-            className={cn("num h-10 min-w-11", text === pick && "border-primary text-primary")}
+            className={cn("tabular h-10 min-w-11", text === pick && "border-primary text-primary")}
             onPointerDown={() => onPick("pointerdown")}
             onPointerUp={() => onPick("pointerup")}
             onPointerCancel={() => onPick("pointercancel")}
