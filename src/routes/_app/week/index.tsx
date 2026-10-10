@@ -191,12 +191,7 @@ function ThisWeek({
           />
           <ul className="flex flex-col">
             {rest.map((r) => (
-              <WeekRow
-                key={r.weekRecipeId}
-                recipe={r}
-                made={madeAt.get(r.recipeId)}
-                onMadeIt={() => madeIt(r)}
-              />
+              <WeekRow key={r.weekRecipeId} recipe={r} made={madeAt.get(r.recipeId)} />
             ))}
           </ul>
         </section>
@@ -301,27 +296,20 @@ function AllMade({ cooks }: { cooks: Cook[] }) {
 }
 
 /**
- * A recipe in the week: the yield as a serif numeral with its unit under it, the name, and
- * what is on hand or when it was made. The whole row opens the recipe; Made it is an
- * outline pill until the recipe is made.
+ * A recipe in the week: the yield as a serif numeral with its unit under it, level with the
+ * name, then what is on hand or when it was made. The whole row opens the recipe, where
+ * Made it lives; on this screen only Tonight carries it, so the rows hold no verbs.
  */
-function WeekRow({
-  recipe,
-  made,
-  onMadeIt,
-}: {
-  recipe: WeekRecipe;
-  made: Cook | undefined;
-  onMadeIt: () => void;
-}) {
+function WeekRow({ recipe, made }: { recipe: WeekRecipe; made: Cook | undefined }) {
   const makes = yieldOf(recipe);
   const second = made ? madeLabel(made.cookedAt, made.times) : onHandText(recipe);
   return (
-    <li className="relative flex min-h-15 items-center gap-3 border-b border-border py-2.5 last:border-b-0">
+    <li className="relative flex min-h-15 items-start gap-3 border-b border-border py-2.5 last:border-b-0">
       <span className="flex w-14 shrink-0 flex-col items-end">
         {makes && (
           <>
-            <span className="font-display text-title leading-none text-primary">
+            {/* Its first line sits level with the name's (17px at 1.3). */}
+            <span className="pt-px font-display text-title leading-none text-primary">
               {makes.figure}
             </span>
             {makes.unit && (
@@ -345,19 +333,8 @@ function WeekRow({
             <span className="tabular">{second}</span>
           </span>
         )}
-        {/* Under the words, so a long name keeps the row's width. */}
-        {!made && (
-          <Pill
-            type="button"
-            variant="outline"
-            className="relative mt-2 mb-0.5 h-10 self-start px-4"
-            onClick={onMadeIt}
-          >
-            Made it
-          </Pill>
-        )}
       </span>
-      <ChevronRight aria-hidden className="size-[18px] shrink-0 text-ring-quiet" />
+      <ChevronRight aria-hidden className="size-[18px] shrink-0 self-center text-ring-quiet" />
     </li>
   );
 }
