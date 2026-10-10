@@ -269,6 +269,41 @@ test.describe("a week in one household, signed in with Clerk", () => {
         await expect.soft(toGet(one, neededCount - 3)).toBeVisible();
         await shot(one, "05b-back-online");
 
+        // A checked row stays in its aisle, after the rows still to get.
+        const butterSection = one.locator("main section").filter({
+          has: one.locator(`[data-item-id="${butterId}"]`),
+        });
+        await expect.soft(butterSection).toHaveCount(1);
+        const order = await butterSection
+          .locator('[data-testid="list-row"]')
+          .evaluateAll((rows) => rows.map((r) => r.getAttribute("data-status")));
+        expect
+          .soft(order, "checked rows sink to the end of their aisle")
+          .toEqual([...order].sort((a, b) => Number(a === "checked") - Number(b === "checked")));
+        expect.soft(order.at(-1)).toBe("checked");
+
+        // The chip row scrolls sideways and fades at its edge.
+        const chips = await one.locator('nav[aria-label="Store sections"] ul').evaluate((ul) => ({
+          overflows: ul.scrollWidth > ul.clientWidth,
+          mask: getComputedStyle(ul).maskImage || getComputedStyle(ul).webkitMaskImage,
+        }));
+        expect.soft(chips.overflows, "chip row scrolls").toBe(true);
+        expect.soft(chips.mask, "chip row fades").not.toBe("none");
+
+        // Sticky headings never paint over the tab bar: scroll a heading to the bottom edge.
+        await one.evaluate(() => {
+          const headings = [...document.querySelectorAll("main section h2")];
+          const target = headings.at(-1)!;
+          window.scrollBy(0, target.getBoundingClientRect().bottom - window.innerHeight + 8);
+        });
+        const tabOnTop = await one.evaluate(() => {
+          const link = document.querySelector('nav[aria-label="Main"] a[href="/settings"]')!;
+          const r = link.getBoundingClientRect();
+          const hit = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
+          return Boolean(hit?.closest('nav[aria-label="Main"]'));
+        });
+        expect.soft(tabOnTop, "the tab bar paints over sticky headings").toBe(true);
+
         // 5 tbsp on hand plus the 17 bought.
         await one.goto("/pantry");
         await expect

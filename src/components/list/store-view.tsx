@@ -1,16 +1,22 @@
 import { Link } from "@tanstack/react-router";
-import { useState, type ReactNode } from "react";
+import { ChevronRight } from "lucide-react";
+import { useRef, useState, type ReactNode } from "react";
 import type { Id } from "../../../convex/_generated/dataModel";
+import { AisleHeading } from "#/components/kit/aisle-heading";
+import { Chip } from "#/components/kit/chip";
+import { Fab } from "#/components/kit/fab";
+import { ListRow } from "#/components/kit/list-row";
+import { Pill } from "#/components/kit/pill";
 import { categoryLabels } from "#/components/pantry/labels";
-import { cn } from "#/lib/utils";
 import { AddSomething } from "./add-something";
-import { ListRow } from "./list-row";
 import { nextStatus, viewList } from "./list-view";
+import { recipeNamesLine } from "./row-text";
 import type { CurrentList, ListItem, TapStatus } from "./types";
 
-// The app header is 3rem; the filter bar sticks under it and section headers under that.
-const FILTER_TOP = "top-[calc(3rem+env(safe-area-inset-top))]";
-const SECTION_TOP = "top-[calc(6.5rem+env(safe-area-inset-top))]";
+// The sticky stack under the app header (3rem and its hairline): the progress line (h-6)
+// and the chip row (h-16) pin together, and each aisle heading pins under them.
+const PINNED_TOP = "top-[calc(3rem+1px+env(safe-area-inset-top))]";
+const HEADING_TOP = "top-[calc(3rem+1px+5.5rem+env(safe-area-inset-top))]";
 
 function sectionLabel(category: string): string {
   return categoryLabels[category] ?? category.replace(/_/g, " ");
@@ -22,9 +28,15 @@ function weekOfLabel(weekOf: string): string {
   return new Date(y, m - 1, d).toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
+/** What to buy, in the list's own words: the purchase amount, or what the recipes need. */
+function amountOf(item: ListItem) {
+  return item.purchase ?? item.required;
+}
+
 /**
- * The list in the aisle: big rows by store section, a section filter, checked rows
- * folded into the cart under their section, and things already here at the end.
+ * The list in the aisle: rows by store section under serif headings, a section filter,
+ * checked rows kept in their aisle (filled, quiet, at the end of it), and things already
+ * here or skipped folded away at the end. Add something is the floating button.
  */
 export function StoreView({
   list,
@@ -40,16 +52,37 @@ export function StoreView({
   onSetStatus: (listItemId: Id<"listItems">, status: TapStatus) => void;
 }) {
   const [filter, setFilter] = useState<string | null>(null);
+  const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(new Set());
+  const [adding, setAdding] = useState(false);
+  const fab = useRef<HTMLButtonElement>(null);
   const view = viewList(list, filter);
   const activeFilter = filter !== null && view.categories.includes(filter) ? filter : null;
-  const toggle = (item: ListItem) => () => onSetStatus(item._id, nextStatus(item.status));
-  const skip = (item: ListItem) => () => onSetStatus(item._id, "skipped");
+
+  const fold = (category: string) => () =>
+    setCollapsed((current) => {
+      const next = new Set(current);
+      if (!next.delete(category)) next.add(category);
+      return next;
+    });
+  const row = (item: ListItem) => (
+    <StoreRow
+      key={item._id}
+      item={item}
+      onToggle={() => onSetStatus(item._id, nextStatus(item.status))}
+    />
+  );
 
   return (
     <Shell
-      weekOf={list.weekOf}
-      toGet={view.toGet}
-      pill={<SyncPill online={online} pending={pending} />}
+      progress={
+        <>
+          <span>
+            <span className="tabular">{view.toGet}</span> to get
+          </span>
+          {` · Week of ${weekOfLabel(list.weekOf)}`}
+          <SyncPill online={online} pending={pending} />
+        </>
+      }
       filterBar={
         view.categories.length > 0 && (
           <FilterBar
@@ -63,47 +96,65 @@ export function StoreView({
         )
       }
     >
-      {view.toGet === 0 && <p className="py-4 text-muted-foreground">Nothing left to get.</p>}
+      {view.toGet === 0 && <p className="pt-4 text-muted-foreground">Nothing left to get.</p>}
 
       {view.sections.map((section) => {
         const headingId = `list-${section.category}`;
+        const rowsId = `${headingId}-rows`;
+        const folded = collapsed.has(section.category);
         return (
           <section key={section.category} aria-labelledby={headingId} className="flex flex-col">
-            <h2
+            <AisleHeading
               id={headingId}
-              className={cn(
-                "sticky z-[4] flex items-baseline justify-between bg-background py-2 text-sm font-medium text-muted-foreground",
-                SECTION_TOP,
-              )}
-            >
-              {sectionLabel(section.category)}
-              <span className="tabular">{section.needed.length}</span>
-            </h2>
-            {section.needed.length > 0 && (
-              <ul className="flex flex-col divide-y rounded-lg border bg-card">
-                {section.needed.map((item) => (
-                  <ListRow key={item._id} item={item} onToggle={toggle(item)} onSkip={skip(item)} />
-                ))}
-              </ul>
-            )}
-            <Group label="In the cart" items={section.inCart} toggle={toggle} />
+              title={sectionLabel(section.category)}
+              count={section.needed.length}
+              collapsed={folded}
+              onToggle={fold(section.category)}
+              controls={rowsId}
+              sticky
+              className={HEADING_TOP}
+            />
+            <ul id={rowsId} hidden={folded} className="flex flex-col">
+              {section.needed.map(row)}
+              {section.inCart.map(row)}
+            </ul>
           </section>
         );
       })}
 
-      <Group label="Already have" items={view.alreadyHave} toggle={toggle} />
-      <Group label="Skipped" items={view.skipped} toggle={toggle} />
+      <Group label="Already have" items={view.alreadyHave} row={row} />
+      <Group label="Skipped" items={view.skipped} row={row} />
 
-      <AddSomething canSend={canSend} />
+      <Fab ref={fab} label="Add something" onClick={() => setAdding(true)} />
+      <AddSomething open={adding} onOpenChange={setAdding} opener={fab} canSend={canSend} />
     </Shell>
+  );
+}
+
+/** One store row: the purchase amount, then the recipes it is for or "in the cart". */
+function StoreRow({ item, onToggle }: { item: ListItem; onToggle: () => void }) {
+  const checked = item.status === "checked";
+  return (
+    <ListRow
+      data-testid="list-row"
+      data-item-id={item._id}
+      data-status={item.status}
+      checked={checked}
+      putBack={item.status === "onHand" || item.status === "skipped"}
+      name={item.displayName}
+      amount={amountOf(item)}
+      // A snapshot saved before names were on the list has none; the row reads as before.
+      note={checked ? "in the cart" : recipeNamesLine(item.sourceRecipeNames ?? [], item.source)}
+      onToggle={onToggle}
+    />
   );
 }
 
 /** No server answer, nothing saved: say so rather than spin. */
 export function NoSignal({ pending }: { pending: number }) {
   return (
-    <Shell pill={<SyncPill online={false} pending={pending} />}>
-      <p className="text-muted-foreground">
+    <Shell progress={<SyncPill online={false} pending={pending} />}>
+      <p className="pt-4 text-muted-foreground">
         No signal, and no list saved on this phone yet. Open the list once with a signal and it will
         be here next time.
       </p>
@@ -113,55 +164,43 @@ export function NoSignal({ pending }: { pending: number }) {
 
 export function NoList({ online, pending }: { online: boolean; pending: number }) {
   return (
-    <Shell pill={<SyncPill online={online} pending={pending} />}>
-      <div className="flex flex-col items-start gap-3 rounded-lg border border-dashed px-4 py-8">
+    <Shell progress={<SyncPill online={online} pending={pending} />}>
+      <div className="flex flex-col items-start gap-1 pt-4">
         <p className="text-muted-foreground">No list yet. Make one from this week.</p>
-        <Link to="/week" className="font-medium text-primary underline-offset-4 hover:underline">
-          This week
-        </Link>
+        <Pill variant="text" asChild className="-ml-5">
+          <Link to="/week">This week</Link>
+        </Pill>
       </div>
     </Shell>
   );
 }
 
+/**
+ * The title, then the progress line and the chip row pinned together under the app
+ * header, so "33 to get" never scrolls away.
+ */
 function Shell({
-  weekOf,
-  toGet,
-  pill,
+  progress,
   filterBar,
   children,
 }: {
-  weekOf?: string;
-  toGet?: number;
-  pill: ReactNode;
+  progress: ReactNode;
   filterBar?: ReactNode;
   children: ReactNode;
 }) {
   return (
-    <main className="mx-auto flex max-w-2xl flex-col gap-4 px-4 pt-6 pb-8">
-      <div className="flex flex-col gap-1">
-        <div className="flex items-baseline justify-between gap-3">
-          <h1 className="text-2xl font-semibold tracking-tight">Store</h1>
-          {toGet !== undefined && (
-            <p className="text-lg font-medium">
-              <span className="tabular">{toGet}</span> to get
-            </p>
-          )}
-        </div>
-        <div className="flex min-h-7 items-center justify-between gap-3">
-          <p className="text-sm text-muted-foreground">
-            {weekOf ? `Week of ${weekOfLabel(weekOf)}` : ""}
-          </p>
-          {pill}
-        </div>
+    <main className="mx-auto flex max-w-2xl flex-col px-5 pt-3 pb-24">
+      <h1 className="font-display text-display">Store</h1>
+      <div className={`sticky z-10 -mx-5 bg-background px-5 ${PINNED_TOP}`}>
+        <p className="h-6 truncate text-caption leading-6 text-muted-foreground">{progress}</p>
+        {filterBar}
       </div>
-      {filterBar}
       {children}
     </main>
   );
 }
 
-/** Says when taps are waiting for a signal. Absent when everything has gone through. */
+/** Says when taps are waiting for a signal, in tomato after the progress line. */
 function SyncPill({ online, pending }: { online: boolean; pending: number }) {
   const queued = pending > 0 && (
     <>
@@ -171,10 +210,7 @@ function SyncPill({ online, pending }: { online: boolean; pending: number }) {
   return (
     <output className="contents">
       {(!online || queued) && (
-        <span
-          data-testid="sync-pill"
-          className="rounded-full border bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground"
-        >
+        <span data-testid="sync-pill" className="ml-2 text-primary">
           {online ? queued : queued ? <>offline, {queued}</> : "offline"}
         </span>
       )}
@@ -182,6 +218,7 @@ function SyncPill({ online, pending }: { online: boolean; pending: number }) {
   );
 }
 
+/** The section filter: chips that scroll sideways, fading at the right edge. */
 function FilterBar({
   categories,
   active,
@@ -196,65 +233,49 @@ function FilterBar({
     ...categories.map((category) => ({ value: category, label: sectionLabel(category) })),
   ];
   return (
-    <nav
-      aria-label="Store sections"
-      className={cn("sticky z-[5] -mx-4 border-b bg-background/95 backdrop-blur", FILTER_TOP)}
-    >
-      <ul className="flex h-14 items-center gap-2 overflow-x-auto px-4 [scrollbar-width:none]">
-        {chips.map(({ value, label }) => {
-          const current = value === active;
-          return (
-            <li key={value ?? "all"} className="shrink-0">
-              <button
-                type="button"
-                aria-pressed={current}
-                onClick={() => onChange(value)}
-                className={cn(
-                  "min-h-10 rounded-full border px-4 text-sm font-medium whitespace-nowrap transition-colors duration-100 outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50",
-                  current
-                    ? "border-primary bg-primary text-primary-foreground"
-                    : "bg-card text-foreground",
-                )}
-              >
-                {label}
-              </button>
-            </li>
-          );
-        })}
+    <nav aria-label="Store sections" className="-mx-5">
+      <ul className="flex h-16 items-center gap-2.5 overflow-x-auto px-5 mask-r-from-[calc(100%-2.5rem)] [scrollbar-width:none]">
+        {chips.map(({ value, label }) => (
+          <li key={value ?? "all"} className="shrink-0">
+            <Chip
+              selected={value === active}
+              onClick={(event) => {
+                onChange(value);
+                event.currentTarget.scrollIntoView({ inline: "nearest", block: "nearest" });
+              }}
+            >
+              {label}
+            </Chip>
+          </li>
+        ))}
       </ul>
     </nav>
   );
 }
 
-/** A collapsed run of rows that are out of the way but one tap from coming back. */
+/** Rows out of the way at the end of the list, one tap from coming back. */
 function Group({
   label,
   items,
-  toggle,
+  row,
 }: {
   label: string;
   items: ListItem[];
-  toggle: (item: ListItem) => () => void;
+  row: (item: ListItem) => ReactNode;
 }) {
   if (items.length === 0) return null;
   return (
-    <details className="group mt-1">
-      <summary className="flex min-h-12 cursor-pointer list-none items-center gap-2 text-sm text-muted-foreground [&::-webkit-details-marker]:hidden">
-        <span
+    <details className="group mt-4">
+      <summary className="flex min-h-11 cursor-pointer list-none items-center gap-1.5 rounded-sm text-subhead text-muted-foreground focus-ring [&::-webkit-details-marker]:hidden">
+        <ChevronRight
           aria-hidden
-          className="inline-block transition-transform duration-100 group-open:rotate-90"
-        >
-          ›
-        </span>
+          className="size-4 transition-transform duration-[120ms] group-open:rotate-90"
+        />
         <span>
           {label} (<span className="tabular">{items.length}</span>)
         </span>
       </summary>
-      <ul className="flex flex-col divide-y rounded-lg border bg-card">
-        {items.map((item) => (
-          <ListRow key={item._id} item={item} onToggle={toggle(item)} />
-        ))}
-      </ul>
+      <ul className="flex flex-col">{items.map(row)}</ul>
     </details>
   );
 }

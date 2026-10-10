@@ -3,9 +3,7 @@ import { amountNeededText, neededParts } from "./needed";
 
 describe("amountNeededText", () => {
   it("reads one amount as the sentence the reconcile row shows", () => {
-    expect(amountNeededText([{ quantityText: "22", unit: "tbsp" }])).toBe(
-      "The week needs 22 tbsp",
-    );
+    expect(amountNeededText([{ quantityText: "22", unit: "tbsp" }])).toBe("The week needs 22 tbsp");
   });
 
   it("joins split units with 'and'", () => {

@@ -1,27 +1,32 @@
 import { useMutation } from "convex/react";
-import { Fragment, useState, type FormEvent } from "react";
 import type { FunctionReturnType } from "convex/server";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { api } from "../../../convex/_generated/api";
+import { Amount } from "#/components/kit/amount";
 import { LevelChips } from "#/components/pantry/level-chips";
 import { shownUnit } from "#/components/recipes/recipe-text";
-import { Button } from "#/components/ui/button";
 import { Input } from "#/components/ui/input";
 import { errorMessage } from "#/lib/errors";
 import type { Level } from "#/lib/levels";
 import { parseQuantity } from "#/lib/quantities";
+import { neededParts } from "./needed";
 
 export type ReconcileItem = FunctionReturnType<typeof api.lists.reconcileItems>[number];
 
-/** "The week needs 22 tbsp" or, for split units, "1 tbsp and 2 tsp". */
+/** How long "Saved" stays after a change goes through. */
+const SAVED_MS = 1500;
+
+/** "The week needs 22 tbsp", the amounts in tomato; split units read "1 tbsp and 2 tsp". */
 function NeededText({ item }: { item: ReconcileItem }) {
   return (
     <>
-      The week needs{" "}
-      {item.required.map((r, index) => (
-        <Fragment key={`${r.quantityText} ${r.unit}`}>
-          {index > 0 && " and "}
-          <span className="tabular">{r.quantityText}</span>
-          {shownUnit(r.unit) && ` ${shownUnit(r.unit)}`}
+      {neededParts(item.required).map((part, index) => (
+        <Fragment key={index}>
+          {"text" in part ? (
+            part.text
+          ) : (
+            <Amount quantityText={part.amount.quantityText} unit={part.amount.unit} />
+          )}
         </Fragment>
       ))}
     </>
@@ -29,120 +34,151 @@ function NeededText({ item }: { item: ReconcileItem }) {
 }
 
 /**
- * One ingredient the list depends on, with what the pantry says. A count is a draft until
- * Save; a level saves on tap. `onSaved` tells the screen the list needs a fresh run.
+ * One ingredient the list depends on, in the list row's shape without the circle: the
+ * name, what the week needs, and what the pantry says. A count saves when the field is
+ * left or Enter is pressed; a level saves on tap. Either way "Saved" shows for a moment,
+ * and `onSaved` tells the screen the list needs a fresh run.
  */
 export function ReconcileRow({ item, onSaved }: { item: ReconcileItem; onSaved: () => void }) {
+  const [savedAt, setSavedAt] = useState<number | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const errorId = `reconcile-${item.ingredientId}-error`;
+
+  useEffect(() => {
+    if (savedAt === null) return;
+    const timer = setTimeout(() => setSavedAt(null), SAVED_MS);
+    return () => clearTimeout(timer);
+  }, [savedAt]);
+
+  const saved = () => {
+    setSavedAt(Date.now());
+    onSaved();
+  };
+
   return (
-    <li className="flex flex-col gap-2 px-4 py-3">
-      <div className="flex flex-col gap-0.5">
-        <span className="font-medium">{item.name}</span>
-        <span className="text-sm text-muted-foreground">
-          <NeededText item={item} />
-        </span>
+    <li className="flex flex-col border-b border-border py-1.5 last:border-b-0">
+      <div className="flex min-h-11 items-center gap-3">
+        <div className="flex min-w-0 flex-1 flex-col">
+          <span className="truncate text-body">{item.name}</span>
+          <span className="mt-0.5 text-caption text-muted-foreground">
+            <NeededText item={item} />
+            <span aria-live="polite">{savedAt !== null && " · Saved"}</span>
+          </span>
+        </div>
+        {item.kind === "count" && (
+          <CountEditor item={item} errorId={errorId} onError={setError} onSaved={saved} />
+        )}
       </div>
-      {item.kind === "count" ? (
-        <CountEditor item={item} onSaved={onSaved} />
-      ) : (
-        <LevelEditor item={item} onSaved={onSaved} />
+      {item.kind === "level" && (
+        <div className="mt-2 mb-1">
+          <LevelEditor item={item} onError={setError} onSaved={saved} />
+        </div>
+      )}
+      {error && (
+        <p id={errorId} role="alert" className="mt-1 mb-1 text-caption text-destructive">
+          {error}
+        </p>
       )}
     </li>
   );
 }
 
-function CountEditor({ item, onSaved }: { item: ReconcileItem; onSaved: () => void }) {
+function CountEditor({
+  item,
+  errorId,
+  onError,
+  onSaved,
+}: {
+  item: ReconcileItem;
+  errorId: string;
+  onError: (error: string | null) => void;
+  onSaved: () => void;
+}) {
   const setCount = useMutation(api.pantry.setCount);
   const saved = item.count?.quantityText ?? "";
   const unit = item.count?.unit ?? item.required[0]?.unit ?? item.defaultUnit ?? "";
   // null until edited, so the field follows the saved count as it changes elsewhere.
   const [draft, setDraft] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [pending, setPending] = useState(false);
-  const value = draft ?? saved;
+  const [invalid, setInvalid] = useState(false);
+  // Enter then blur would send the same change twice; one save runs at a time.
+  const saving = useRef(false);
   const id = `reconcile-${item.ingredientId}`;
 
-  async function save(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    if (draft === null || draft.trim() === saved) return;
+  async function commit() {
+    if (draft === null || draft.trim() === saved || saving.current) return;
     if (parseQuantity(draft) === null) {
-      setError("Use a number or a fraction.");
+      setInvalid(true);
+      onError("Use a number or a fraction.");
       return;
     }
-    setPending(true);
-    setError(null);
+    saving.current = true;
+    setInvalid(false);
+    onError(null);
     try {
       await setCount({ ingredientId: item.ingredientId, quantityText: draft, unit });
       setDraft(null);
       onSaved();
     } catch (err) {
-      setError(errorMessage(err));
+      setInvalid(true);
+      onError(errorMessage(err));
     } finally {
-      setPending(false);
+      saving.current = false;
     }
   }
 
   return (
-    <form className="flex flex-col gap-2" onSubmit={save} noValidate>
-      <div className="flex items-center gap-2">
-        <label htmlFor={id} className="sr-only">
-          How much {item.name} is on hand
-        </label>
-        <Input
-          id={id}
-          value={value}
-          inputMode="decimal"
-          autoComplete="off"
-          enterKeyHint="done"
-          className="tabular h-10 w-24"
-          aria-invalid={error !== null}
-          aria-describedby={error ? `${id}-error` : undefined}
-          onChange={(e) => setDraft(e.target.value)}
-        />
-        <span className="text-sm text-muted-foreground">{unit}</span>
-        <Button
-          type="submit"
-          variant="outline"
-          className="ml-auto h-10"
-          disabled={pending || draft === null || draft.trim() === saved}
-        >
-          Save
-        </Button>
-      </div>
-      {error && (
-        <p id={`${id}-error`} role="alert" className="text-sm text-destructive">
-          {error}
-        </p>
-      )}
+    <form
+      className="flex shrink-0 items-center gap-2"
+      noValidate
+      onSubmit={(e) => {
+        e.preventDefault();
+        void commit();
+      }}
+    >
+      <label htmlFor={id} className="sr-only">
+        How much {item.name} is on hand
+      </label>
+      <Input
+        id={id}
+        value={draft ?? saved}
+        inputMode="decimal"
+        autoComplete="off"
+        enterKeyHint="done"
+        className="tabular w-20 text-right"
+        aria-invalid={invalid}
+        aria-describedby={invalid ? errorId : undefined}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={() => void commit()}
+      />
+      <span className="min-w-8 text-caption text-muted-foreground">{shownUnit(unit)}</span>
     </form>
   );
 }
 
-function LevelEditor({ item, onSaved }: { item: ReconcileItem; onSaved: () => void }) {
+function LevelEditor({
+  item,
+  onError,
+  onSaved,
+}: {
+  item: ReconcileItem;
+  onError: (error: string | null) => void;
+  onSaved: () => void;
+}) {
   const setLevel = useMutation(api.pantry.setLevel);
   const [pending, setPending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   async function change(level: Level) {
     setPending(true);
-    setError(null);
+    onError(null);
     try {
       await setLevel({ ingredientId: item.ingredientId, level });
       onSaved();
     } catch (err) {
-      setError(errorMessage(err));
+      onError(errorMessage(err));
     } finally {
       setPending(false);
     }
   }
 
-  return (
-    <div className="flex flex-col gap-2">
-      <LevelChips name={item.name} value={item.level} onChange={change} disabled={pending} />
-      {error && (
-        <p role="alert" className="text-sm text-destructive">
-          {error}
-        </p>
-      )}
-    </div>
-  );
+  return <LevelChips name={item.name} value={item.level} onChange={change} disabled={pending} />;
 }
