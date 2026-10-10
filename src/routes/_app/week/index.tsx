@@ -2,7 +2,7 @@ import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
 import { BookOpen, ChevronRight, CookingPot, Soup } from "lucide-react";
-import { type ReactNode, useState } from "react";
+import { type ReactNode, type RefObject, useRef, useState } from "react";
 import { api } from "../../../../convex/_generated/api";
 import { MadeItSheet } from "#/components/cook/made-it-sheet";
 import { AisleHeading } from "#/components/kit/aisle-heading";
@@ -88,6 +88,7 @@ function ThisWeek({
   // made moves from Tonight into the rows.
   const [cooking, setCooking] = useState<WeekRecipe | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const opener = useRef<HTMLButtonElement>(null);
   const madeIt = (recipe: WeekRecipe) => {
     setCooking(recipe);
     setSheetOpen(true);
@@ -175,6 +176,7 @@ function ThisWeek({
       ) : tonight ? (
         <TonightCard
           recipe={tonight}
+          opener={opener}
           onMadeIt={() => madeIt(tonight)}
           adaptations={week.adaptations.filter((a) => a.recipeId === tonight.recipeId)}
         />
@@ -215,6 +217,7 @@ function ThisWeek({
           defaultMultiplier={cooking.multiplier.text}
           open={sheetOpen}
           onOpenChange={setSheetOpen}
+          opener={opener}
         />
       )}
     </main>
@@ -229,10 +232,13 @@ function ThisWeek({
 function TonightCard({
   recipe,
   adaptations,
+  opener,
   onMadeIt,
 }: {
   recipe: WeekRecipe;
   adaptations: CurrentWeek["adaptations"];
+  /** Focus comes back here when the Made it sheet closes. */
+  opener: RefObject<HTMLButtonElement | null>;
   onMadeIt: () => void;
 }) {
   const made = yieldOf(recipe);
@@ -263,7 +269,7 @@ function TonightCard({
         ))}
       </p>
       <div className="mt-3 flex items-center gap-3">
-        <Pill type="button" variant="pale" onClick={onMadeIt}>
+        <Pill ref={opener} type="button" variant="pale" onClick={onMadeIt}>
           <CookingPot aria-hidden className="size-[18px]" />
           Made it
         </Pill>
