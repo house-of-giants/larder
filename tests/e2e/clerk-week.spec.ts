@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { devices, expect, test, type BrowserContext, type Page } from "@playwright/test";
 import {
   applyTestingToken,
+  deleteTestUser,
   createTestingToken,
   requireDevelopmentKeys,
   signIn,
@@ -583,6 +584,8 @@ test.describe("a week in one household, signed in with Clerk", () => {
         convexRun("testing:deleteDevHousehold", { householdId });
       }
       for (const context of contexts) await context.close();
+      // The three sign-ups come off the development instance, which caps at 100 users.
+      for (const email of Object.values(EMAIL)) await deleteTestUser(email);
     }
   });
 });

@@ -82,3 +82,25 @@ export async function signIn(page: Page, email: string) {
   await enterCode(page);
   await leftAuth(page);
 }
+
+/**
+ * Deletes a test user this run signed up, so the development instance (capped at 100
+ * users) does not fill with throwaway accounts. Looks the address up first; a user that
+ * never got created is not an error. Never touches an address without the test marker.
+ */
+export async function deleteTestUser(email: string): Promise<void> {
+  requireDevelopmentKeys();
+  if (!email.includes("+clerk_test@"))
+    throw new Error(`Refusing to delete a non-test user: ${email}`);
+  const secret = process.env.CLERK_SECRET_KEY!;
+  const headers = { Authorization: `Bearer ${secret}` };
+  const list = await fetch(
+    `https://api.clerk.com/v1/users?email_address=${encodeURIComponent(email)}&limit=5`,
+    { headers },
+  );
+  if (!list.ok) return;
+  const users = (await list.json()) as { id: string }[];
+  for (const user of users) {
+    await fetch(`https://api.clerk.com/v1/users/${user.id}`, { method: "DELETE", headers });
+  }
+}
