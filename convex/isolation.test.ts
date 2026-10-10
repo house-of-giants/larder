@@ -13,7 +13,25 @@ type Case = {
   kind: "query" | "mutation";
   fn: FunctionReference<"query" | "mutation", "public">;
   args: Record<string, unknown>;
+  /** The refusal; member functions say "Sign in first.", the MCP door's say less. */
+  expectedError?: string;
 };
+
+// Phase 5. The MCP door's functions take the agent secret instead of a sign-in. An
+// anonymous caller does not have it: a guess, with a household and token id of its choosing.
+const guess = { agentSecret: "guess", householdId: "1households", tokenId: "1householdTokens" };
+const agentCase = (
+  name: string,
+  kind: Case["kind"],
+  fn: Case["fn"],
+  args: Record<string, unknown> = {},
+): Case => ({
+  name,
+  kind,
+  fn,
+  args: { ...guess, ...args },
+  expectedError: "Agent access refused.",
+});
 
 const cases: Case[] = [
   { name: "households.current", kind: "query", fn: api.households.current, args: {} },
@@ -214,6 +232,104 @@ const cases: Case[] = [
     fn: api.undo.event,
     args: { eventId: "1inventoryEvents" },
   },
+  // Phase 5.
+  { name: "tokens.list", kind: "query", fn: api.tokens.list, args: {} },
+  { name: "tokens.create", kind: "mutation", fn: api.tokens.create, args: { label: "Hermes" } },
+  {
+    name: "tokens.revoke",
+    kind: "mutation",
+    fn: api.tokens.revoke,
+    args: { tokenId: "1householdTokens" },
+  },
+  {
+    name: "agent.resolveToken",
+    kind: "query",
+    fn: api.agent.resolveToken,
+    args: { agentSecret: "guess", tokenHash: "0".repeat(64) },
+    expectedError: "Agent access refused.",
+  },
+  {
+    name: "agent.touchToken",
+    kind: "mutation",
+    fn: api.agent.touchToken,
+    args: { agentSecret: "guess", tokenId: "1householdTokens" },
+    expectedError: "Agent access refused.",
+  },
+  agentCase("agent.pantryList", "query", api.agent.pantryList),
+  agentCase("agent.pantrySetCount", "mutation", api.agent.pantrySetCount, {
+    ingredientId: "1ingredients",
+    quantityText: "6",
+    unit: "each",
+  }),
+  agentCase("agent.pantrySetLevel", "mutation", api.agent.pantrySetLevel, {
+    ingredientId: "1ingredients",
+    level: "full",
+  }),
+  agentCase("agent.pantryMarkOut", "mutation", api.agent.pantryMarkOut, {
+    ingredientId: "1ingredients",
+  }),
+  agentCase("agent.ingredientsList", "query", api.agent.ingredientsList),
+  agentCase("agent.ingredientsResolve", "query", api.agent.ingredientsResolve, { name: "eggs" }),
+  agentCase("agent.ingredientsUpsert", "mutation", api.agent.ingredientsUpsert, {
+    name: "salt",
+    kind: "level",
+    category: "baking_pantry_condiments",
+    aliases: [],
+    tracked: true,
+  }),
+  agentCase("agent.recipesList", "query", api.agent.recipesList),
+  agentCase("agent.recipesGet", "query", api.agent.recipesGet, { id: "1recipes" }),
+  agentCase("agent.recipesUpsert", "mutation", api.agent.recipesUpsert, {
+    name: "Sliders",
+    instructions: [],
+    tags: [],
+    ingredients: [{ name: "eggs", quantityText: "1", unit: "each" }],
+  }),
+  agentCase("agent.recipesArchive", "mutation", api.agent.recipesArchive, { id: "1recipes" }),
+  agentCase("agent.weeksCurrent", "query", api.agent.weeksCurrent),
+  agentCase("agent.weeksCreate", "mutation", api.agent.weeksCreate, { weekOf: "2026-10-09" }),
+  agentCase("agent.weeksSetRecipes", "mutation", api.agent.weeksSetRecipes, {
+    weekId: "1weeks",
+    recipes: [{ recipeId: "1recipes", status: "selected" }],
+  }),
+  agentCase("agent.weeksAddAdaptation", "mutation", api.agent.weeksAddAdaptation, {
+    weekId: "1weeks",
+    recipeId: "1recipes",
+    kind: "remove",
+    originalIngredientId: "1ingredients",
+    description: "",
+  }),
+  agentCase("agent.weeksSetStatus", "mutation", api.agent.weeksSetStatus, {
+    weekId: "1weeks",
+    status: "cooking",
+  }),
+  agentCase("agent.listGet", "query", api.agent.listGet),
+  agentCase("agent.listGenerate", "mutation", api.agent.listGenerate, { weekId: "1weeks" }),
+  agentCase("agent.listAddItem", "mutation", api.agent.listAddItem, {
+    displayName: "paper towels",
+  }),
+  agentCase("agent.listSetItemStatus", "mutation", api.agent.listSetItemStatus, {
+    listItemId: "1listItems",
+    status: "checked",
+  }),
+  agentCase("agent.cookMade", "mutation", api.agent.cookMade, {
+    recipeId: "1recipes",
+    multiplierText: "1",
+    skippedIngredientIds: [],
+    substitutions: [],
+  }),
+  agentCase("agent.leftoversList", "query", api.agent.leftoversList),
+  agentCase("agent.leftoversConsume", "mutation", api.agent.leftoversConsume, {
+    preparedFoodId: "1preparedFoods",
+  }),
+  agentCase("agent.leftoversDiscard", "mutation", api.agent.leftoversDiscard, {
+    preparedFoodId: "1preparedFoods",
+  }),
+  agentCase("agent.weekCloseout", "mutation", api.agent.weekCloseout, {
+    weekId: "1weeks",
+    decisions: [],
+  }),
+  agentCase("agent.eventsRecent", "query", api.agent.eventsRecent),
 ];
 
 // Every Convex function module, so a public function added in any phase must be listed
@@ -250,13 +366,13 @@ describe("isolation registry", () => {
 });
 
 describe("anonymous callers", () => {
-  it.each(cases)("$name refuses an anonymous caller", async ({ kind, fn, args }) => {
+  it.each(cases)("$name refuses an anonymous caller", async ({ kind, fn, args, expectedError }) => {
     const t = convexTest(schema, modules);
     const call =
       kind === "query"
         ? t.query(fn as FunctionReference<"query">, args)
         : t.mutation(fn as FunctionReference<"mutation">, args);
-    await expect(call).rejects.toMatchObject({ data: "Sign in first." });
+    await expect(call).rejects.toMatchObject({ data: expectedError ?? "Sign in first." });
     // Nothing was written on the way to the refusal.
     const households = await t.run((ctx) => ctx.db.query("households").collect());
     expect(households).toEqual([]);

@@ -1,8 +1,8 @@
-import { ConvexError, v } from "convex/values";
+import { ConvexError, type ObjectType, v } from "convex/values";
 import { defaultLocation } from "../src/lib/locations";
 import type { Doc, Id } from "./_generated/dataModel";
 import { type MutationCtx, type QueryCtx, mutation, query } from "./_generated/server";
-import { requireMember } from "./lib/auth";
+import { type Actor, type Caller, requireCaller, requireMember } from "./lib/auth";
 import { recordInventoryEvent } from "./lib/ledger";
 import {
   type ListAdaptation,
@@ -77,158 +77,163 @@ const planKey = (
 export const generate = mutation({
   args: { weekId: v.id("weeks") },
   returns: v.id("lists"),
-  handler: async (ctx, args) => {
-    const { householdId } = await requireMember(ctx);
-    const week = await requireWeek(ctx, householdId, args.weekId);
-    if (week.status !== "planning" && week.status !== "shopping") {
-      throw new ConvexError("The list is set for this week.");
-    }
-
-    // Every joined row is checked against the household before it is used.
-    const recipes: ListRecipe<Id<"ingredients">, Id<"recipes">>[] = [];
-    const weekRecipes = await weekRows(ctx, "weekRecipes", householdId, week._id);
-    for (const wr of weekRecipes) {
-      if (wr.status !== "selected") continue;
-      const recipe = await ctx.db.get("recipes", wr.recipeId);
-      if (recipe === null || recipe.householdId !== householdId) continue;
-      const rows = await ctx.db
-        .query("recipeIngredients")
-        .withIndex("by_householdId_recipeId", (q) =>
-          q.eq("householdId", householdId).eq("recipeId", recipe._id),
-        )
-        .collect();
-      recipes.push({
-        recipeId: recipe._id,
-        name: recipe.name,
-        multiplier: wr.multiplier.decimal,
-        ingredients: rows
-          .sort((a, b) => a.order - b.order)
-          .map((r) => ({
-            ingredientId: r.ingredientId,
-            quantityDecimal: r.quantityDecimal ?? null,
-            quantityText: r.quantityText,
-            unit: r.unit,
-          })),
-      });
-    }
-    if (recipes.length === 0) {
-      throw new ConvexError("Pick at least one recipe first.");
-    }
-
-    const adaptations: ListAdaptation<Id<"ingredients">, Id<"recipes">>[] = (
-      await weekRows(ctx, "weekAdaptations", householdId, week._id)
-    ).map((a) => ({
-      recipeId: a.recipeId,
-      kind: a.kind,
-      originalIngredientId: a.originalIngredientId,
-      newIngredientId: a.newIngredientId,
-      quantityDecimal: a.quantityDecimal,
-      quantityText: a.quantityText,
-      unit: a.unit,
-    }));
-
-    const ingredientRows = await ctx.db
-      .query("ingredients")
-      .withIndex("by_householdId", (q) => q.eq("householdId", householdId))
-      .collect();
-    const ingredients = new Map<Id<"ingredients">, ListIngredient>(
-      ingredientRows.map((i) => [
-        i._id,
-        { name: i.name, kind: i.kind, category: i.category, tracked: i.tracked },
-      ]),
-    );
-    // A row naming an ingredient from outside the household is dropped, not trusted.
-    for (const recipe of recipes) {
-      recipe.ingredients = recipe.ingredients.filter((r) => ingredients.has(r.ingredientId));
-    }
-    const ownAdaptations = adaptations.filter(
-      (a) =>
-        (a.originalIngredientId === undefined || ingredients.has(a.originalIngredientId)) &&
-        (a.newIngredientId === undefined || ingredients.has(a.newIngredientId)),
-    );
-
-    const pantryRows = await ctx.db
-      .query("pantryItems")
-      .withIndex("by_householdId", (q) => q.eq("householdId", householdId))
-      .collect();
-    const pantry = new Map<Id<"ingredients">, ListPantryRow>(
-      pantryRows.map((p) => [p.ingredientId, p]),
-    );
-
-    const { items } = generateList({
-      recipes,
-      adaptations: ownAdaptations,
-      ingredients,
-      pantry,
-    });
-
-    const now = Date.now();
-    let list = await activeList(ctx, householdId, week._id);
-    if (list === null) {
-      const listId = await ctx.db.insert("lists", {
-        householdId,
-        weekId: week._id,
-        status: "active",
-        generatedAt: now,
-      });
-      list = (await ctx.db.get("lists", listId))!;
-    } else {
-      await ctx.db.patch("lists", list._id, { generatedAt: now });
-    }
-
-    // Re-running keeps ad-hoc items untouched, and plan lines someone checked or skipped:
-    // their purchase is what went into the pantry, so they stay exactly as they are even
-    // when the new run would drop or change the line. Lines still open (needed, onHand)
-    // keep their row when the same line comes back, and are replaced otherwise.
-    const decided = new Set<string>();
-    const previous = new Map<string, Doc<"listItems">>();
-    for (const item of await listItemsOf(ctx, householdId, list._id)) {
-      if (item.source !== "plan") continue;
-      const key = planKey(item.ingredientId, item.required);
-      if (item.status === "checked" || item.status === "skipped") {
-        decided.add(key);
-      } else if (previous.has(key)) {
-        await ctx.db.delete("listItems", item._id);
-      } else {
-        previous.set(key, item);
-      }
-    }
-
-    for (const line of items) {
-      const key = planKey(line.ingredientId, line.required);
-      if (decided.has(key)) continue;
-      const fields = {
-        displayName: line.displayName,
-        category: line.category,
-        required: line.required,
-        purchase: line.purchase,
-        status: line.status,
-        sourceRecipeIds: line.sourceRecipeIds,
-      };
-      const kept = previous.get(key);
-      if (kept !== undefined) {
-        previous.delete(key);
-        await ctx.db.patch("listItems", kept._id, fields);
-        continue;
-      }
-      await ctx.db.insert("listItems", {
-        householdId,
-        listId: list._id,
-        source: "plan",
-        ingredientId: line.ingredientId,
-        ...fields,
-      });
-    }
-    for (const stale of previous.values()) {
-      await ctx.db.delete("listItems", stale._id);
-    }
-
-    if (week.status === "planning") {
-      await ctx.db.patch("weeks", week._id, { status: "shopping" });
-    }
-    return list._id;
-  },
+  handler: async (ctx, args) => generateWeekList(ctx, await requireCaller(ctx), args),
 });
+
+export async function generateWeekList(
+  ctx: MutationCtx,
+  { householdId }: Caller,
+  args: { weekId: Id<"weeks"> },
+) {
+  const week = await requireWeek(ctx, householdId, args.weekId);
+  if (week.status !== "planning" && week.status !== "shopping") {
+    throw new ConvexError("The list is set for this week.");
+  }
+
+  // Every joined row is checked against the household before it is used.
+  const recipes: ListRecipe<Id<"ingredients">, Id<"recipes">>[] = [];
+  const weekRecipes = await weekRows(ctx, "weekRecipes", householdId, week._id);
+  for (const wr of weekRecipes) {
+    if (wr.status !== "selected") continue;
+    const recipe = await ctx.db.get("recipes", wr.recipeId);
+    if (recipe === null || recipe.householdId !== householdId) continue;
+    const rows = await ctx.db
+      .query("recipeIngredients")
+      .withIndex("by_householdId_recipeId", (q) =>
+        q.eq("householdId", householdId).eq("recipeId", recipe._id),
+      )
+      .collect();
+    recipes.push({
+      recipeId: recipe._id,
+      name: recipe.name,
+      multiplier: wr.multiplier.decimal,
+      ingredients: rows
+        .sort((a, b) => a.order - b.order)
+        .map((r) => ({
+          ingredientId: r.ingredientId,
+          quantityDecimal: r.quantityDecimal ?? null,
+          quantityText: r.quantityText,
+          unit: r.unit,
+        })),
+    });
+  }
+  if (recipes.length === 0) {
+    throw new ConvexError("Pick at least one recipe first.");
+  }
+
+  const adaptations: ListAdaptation<Id<"ingredients">, Id<"recipes">>[] = (
+    await weekRows(ctx, "weekAdaptations", householdId, week._id)
+  ).map((a) => ({
+    recipeId: a.recipeId,
+    kind: a.kind,
+    originalIngredientId: a.originalIngredientId,
+    newIngredientId: a.newIngredientId,
+    quantityDecimal: a.quantityDecimal,
+    quantityText: a.quantityText,
+    unit: a.unit,
+  }));
+
+  const ingredientRows = await ctx.db
+    .query("ingredients")
+    .withIndex("by_householdId", (q) => q.eq("householdId", householdId))
+    .collect();
+  const ingredients = new Map<Id<"ingredients">, ListIngredient>(
+    ingredientRows.map((i) => [
+      i._id,
+      { name: i.name, kind: i.kind, category: i.category, tracked: i.tracked },
+    ]),
+  );
+  // A row naming an ingredient from outside the household is dropped, not trusted.
+  for (const recipe of recipes) {
+    recipe.ingredients = recipe.ingredients.filter((r) => ingredients.has(r.ingredientId));
+  }
+  const ownAdaptations = adaptations.filter(
+    (a) =>
+      (a.originalIngredientId === undefined || ingredients.has(a.originalIngredientId)) &&
+      (a.newIngredientId === undefined || ingredients.has(a.newIngredientId)),
+  );
+
+  const pantryRows = await ctx.db
+    .query("pantryItems")
+    .withIndex("by_householdId", (q) => q.eq("householdId", householdId))
+    .collect();
+  const pantry = new Map<Id<"ingredients">, ListPantryRow>(
+    pantryRows.map((p) => [p.ingredientId, p]),
+  );
+
+  const { items } = generateList({
+    recipes,
+    adaptations: ownAdaptations,
+    ingredients,
+    pantry,
+  });
+
+  const now = Date.now();
+  let list = await activeList(ctx, householdId, week._id);
+  if (list === null) {
+    const listId = await ctx.db.insert("lists", {
+      householdId,
+      weekId: week._id,
+      status: "active",
+      generatedAt: now,
+    });
+    list = (await ctx.db.get("lists", listId))!;
+  } else {
+    await ctx.db.patch("lists", list._id, { generatedAt: now });
+  }
+
+  // Re-running keeps ad-hoc items untouched, and plan lines someone checked or skipped:
+  // their purchase is what went into the pantry, so they stay exactly as they are even
+  // when the new run would drop or change the line. Lines still open (needed, onHand)
+  // keep their row when the same line comes back, and are replaced otherwise.
+  const decided = new Set<string>();
+  const previous = new Map<string, Doc<"listItems">>();
+  for (const item of await listItemsOf(ctx, householdId, list._id)) {
+    if (item.source !== "plan") continue;
+    const key = planKey(item.ingredientId, item.required);
+    if (item.status === "checked" || item.status === "skipped") {
+      decided.add(key);
+    } else if (previous.has(key)) {
+      await ctx.db.delete("listItems", item._id);
+    } else {
+      previous.set(key, item);
+    }
+  }
+
+  for (const line of items) {
+    const key = planKey(line.ingredientId, line.required);
+    if (decided.has(key)) continue;
+    const fields = {
+      displayName: line.displayName,
+      category: line.category,
+      required: line.required,
+      purchase: line.purchase,
+      status: line.status,
+      sourceRecipeIds: line.sourceRecipeIds,
+    };
+    const kept = previous.get(key);
+    if (kept !== undefined) {
+      previous.delete(key);
+      await ctx.db.patch("listItems", kept._id, fields);
+      continue;
+    }
+    await ctx.db.insert("listItems", {
+      householdId,
+      listId: list._id,
+      source: "plan",
+      ingredientId: line.ingredientId,
+      ...fields,
+    });
+  }
+  for (const stale of previous.values()) {
+    await ctx.db.delete("listItems", stale._id);
+  }
+
+  if (week.status === "planning") {
+    await ctx.db.patch("weeks", week._id, { status: "shopping" });
+  }
+  return list._id;
+}
 
 const listItemView = v.object({
   _id: v.id("listItems"),
@@ -244,112 +249,122 @@ const listItemView = v.object({
   sourceRecipeIds: itemFields.sourceRecipeIds,
 });
 
+export const currentList = v.union(
+  v.null(),
+  v.object({
+    listId: v.id("lists"),
+    weekId: v.id("weeks"),
+    weekOf: v.string(),
+    status: v.union(v.literal("draft"), v.literal("active"), v.literal("complete")),
+    generatedAt: v.number(),
+    sections: v.array(v.object({ category: v.string(), items: v.array(listItemView) })),
+  }),
+);
+
 export const current = query({
   args: {},
-  returns: v.union(
-    v.null(),
-    v.object({
-      listId: v.id("lists"),
-      weekId: v.id("weeks"),
-      weekOf: v.string(),
-      status: v.union(v.literal("draft"), v.literal("active"), v.literal("complete")),
-      generatedAt: v.number(),
-      sections: v.array(v.object({ category: v.string(), items: v.array(listItemView) })),
-    }),
-  ),
-  handler: async (ctx) => {
-    const { householdId } = await requireMember(ctx);
-    const week = await findOpenWeek(ctx, householdId);
-    if (week === null) return null;
-    const list = await activeList(ctx, householdId, week._id);
-    if (list === null) return null;
-
-    const items = [];
-    for (const item of await listItemsOf(ctx, householdId, list._id)) {
-      let kind: "count" | "level" = "count";
-      if (item.ingredientId !== undefined) {
-        const ingredient = await ctx.db.get("ingredients", item.ingredientId);
-        if (ingredient === null || ingredient.householdId !== householdId) continue;
-        kind = ingredient.kind;
-      }
-      items.push({
-        _id: item._id,
-        source: item.source,
-        ingredientId: item.ingredientId,
-        displayName: item.displayName,
-        category: item.category,
-        kind,
-        required: item.required,
-        purchase: item.purchase,
-        status: item.status,
-        checkedAt: item.checkedAt,
-        sourceRecipeIds: item.sourceRecipeIds,
-      });
-    }
-    // Store order, then what is left to buy before what is already home, then by name.
-    items.sort(
-      (a, b) =>
-        sectionRank(a.category) - sectionRank(b.category) ||
-        byText(a.category, b.category) ||
-        Number(a.status === "onHand") - Number(b.status === "onHand") ||
-        byText(a.displayName, b.displayName) ||
-        byText(a.required.unit, b.required.unit),
-    );
-    const sections: { category: string; items: typeof items }[] = [];
-    for (const item of items) {
-      const last = sections.at(-1);
-      if (last?.category === item.category) last.items.push(item);
-      else sections.push({ category: item.category, items: [item] });
-    }
-    return {
-      listId: list._id,
-      weekId: week._id,
-      weekOf: week.weekOf,
-      status: list.status,
-      generatedAt: list.generatedAt,
-      sections,
-    };
-  },
+  returns: currentList,
+  handler: async (ctx) => getCurrentList(ctx, await requireCaller(ctx)),
 });
+
+export async function getCurrentList(ctx: QueryCtx, { householdId }: Caller) {
+  const week = await findOpenWeek(ctx, householdId);
+  if (week === null) return null;
+  const list = await activeList(ctx, householdId, week._id);
+  if (list === null) return null;
+
+  const items = [];
+  for (const item of await listItemsOf(ctx, householdId, list._id)) {
+    let kind: "count" | "level" = "count";
+    if (item.ingredientId !== undefined) {
+      const ingredient = await ctx.db.get("ingredients", item.ingredientId);
+      if (ingredient === null || ingredient.householdId !== householdId) continue;
+      kind = ingredient.kind;
+    }
+    items.push({
+      _id: item._id,
+      source: item.source,
+      ingredientId: item.ingredientId,
+      displayName: item.displayName,
+      category: item.category,
+      kind,
+      required: item.required,
+      purchase: item.purchase,
+      status: item.status,
+      checkedAt: item.checkedAt,
+      sourceRecipeIds: item.sourceRecipeIds,
+    });
+  }
+  // Store order, then what is left to buy before what is already home, then by name.
+  items.sort(
+    (a, b) =>
+      sectionRank(a.category) - sectionRank(b.category) ||
+      byText(a.category, b.category) ||
+      Number(a.status === "onHand") - Number(b.status === "onHand") ||
+      byText(a.displayName, b.displayName) ||
+      byText(a.required.unit, b.required.unit),
+  );
+  const sections: { category: string; items: typeof items }[] = [];
+  for (const item of items) {
+    const last = sections.at(-1);
+    if (last?.category === item.category) last.items.push(item);
+    else sections.push({ category: item.category, items: [item] });
+  }
+  return {
+    listId: list._id,
+    weekId: week._id,
+    weekOf: week.weekOf,
+    status: list.status,
+    generatedAt: list.generatedAt,
+    sections,
+  };
+}
 
 function optionalText(raw: string | undefined): string | undefined {
   const text = raw?.trim();
   return text ? text : undefined;
 }
 
+export const addItemArgs = {
+  displayName: v.string(),
+  quantityText: v.optional(v.string()),
+  unit: v.optional(v.string()),
+  category: v.optional(v.string()),
+};
+
 export const addItem = mutation({
-  args: {
-    displayName: v.string(),
-    quantityText: v.optional(v.string()),
-    unit: v.optional(v.string()),
-    category: v.optional(v.string()),
-  },
+  args: addItemArgs,
   returns: v.id("listItems"),
-  handler: async (ctx, args) => {
-    const { householdId } = await requireMember(ctx);
-    const displayName = args.displayName.trim().replace(/\s+/g, " ");
-    if (displayName === "") {
-      throw new ConvexError("Name the item.");
-    }
-    const week = await findOpenWeek(ctx, householdId);
-    const list = week === null ? null : await activeList(ctx, householdId, week._id);
-    if (list === null) {
-      throw new ConvexError("Make the list first.");
-    }
-    const quantityText = optionalText(args.quantityText) ?? "";
-    const quantityDecimal = parseQuantity(quantityText) ?? undefined;
-    return await ctx.db.insert("listItems", {
-      householdId,
-      listId: list._id,
-      source: "adhoc",
-      displayName,
-      category: optionalText(args.category) ?? "other",
-      required: { quantityText, quantityDecimal, unit: optionalText(args.unit) ?? "" },
-      status: "needed",
-      sourceRecipeIds: [],
-    });
-  },
+  handler: async (ctx, args) => addListItem(ctx, await requireCaller(ctx), args),
 });
+
+export async function addListItem(
+  ctx: MutationCtx,
+  { householdId }: Caller,
+  args: ObjectType<typeof addItemArgs>,
+) {
+  const displayName = args.displayName.trim().replace(/\s+/g, " ");
+  if (displayName === "") {
+    throw new ConvexError("Name the item.");
+  }
+  const week = await findOpenWeek(ctx, householdId);
+  const list = week === null ? null : await activeList(ctx, householdId, week._id);
+  if (list === null) {
+    throw new ConvexError("Make the list first.");
+  }
+  const quantityText = optionalText(args.quantityText) ?? "";
+  const quantityDecimal = parseQuantity(quantityText) ?? undefined;
+  return await ctx.db.insert("listItems", {
+    householdId,
+    listId: list._id,
+    source: "adhoc",
+    displayName,
+    category: optionalText(args.category) ?? "other",
+    required: { quantityText, quantityDecimal, unit: optionalText(args.unit) ?? "" },
+    status: "needed",
+    sourceRecipeIds: [],
+  });
+}
 
 type PurchasePayload = {
   /** The row before the check-off; null when the check-off created it. */
@@ -386,7 +401,7 @@ async function putPantryRow(
 
 type Tap = {
   householdId: Id<"households">;
-  memberId: Id<"members">;
+  actor: Actor;
   item: Doc<"listItems">;
   ingredient: Doc<"ingredients">;
   /** The phone's tap time, for replayed offline taps. */
@@ -394,10 +409,7 @@ type Tap = {
 };
 
 /** Check-off of a plan item: the pantry gains what was bought, with a purchase event. */
-async function applyPurchase(
-  ctx: MutationCtx,
-  { householdId, memberId, item, ingredient, at }: Tap,
-) {
+async function applyPurchase(ctx: MutationCtx, { householdId, actor, item, ingredient, at }: Tap) {
   const existing = await findPantryRow(ctx, householdId, ingredient._id);
   const location = existing?.location ?? defaultLocation(ingredient.category);
   const kept = {
@@ -441,7 +453,7 @@ async function applyPurchase(
   await recordInventoryEvent(ctx, {
     householdId,
     type: "purchase",
-    actor: { kind: "member", memberId },
+    actor,
     refs: { pantryItemId, listItemId: item._id },
     payload: { ...payload, after } satisfies PurchasePayload,
     at,
@@ -530,7 +542,7 @@ async function undoneRow(
  */
 export async function reversePurchase(
   ctx: MutationCtx,
-  { householdId, memberId, item, ingredient, at }: Tap,
+  { householdId, actor, item, ingredient, at }: Tap,
   /** The purchase to reverse, when the caller already picked it (the undo drawer). */
   purchase?: Doc<"inventoryEvents">,
 ) {
@@ -549,7 +561,7 @@ export async function reversePurchase(
   await recordInventoryEvent(ctx, {
     householdId,
     type: "undo",
-    actor: { kind: "member", memberId },
+    actor,
     refs: { pantryItemId, listItemId: item._id },
     payload: { before, after },
     undoesEventId: latest._id,
@@ -557,47 +569,56 @@ export async function reversePurchase(
   });
 }
 
+export const setItemStatusArgs = {
+  listItemId: v.id("listItems"),
+  status: v.union(v.literal("needed"), v.literal("checked"), v.literal("skipped")),
+  /** When the phone recorded the tap; offline check-offs replay later. */
+  at: v.optional(v.number()),
+};
+
 export const setItemStatus = mutation({
-  args: {
-    listItemId: v.id("listItems"),
-    status: v.union(v.literal("needed"), v.literal("checked"), v.literal("skipped")),
-    /** When the phone recorded the tap; offline check-offs replay later. */
-    at: v.optional(v.number()),
-  },
+  args: setItemStatusArgs,
   returns: v.null(),
   handler: async (ctx, args) => {
-    const { householdId, member } = await requireMember(ctx);
-    const item = await ctx.db.get("listItems", args.listItemId);
-    if (item === null || item.householdId !== householdId) {
-      throw new ConvexError(itemNotHere);
-    }
-    const list = await ctx.db.get("lists", item.listId);
-    if (list === null || list.householdId !== householdId) {
-      throw new ConvexError(itemNotHere);
-    }
-    // Idempotent: a replayed tap that is already in place changes nothing.
-    if (item.status === args.status) return null;
-
-    if (item.source === "plan" && item.ingredientId !== undefined) {
-      const ingredient = await ctx.db.get("ingredients", item.ingredientId);
-      if (ingredient === null || ingredient.householdId !== householdId) {
-        throw new ConvexError(itemNotHere);
-      }
-      const tap = { householdId, memberId: member._id, item, ingredient, at: args.at };
-      if (args.status === "checked") {
-        await applyPurchase(ctx, tap);
-      } else if (item.status === "checked") {
-        await reversePurchase(ctx, tap);
-      }
-    }
-
-    await ctx.db.patch("listItems", item._id, {
-      status: args.status,
-      checkedAt: args.status === "checked" ? (args.at ?? Date.now()) : undefined,
-    });
+    await setListItemStatus(ctx, await requireCaller(ctx), args);
     return null;
   },
 });
+
+export async function setListItemStatus(
+  ctx: MutationCtx,
+  { householdId, actor }: Caller,
+  args: ObjectType<typeof setItemStatusArgs>,
+) {
+  const item = await ctx.db.get("listItems", args.listItemId);
+  if (item === null || item.householdId !== householdId) {
+    throw new ConvexError(itemNotHere);
+  }
+  const list = await ctx.db.get("lists", item.listId);
+  if (list === null || list.householdId !== householdId) {
+    throw new ConvexError(itemNotHere);
+  }
+  // Idempotent: a replayed tap that is already in place changes nothing.
+  if (item.status === args.status) return;
+
+  if (item.source === "plan" && item.ingredientId !== undefined) {
+    const ingredient = await ctx.db.get("ingredients", item.ingredientId);
+    if (ingredient === null || ingredient.householdId !== householdId) {
+      throw new ConvexError(itemNotHere);
+    }
+    const tap = { householdId, actor, item, ingredient, at: args.at };
+    if (args.status === "checked") {
+      await applyPurchase(ctx, tap);
+    } else if (item.status === "checked") {
+      await reversePurchase(ctx, tap);
+    }
+  }
+
+  await ctx.db.patch("listItems", item._id, {
+    status: args.status,
+    checkedAt: args.status === "checked" ? (args.at ?? Date.now()) : undefined,
+  });
+}
 
 export const reconcileItems = query({
   args: { weekId: v.id("weeks") },

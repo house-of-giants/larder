@@ -1,6 +1,6 @@
 import { useClerk, useUser } from "@clerk/tanstack-react-start";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useMutation } from "convex/react";
+import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { api } from "../../../convex/_generated/api";
@@ -54,6 +54,8 @@ function Settings() {
           ))}
         </ul>
       </section>
+
+      <AgentAccess />
 
       <UndoDrawer />
 
@@ -136,18 +138,18 @@ function HouseholdName({ name }: { name: string }) {
   );
 }
 
+async function copy(text: string, done: string) {
+  try {
+    await navigator.clipboard.writeText(text);
+    toast(done);
+  } catch {
+    toast.error("Could not copy. Press on it and copy it by hand.");
+  }
+}
+
 function InviteLink({ code }: { code: string }) {
   const rotate = useMutation(api.households.rotateInviteCode);
   const url = inviteUrl(window.location.origin, code);
-
-  async function copy() {
-    try {
-      await navigator.clipboard.writeText(url);
-      toast("Link copied");
-    } catch {
-      toast.error("Could not copy. Press on the link and copy it by hand.");
-    }
-  }
 
   return (
     <section className="flex flex-col gap-2" aria-labelledby="invite-heading">
@@ -165,7 +167,7 @@ function InviteLink({ code }: { code: string }) {
         onFocus={(e) => e.currentTarget.select()}
       />
       <div className="flex gap-2">
-        <Button type="button" onClick={copy}>
+        <Button type="button" onClick={() => copy(url, "Link copied")}>
           Copy link
         </Button>
         <ConfirmDialog
@@ -183,6 +185,148 @@ function InviteLink({ code }: { code: string }) {
           }}
         />
       </div>
+    </section>
+  );
+}
+
+function AgentAccess() {
+  const { isAuthenticated } = useConvexAuth();
+  const tokens = useQuery(api.tokens.list, isAuthenticated ? {} : "skip");
+  const create = useMutation(api.tokens.create);
+  const revoke = useMutation(api.tokens.revoke);
+  const [label, setLabel] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
+  // The plaintext lives only here, until Done or leaving the page; the server keeps a hash.
+  const [fresh, setFresh] = useState<{ label: string; token: string } | null>(null);
+  const mcpUrl = `${window.location.origin}/mcp`;
+
+  async function makeToken() {
+    setPending(true);
+    setError(null);
+    try {
+      const { token } = await create({ label });
+      setFresh({ label: label.trim(), token });
+      setLabel("");
+    } catch (e) {
+      setError(errorMessage(e));
+    } finally {
+      setPending(false);
+    }
+  }
+
+  return (
+    <section className="flex flex-col gap-3" aria-labelledby="agents-heading">
+      <h2 id="agents-heading" className="font-medium">
+        Agent access
+      </h2>
+      <p className="text-sm text-muted-foreground">
+        An agent with a token can plan the week, import recipes, and keep the pantry for this
+        household.
+      </p>
+
+      {fresh ? (
+        <div className="flex flex-col gap-2 rounded-lg border bg-card p-4">
+          <Label htmlFor="new-token">Token for {fresh.label}</Label>
+          <Input
+            id="new-token"
+            readOnly
+            value={fresh.token}
+            className="font-mono text-sm"
+            onFocus={(e) => e.currentTarget.select()}
+          />
+          <p className="text-sm text-muted-foreground">Copy it now. It will not be shown again.</p>
+          <Label htmlFor="mcp-url">MCP address</Label>
+          <Input
+            id="mcp-url"
+            readOnly
+            value={mcpUrl}
+            className="font-mono text-sm"
+            onFocus={(e) => e.currentTarget.select()}
+          />
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" onClick={() => copy(fresh.token, "Token copied")}>
+              Copy token
+            </Button>
+            <Button type="button" variant="outline" onClick={() => copy(mcpUrl, "Address copied")}>
+              Copy address
+            </Button>
+            <Button type="button" variant="ghost" onClick={() => setFresh(null)}>
+              Done
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <form
+          className="flex flex-col gap-2"
+          onSubmit={(e) => {
+            e.preventDefault();
+            void makeToken();
+          }}
+        >
+          <Label htmlFor="token-label">New token</Label>
+          <div className="flex gap-2">
+            <Input
+              id="token-label"
+              value={label}
+              placeholder="Hermes"
+              autoComplete="off"
+              enterKeyHint="done"
+              aria-invalid={error !== null}
+              aria-describedby={error ? "token-label-error" : undefined}
+              onChange={(e) => setLabel(e.target.value)}
+            />
+            <Button type="submit" disabled={pending || label.trim() === ""}>
+              Make token
+            </Button>
+          </div>
+          {error && (
+            <p id="token-label-error" role="alert" className="text-sm text-destructive">
+              {error}
+            </p>
+          )}
+        </form>
+      )}
+
+      {tokens && tokens.length > 0 && (
+        <ul className="flex flex-col divide-y rounded-lg border bg-card">
+          {tokens.map((t) => (
+            <li key={t._id} className="flex items-center justify-between gap-4 px-4 py-3">
+              <div className="flex min-w-0 flex-col">
+                <span className={t.revokedAt ? "truncate text-muted-foreground" : "truncate"}>
+                  {t.label}
+                </span>
+                <span className="text-sm text-muted-foreground">
+                  Made {formatDate(t.createdAt)}
+                  {" · "}
+                  {t.revokedAt
+                    ? `Revoked ${formatDate(t.revokedAt)}`
+                    : t.lastUsedAt
+                      ? `Last used ${formatDate(t.lastUsedAt)}`
+                      : "Not used yet"}
+                </span>
+              </div>
+              {!t.revokedAt && (
+                <ConfirmDialog
+                  trigger={
+                    <Button type="button" variant="outline" size="sm">
+                      Revoke
+                    </Button>
+                  }
+                  title={`Revoke ${t.label}?`}
+                  description="Anything using this token loses access right away."
+                  confirmLabel="Revoke"
+                  destructive
+                  onConfirm={async () => {
+                    await revoke({ tokenId: t._id });
+                    toast(`${t.label} revoked`);
+                  }}
+                />
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
     </section>
   );
 }

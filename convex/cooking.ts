@@ -1,7 +1,7 @@
-import { ConvexError, v } from "convex/values";
+import { ConvexError, type Infer, type ObjectType, v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
-import { type QueryCtx, mutation, query } from "./_generated/server";
-import { requireMember } from "./lib/auth";
+import { type MutationCtx, type QueryCtx, mutation, query } from "./_generated/server";
+import { type Caller, requireCaller, requireMember } from "./lib/auth";
 import {
   type Deduction,
   type DeductionIngredient,
@@ -126,231 +126,239 @@ const deductionView = v.union(
 
 const amount = v.object({ text: v.string(), decimal: v.number() });
 
-export const madeIt = mutation({
-  args: {
-    /** Omitted from a recipe page: the cook joins the open week, if there is one. */
-    weekId: v.optional(v.id("weeks")),
-    recipeId: v.id("recipes"),
-    multiplierText: v.string(),
-    skippedIngredientIds: v.array(v.id("ingredients")),
-    substitutions: v.array(
-      v.object({
-        ingredientId: v.id("ingredients"),
-        replacementIngredientId: v.optional(v.id("ingredients")),
-        note: v.optional(v.string()),
-      }),
-    ),
-    notes: v.optional(v.string()),
-  },
-  returns: v.object({
-    cookingEventId: v.id("cookingEvents"),
-    recipeName: v.string(),
-    preparedFood: v.union(
-      v.null(),
-      v.object({
-        preparedFoodId: v.id("preparedFoods"),
-        name: v.string(),
-        remaining: amount,
-        unit: v.string(),
-        location: v.union(v.literal("fridge"), v.literal("freezer")),
-      }),
-    ),
-    /** Why no prepared food was made, in a sentence for the cook. */
-    noFoodReason: v.optional(v.string()),
-    deductions: v.array(deductionView),
-  }),
-  handler: async (ctx, args) => {
-    const { householdId, member } = await requireMember(ctx);
-    const recipe = await requireRecipe(ctx, householdId, args.recipeId);
-    const week =
-      args.weekId === undefined
-        ? await findOpenWeek(ctx, householdId)
-        : await requireWeek(ctx, householdId, args.weekId);
-    if (week?.status === "closed") {
-      throw new ConvexError("This week is closed.");
-    }
+export const madeItArgs = {
+  /** Omitted from a recipe page: the cook joins the open week, if there is one. */
+  weekId: v.optional(v.id("weeks")),
+  recipeId: v.id("recipes"),
+  multiplierText: v.string(),
+  skippedIngredientIds: v.array(v.id("ingredients")),
+  substitutions: v.array(
+    v.object({
+      ingredientId: v.id("ingredients"),
+      replacementIngredientId: v.optional(v.id("ingredients")),
+      note: v.optional(v.string()),
+    }),
+  ),
+  notes: v.optional(v.string()),
+};
 
-    const multiplierText = args.multiplierText.trim();
-    const multiplierDecimal = parseQuantity(multiplierText);
-    if (multiplierDecimal === null || multiplierDecimal <= 0) {
-      throw new ConvexError("Use a number like 1/2, 1 or 2.");
-    }
-
-    // Every id the client sends is checked against the household before it is used.
-    for (const id of args.skippedIngredientIds) {
-      await requireIngredient(ctx, householdId, id);
-    }
-    const substitutions = [];
-    for (const s of args.substitutions) {
-      await requireIngredient(ctx, householdId, s.ingredientId);
-      if (s.replacementIngredientId !== undefined) {
-        await requireIngredient(ctx, householdId, s.replacementIngredientId);
-      }
-      const note = s.note?.trim();
-      substitutions.push({
-        ingredientId: s.ingredientId,
-        replacementIngredientId: s.replacementIngredientId,
-        ...(note && { note }),
-      });
-    }
-
-    const rows = await recipeRows(ctx, householdId, recipe._id);
-    // Each ingredient the cook can touch: the row's own, its redirect, and any swap.
-    const dictionary = new Map<Id<"ingredients">, DeductionIngredient>();
-    const ingredientRows = new Map<Id<"ingredients">, Doc<"ingredients">>();
-    const pantry = new Map<Id<"ingredients">, DeductionPantryRow>();
-    const pantryRows = new Map<Id<"ingredients">, Doc<"pantryItems">>();
-    const touched = [
-      ...rows.flatMap((r) => [r.ingredientId, r.deductionIngredientId]),
-      ...substitutions.map((s) => s.replacementIngredientId),
-    ];
-    for (const id of touched) {
-      if (id === undefined || ingredientRows.has(id)) continue;
-      const ingredient = await ownIngredient(ctx, householdId, id);
-      if (ingredient === null) continue;
-      ingredientRows.set(id, ingredient);
-      dictionary.set(id, { kind: ingredient.kind, tracked: ingredient.tracked });
-      const row = await findPantryRow(ctx, householdId, id);
-      if (row === null) continue;
-      pantryRows.set(id, row);
-      // A row of the other kind than its ingredient holds nothing this cook can take.
-      const count = ingredient.kind === "count" ? countOf(row) : undefined;
-      const level = ingredient.kind === "level" ? levelOf(row) : undefined;
-      pantry.set(id, {
-        ...(count !== undefined && { count }),
-        ...(level !== undefined && { level }),
-      });
-    }
-
-    const plan = planDeductions({
-      ingredients: rows
-        .filter((r) => dictionary.has(r.ingredientId))
-        .map((r) => ({
-          ingredientId: r.ingredientId,
-          quantityDecimal: r.quantityDecimal ?? null,
-          unit: r.unit,
-          deductionIngredientId:
-            r.deductionIngredientId !== undefined && dictionary.has(r.deductionIngredientId)
-              ? r.deductionIngredientId
-              : undefined,
-        })),
-      multiplier: multiplierDecimal,
-      skipped: new Set(args.skippedIngredientIds),
-      substitutions,
-      dictionary,
-      pantry,
-    });
-
-    const cookedAt = Date.now();
-    const notes = args.notes?.trim();
-    const cookingEventId = await ctx.db.insert("cookingEvents", {
-      householdId,
-      weekId: week?._id,
-      recipeId: recipe._id,
-      cookedAt,
-      multiplier: { text: multiplierText, decimal: multiplierDecimal },
-      skippedIngredientIds: [...new Set(args.skippedIngredientIds)],
-      substitutions,
-      ...(notes && { notes }),
-    });
-    const actor = { kind: "member" as const, memberId: member._id };
-
-    for (const d of plan) {
-      const row = pantryRows.get(d.ingredientId);
-      const changed =
-        d.kind === "level" ? d.after !== null : d.after !== null && d.note === undefined;
-      if (row === undefined || !changed) continue;
-      // `after` is set only when the pantry held this kind, so the row is that kind too.
-      let after: PantrySnapshot;
-      if (d.kind === "level" && row.kind === "level" && d.after !== null) {
-        after = pantrySnapshot({ ...row, level: d.after });
-      } else if (d.kind === "count" && row.kind === "count" && d.after !== null) {
-        after = pantrySnapshot({
-          ...row,
-          count: {
-            quantityText: formatQuantity(d.after),
-            quantityDecimal: d.after,
-            unit: row.count.unit,
-          },
-        });
-      } else {
-        continue;
-      }
-      await ctx.db.replace("pantryItems", row._id, { householdId, ...after, updatedAt: cookedAt });
-      await recordInventoryEvent(ctx, {
-        householdId,
-        type: "deduction",
-        actor,
-        refs: { pantryItemId: row._id, cookingEventId },
-        payload: {
-          before: pantrySnapshot(row),
-          after,
-          wentNegative: d.wentNegative,
-          used: d.kind === "count" ? d.used : null,
-        } satisfies DeductionPayload,
-      });
-    }
-
-    let preparedFood = null;
-    let noFoodReason: string | undefined;
-    const made = recipe.yield;
-    if (made === undefined || made.quantityDecimal === undefined || made.quantityDecimal <= 0) {
-      noFoodReason = "This recipe has no yield, so nothing went in the fridge.";
-    } else {
-      const decimal = made.quantityDecimal * multiplierDecimal;
-      // The recipe's words win at one batch; scaled, the number is written the recipe's way.
-      const remaining = {
-        text: multiplierDecimal === 1 ? made.quantityText : formatQuantity(decimal),
-        decimal,
-      };
-      const food = {
-        householdId,
-        recipeId: recipe._id,
-        weekId: week?._id,
-        cookingEventId,
-        name: recipe.name,
-        starting: remaining,
-        remaining,
-        unit: made.unit,
-        location: "fridge" as const,
-        madeAt: cookedAt,
-        status: "available" as const,
-      };
-      const preparedFoodId = await ctx.db.insert("preparedFoods", food);
-      await recordInventoryEvent(ctx, {
-        householdId,
-        type: "adjustment",
-        actor,
-        refs: { preparedFoodId, cookingEventId },
-        payload: {
-          name: food.name,
-          unit: food.unit,
-          before: null,
-          after: foodSnapshot(food),
-        } satisfies FoodPayload,
-      });
-      preparedFood = {
-        preparedFoodId,
-        name: food.name,
-        remaining,
-        unit: food.unit,
-        location: food.location,
-      };
-    }
-
-    const nameOf = (id: Id<"ingredients">) => ingredientRows.get(id)?.name ?? "";
-    return {
-      cookingEventId,
-      recipeName: recipe.name,
-      preparedFood,
-      ...(noFoodReason !== undefined && { noFoodReason }),
-      deductions: plan.map((d: Deduction<Id<"ingredients">>) => ({
-        ...d,
-        name: nameOf(d.ingredientId),
-      })),
-    };
-  },
+export const madeItResult = v.object({
+  cookingEventId: v.id("cookingEvents"),
+  recipeName: v.string(),
+  preparedFood: v.union(
+    v.null(),
+    v.object({
+      preparedFoodId: v.id("preparedFoods"),
+      name: v.string(),
+      remaining: amount,
+      unit: v.string(),
+      location: v.union(v.literal("fridge"), v.literal("freezer")),
+    }),
+  ),
+  /** Why no prepared food was made, in a sentence for the cook. */
+  noFoodReason: v.optional(v.string()),
+  deductions: v.array(deductionView),
 });
+
+export const madeIt = mutation({
+  args: madeItArgs,
+  returns: madeItResult,
+  handler: async (ctx, args) => recordCook(ctx, await requireCaller(ctx), args),
+});
+
+export async function recordCook(
+  ctx: MutationCtx,
+  { householdId, actor }: Caller,
+  args: ObjectType<typeof madeItArgs>,
+): Promise<Infer<typeof madeItResult>> {
+  const recipe = await requireRecipe(ctx, householdId, args.recipeId);
+  const week =
+    args.weekId === undefined
+      ? await findOpenWeek(ctx, householdId)
+      : await requireWeek(ctx, householdId, args.weekId);
+  if (week?.status === "closed") {
+    throw new ConvexError("This week is closed.");
+  }
+
+  const multiplierText = args.multiplierText.trim();
+  const multiplierDecimal = parseQuantity(multiplierText);
+  if (multiplierDecimal === null || multiplierDecimal <= 0) {
+    throw new ConvexError("Use a number like 1/2, 1 or 2.");
+  }
+
+  // Every id the client sends is checked against the household before it is used.
+  for (const id of args.skippedIngredientIds) {
+    await requireIngredient(ctx, householdId, id);
+  }
+  const substitutions = [];
+  for (const s of args.substitutions) {
+    await requireIngredient(ctx, householdId, s.ingredientId);
+    if (s.replacementIngredientId !== undefined) {
+      await requireIngredient(ctx, householdId, s.replacementIngredientId);
+    }
+    const note = s.note?.trim();
+    substitutions.push({
+      ingredientId: s.ingredientId,
+      replacementIngredientId: s.replacementIngredientId,
+      ...(note && { note }),
+    });
+  }
+
+  const rows = await recipeRows(ctx, householdId, recipe._id);
+  // Each ingredient the cook can touch: the row's own, its redirect, and any swap.
+  const dictionary = new Map<Id<"ingredients">, DeductionIngredient>();
+  const ingredientRows = new Map<Id<"ingredients">, Doc<"ingredients">>();
+  const pantry = new Map<Id<"ingredients">, DeductionPantryRow>();
+  const pantryRows = new Map<Id<"ingredients">, Doc<"pantryItems">>();
+  const touched = [
+    ...rows.flatMap((r) => [r.ingredientId, r.deductionIngredientId]),
+    ...substitutions.map((s) => s.replacementIngredientId),
+  ];
+  for (const id of touched) {
+    if (id === undefined || ingredientRows.has(id)) continue;
+    const ingredient = await ownIngredient(ctx, householdId, id);
+    if (ingredient === null) continue;
+    ingredientRows.set(id, ingredient);
+    dictionary.set(id, { kind: ingredient.kind, tracked: ingredient.tracked });
+    const row = await findPantryRow(ctx, householdId, id);
+    if (row === null) continue;
+    pantryRows.set(id, row);
+    // A row of the other kind than its ingredient holds nothing this cook can take.
+    const count = ingredient.kind === "count" ? countOf(row) : undefined;
+    const level = ingredient.kind === "level" ? levelOf(row) : undefined;
+    pantry.set(id, {
+      ...(count !== undefined && { count }),
+      ...(level !== undefined && { level }),
+    });
+  }
+
+  const plan = planDeductions({
+    ingredients: rows
+      .filter((r) => dictionary.has(r.ingredientId))
+      .map((r) => ({
+        ingredientId: r.ingredientId,
+        quantityDecimal: r.quantityDecimal ?? null,
+        unit: r.unit,
+        deductionIngredientId:
+          r.deductionIngredientId !== undefined && dictionary.has(r.deductionIngredientId)
+            ? r.deductionIngredientId
+            : undefined,
+      })),
+    multiplier: multiplierDecimal,
+    skipped: new Set(args.skippedIngredientIds),
+    substitutions,
+    dictionary,
+    pantry,
+  });
+
+  const cookedAt = Date.now();
+  const notes = args.notes?.trim();
+  const cookingEventId = await ctx.db.insert("cookingEvents", {
+    householdId,
+    weekId: week?._id,
+    recipeId: recipe._id,
+    cookedAt,
+    multiplier: { text: multiplierText, decimal: multiplierDecimal },
+    skippedIngredientIds: [...new Set(args.skippedIngredientIds)],
+    substitutions,
+    ...(notes && { notes }),
+  });
+
+  for (const d of plan) {
+    const row = pantryRows.get(d.ingredientId);
+    const changed =
+      d.kind === "level" ? d.after !== null : d.after !== null && d.note === undefined;
+    if (row === undefined || !changed) continue;
+    // `after` is set only when the pantry held this kind, so the row is that kind too.
+    let after: PantrySnapshot;
+    if (d.kind === "level" && row.kind === "level" && d.after !== null) {
+      after = pantrySnapshot({ ...row, level: d.after });
+    } else if (d.kind === "count" && row.kind === "count" && d.after !== null) {
+      after = pantrySnapshot({
+        ...row,
+        count: {
+          quantityText: formatQuantity(d.after),
+          quantityDecimal: d.after,
+          unit: row.count.unit,
+        },
+      });
+    } else {
+      continue;
+    }
+    await ctx.db.replace("pantryItems", row._id, { householdId, ...after, updatedAt: cookedAt });
+    await recordInventoryEvent(ctx, {
+      householdId,
+      type: "deduction",
+      actor,
+      refs: { pantryItemId: row._id, cookingEventId },
+      payload: {
+        before: pantrySnapshot(row),
+        after,
+        wentNegative: d.wentNegative,
+        used: d.kind === "count" ? d.used : null,
+      } satisfies DeductionPayload,
+    });
+  }
+
+  let preparedFood = null;
+  let noFoodReason: string | undefined;
+  const made = recipe.yield;
+  if (made === undefined || made.quantityDecimal === undefined || made.quantityDecimal <= 0) {
+    noFoodReason = "This recipe has no yield, so nothing went in the fridge.";
+  } else {
+    const decimal = made.quantityDecimal * multiplierDecimal;
+    // The recipe's words win at one batch; scaled, the number is written the recipe's way.
+    const remaining = {
+      text: multiplierDecimal === 1 ? made.quantityText : formatQuantity(decimal),
+      decimal,
+    };
+    const food = {
+      householdId,
+      recipeId: recipe._id,
+      weekId: week?._id,
+      cookingEventId,
+      name: recipe.name,
+      starting: remaining,
+      remaining,
+      unit: made.unit,
+      location: "fridge" as const,
+      madeAt: cookedAt,
+      status: "available" as const,
+    };
+    const preparedFoodId = await ctx.db.insert("preparedFoods", food);
+    await recordInventoryEvent(ctx, {
+      householdId,
+      type: "adjustment",
+      actor,
+      refs: { preparedFoodId, cookingEventId },
+      payload: {
+        name: food.name,
+        unit: food.unit,
+        before: null,
+        after: foodSnapshot(food),
+      } satisfies FoodPayload,
+    });
+    preparedFood = {
+      preparedFoodId,
+      name: food.name,
+      remaining,
+      unit: food.unit,
+      location: food.location,
+    };
+  }
+
+  const nameOf = (id: Id<"ingredients">) => ingredientRows.get(id)?.name ?? "";
+  return {
+    cookingEventId,
+    recipeName: recipe.name,
+    preparedFood,
+    ...(noFoodReason !== undefined && { noFoodReason }),
+    deductions: plan.map((d: Deduction<Id<"ingredients">>) => ({
+      ...d,
+      name: nameOf(d.ingredientId),
+    })),
+  };
+}
 
 export const undo = mutation({
   args: { cookingEventId: v.id("cookingEvents") },

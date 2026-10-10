@@ -45,6 +45,42 @@ It replaces that household's ingredients, pantry, recipes, weeks, lists, and led
 members and agent tokens stay. Running it again gives the same result. It is an internal
 function, so the app cannot call it.
 
+## Agents (the MCP door)
+
+Agents reach the household through `/mcp`, a Streamable HTTP MCP server with 25 tools
+(`src/mcp/tools.ts`). Each request carries a household agent token as its bearer; the
+server route resolves it and calls the Convex agent functions (`convex/agent.ts`) with a
+shared secret, so the household always comes from the token, never from the agent.
+
+Set the secret once per deployment, the same value in both places:
+
+```sh
+openssl rand -base64 32          # the value
+bunx convex env set AGENT_SECRET <value>
+echo 'AGENT_SECRET=<value>' >> .env.local
+```
+
+Then make a token on Settings, under Agent access. It is shown once; the database keeps
+only its SHA-256. Revoking it there shuts the door to that token on the next request. An
+MCP client connects with:
+
+```json
+{
+  "mcpServers": {
+    "larder": {
+      "type": "http",
+      "url": "https://<your-domain>/mcp",
+      "headers": { "Authorization": "Bearer lard_<token>" }
+    }
+  }
+}
+```
+
+`bun run test:mcp` drives a whole week through the door against the dev deployment (run
+`bunx convex dev --once` first so the functions are current). It makes a throwaway
+household with the internal `testing:*` helpers, seeds it, mints and revokes a token, and
+deletes the household afterwards.
+
 ## Check it
 
 ```sh
@@ -62,11 +98,13 @@ production environment:
   `VITE_CONVEX_URL` for the build on its own.
 - `VITE_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`: from the Clerk production instance.
 - `CLERK_SIGN_IN_URL=/sign-in`, `CLERK_SIGN_UP_URL=/sign-up`.
+- `AGENT_SECRET`: a fresh random value for production, for the MCP door.
 
-And on the production Convex deployment:
+And on the production Convex deployment, the same `AGENT_SECRET`:
 
 ```sh
 bunx convex env set --prod CLERK_JWT_ISSUER_DOMAIN https://clerk.<your-domain>
+bunx convex env set --prod AGENT_SECRET <value>
 ```
 
 ## Layout
