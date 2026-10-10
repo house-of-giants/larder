@@ -168,6 +168,21 @@ export async function listRecipes(
   );
 }
 
+/** How many of the household's recipes are archived; decides whether "Show archived" shows. */
+export const archivedCount = query({
+  args: {},
+  returns: v.number(),
+  handler: async (ctx) => {
+    const { householdId } = await requireCaller(ctx);
+    // The recipe rows only; unlike list, no ingredient rows are read.
+    const recipes = await ctx.db
+      .query("recipes")
+      .withIndex("by_householdId", (q) => q.eq("householdId", householdId))
+      .collect();
+    return recipes.filter((r) => r.archivedAt !== undefined).length;
+  },
+});
+
 export const recipeDetail = v.object({
   _id: v.id("recipes"),
   _creationTime: v.number(),

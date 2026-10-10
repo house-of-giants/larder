@@ -100,6 +100,7 @@ const cases: Case[] = [
     args: { ingredientId: "1ingredients" },
   },
   { name: "recipes.list", kind: "query", fn: api.recipes.list, args: {} },
+  { name: "recipes.archivedCount", kind: "query", fn: api.recipes.archivedCount, args: {} },
   { name: "recipes.get", kind: "query", fn: api.recipes.get, args: { id: "1recipes" } },
   { name: "recipes.ingredientOptions", kind: "query", fn: api.recipes.ingredientOptions, args: {} },
   {

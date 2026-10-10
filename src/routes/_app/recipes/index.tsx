@@ -21,24 +21,30 @@ export const Route = createFileRoute("/_app/recipes/")({
  */
 function Recipes() {
   const [showArchived, setShowArchived] = useState(false);
-  // One query for both: the archived ones decide whether the toggle shows at all.
-  const all = useQuery(api.recipes.list, { includeArchived: true });
+  const active = useQuery(api.recipes.list, {});
+  // A count decides whether the chip shows; the archived recipes load only once it is on.
+  const archived = useQuery(api.recipes.archivedCount, {}) ?? 0;
+  const withArchived = useQuery(
+    api.recipes.list,
+    showArchived && archived > 0 ? { includeArchived: true } : "skip",
+  );
 
-  if (all === undefined) return <RecipesSkeleton />;
+  if (active === undefined) return <RecipesSkeleton />;
 
-  const archived = all.filter((r) => r.archivedAt !== undefined).length;
-  const recipes = showArchived ? all : all.filter((r) => r.archivedAt === undefined);
+  // While the archived ones load, the active list stays on screen.
+  const recipes = showArchived && archived > 0 ? (withArchived ?? active) : active;
+  const empty = active.length === 0 && archived === 0;
 
   return (
     <main className="mx-auto flex max-w-2xl flex-col px-5 pt-3 pb-24">
       <h1 className="font-display text-display">Recipes</h1>
-      {all.length === 0 ? (
+      {empty ? (
         <p className="mt-1 text-body text-muted-foreground">No recipes yet.</p>
       ) : (
         <div className="mt-1 flex items-center justify-between gap-3">
           <p className="text-caption text-muted-foreground">
-            <span className="tabular">{all.length - archived}</span>{" "}
-            {all.length - archived === 1 ? "recipe" : "recipes"}
+            <span className="tabular">{active.length}</span>{" "}
+            {active.length === 1 ? "recipe" : "recipes"}
           </p>
           {archived > 0 && (
             <Chip selected={showArchived} onClick={() => setShowArchived((on) => !on)}>
