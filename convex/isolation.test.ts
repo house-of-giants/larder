@@ -232,6 +232,12 @@ const cases: Case[] = [
     fn: api.undo.event,
     args: { eventId: "1inventoryEvents" },
   },
+  {
+    name: "undo.events",
+    kind: "mutation",
+    fn: api.undo.events,
+    args: { eventIds: ["1inventoryEvents"] },
+  },
   // Phase 5.
   { name: "tokens.list", kind: "query", fn: api.tokens.list, args: {} },
   { name: "tokens.create", kind: "mutation", fn: api.tokens.create, args: { label: "Hermes" } },

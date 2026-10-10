@@ -153,7 +153,7 @@ describe("Phase 4 gate: cook the seeded sliders, undo, eat, close the week", () 
       decimal: 7,
     });
 
-    const nextWeekId = await as.mutation(api.closeout.run, {
+    const { nextWeekId } = await as.mutation(api.closeout.run, {
       weekId,
       decisions: [],
       weekOf: "2026-10-16",
@@ -426,7 +426,7 @@ describe("closeout.run", () => {
     const bitesFood = await as.mutation(api.cooking.madeIt, cookArgs(weekId, bites));
     const parfaitFood = await as.mutation(api.cooking.madeIt, cookArgs(weekId, parfaits));
 
-    const nextWeekId = await as.mutation(api.closeout.run, {
+    const { nextWeekId } = await as.mutation(api.closeout.run, {
       weekId,
       decisions: [
         { preparedFoodId: bitesFood.preparedFood!.preparedFoodId, outcome: "keep" },

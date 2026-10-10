@@ -23,7 +23,8 @@ export const runArgs = {
 
 export const run = mutation({
   args: runArgs,
-  returns: v.id("weeks"),
+  // The closeout's own events, so the toast's Undo takes back exactly these.
+  returns: v.object({ nextWeekId: v.id("weeks"), undoEventIds: v.array(v.id("inventoryEvents")) }),
   handler: async (ctx, args) => closeOutWeek(ctx, await requireCaller(ctx), args),
 });
 
@@ -70,6 +71,7 @@ export async function closeOutWeek(
       createdAt: Date.now(),
     }));
 
+  const undoEventIds = [];
   for (const food of foods) {
     const result = decided.get(food._id) ?? "eaten";
     const next: FoodSnapshot =
@@ -83,7 +85,7 @@ export async function closeOutWeek(
       remaining: next.remaining,
       weekId: next.weekId,
     });
-    await recordInventoryEvent(ctx, {
+    const eventId = await recordInventoryEvent(ctx, {
       householdId,
       type: "closeout",
       actor,
@@ -96,6 +98,7 @@ export async function closeOutWeek(
         after: next,
       } satisfies CloseoutPayload,
     });
+    undoEventIds.push(eventId);
   }
-  return nextWeekId;
+  return { nextWeekId, undoEventIds };
 }

@@ -312,3 +312,90 @@ describe("the drawer only offers what undo will do", () => {
     expect(row).toMatchObject({ canUndo: false, reason: "Undone." });
   });
 });
+
+describe("a closeout undone in one go", () => {
+  const BITES = "Monster Cookie Protein Bites";
+
+  /** Alice's week with the sliders and the bites made, so two foods are in the fridge. */
+  async function twoFoods(t: Test) {
+    const alice = await seeded(t, "Alice", "Elm");
+    const bites = (await alice.as.query(api.weeks.current, {}))!.recipes.find(
+      (r) => r.name === BITES,
+    )!.recipeId;
+    await alice.as.mutation(api.cooking.madeIt, cook(alice.weekId, alice.recipeId));
+    await alice.as.mutation(api.cooking.madeIt, cook(alice.weekId, bites));
+    return alice;
+  }
+
+  const fridge = (t: Test, householdId: Id<"households">) =>
+    t.run(async (ctx) =>
+      (await ctx.db.query("preparedFoods").collect())
+        .filter((f) => f.householdId === householdId)
+        .map((f) => ({ name: f.name, status: f.status, remaining: f.remaining.text }))
+        .sort((a, b) => a.name.localeCompare(b.name)),
+    );
+
+  it("returns the closeout's own events, and undoing them puts both foods back", async () => {
+    const t = newTest();
+    const alice = await twoFoods(t);
+    const result = await alice.as.mutation(api.closeout.run, {
+      weekId: alice.weekId,
+      decisions: [],
+      weekOf: "2026-10-16",
+    });
+    expect(result.undoEventIds).toHaveLength(2);
+    // Sorted by name: the sliders ("Italian ...") before the bites ("Monster ...").
+    expect(await fridge(t, alice.householdId)).toEqual([
+      { name: SLIDERS, status: "consumed", remaining: "0" },
+      { name: BITES, status: "consumed", remaining: "0" },
+    ]);
+
+    await alice.as.mutation(api.undo.events, { eventIds: result.undoEventIds });
+    expect(await fridge(t, alice.householdId)).toEqual([
+      { name: SLIDERS, status: "available", remaining: "12" },
+      { name: BITES, status: "available", remaining: "24" },
+    ]);
+    // The new week stays open.
+    expect((await alice.as.query(api.weeks.current, {}))?._id).toBe(result.nextWeekId);
+  });
+
+  it("refuses the lot when one event is another household's", async () => {
+    const t = newTest();
+    const alice = await twoFoods(t);
+    const bob = await seeded(t, "Bob", "Oak");
+    await bob.as.mutation(api.cooking.madeIt, cook(bob.weekId, bob.recipeId));
+    const bobs = await bob.as.mutation(api.closeout.run, {
+      weekId: bob.weekId,
+      decisions: [],
+      weekOf: "2026-10-16",
+    });
+    const alices = await alice.as.mutation(api.closeout.run, {
+      weekId: alice.weekId,
+      decisions: [],
+      weekOf: "2026-10-16",
+    });
+    const before = await everything(t);
+    await expect(
+      alice.as.mutation(api.undo.events, {
+        eventIds: [...alices.undoEventIds, ...bobs.undoEventIds],
+      }),
+    ).rejects.toMatchObject({ data: "That event is not here." });
+    expect(await everything(t)).toEqual(before);
+  });
+
+  it("refuses the lot when one event is already undone", async () => {
+    const t = newTest();
+    const alice = await twoFoods(t);
+    const { undoEventIds } = await alice.as.mutation(api.closeout.run, {
+      weekId: alice.weekId,
+      decisions: [],
+      weekOf: "2026-10-16",
+    });
+    await alice.as.mutation(api.undo.event, { eventId: undoEventIds[0] });
+    const before = await everything(t);
+    await expect(
+      alice.as.mutation(api.undo.events, { eventIds: undoEventIds }),
+    ).rejects.toMatchObject({ data: expect.stringMatching(/undone/i) });
+    expect(await everything(t)).toEqual(before);
+  });
+});

@@ -132,6 +132,10 @@ const week = z.object({
       status: z.enum(["candidate", "selected", "skipped"]),
       multiplier: amount,
       yield: recipeYield,
+      ingredientCount: z.number().describe("The recipe's distinct ingredients."),
+      onHandCount: z
+        .number()
+        .describe("How many of them the pantry holds (a count above 0, or a level not out)."),
     }),
   ),
   adaptations: z.array(

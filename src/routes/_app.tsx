@@ -1,5 +1,5 @@
 import { Link, Navigate, Outlet, createFileRoute } from "@tanstack/react-router";
-import { BookOpen, CalendarDays, Refrigerator, Settings, ShoppingBasket, Soup } from "lucide-react";
+import { BookOpen, CalendarDays, Refrigerator, Settings, ShoppingBasket } from "lucide-react";
 import { PageSkeleton } from "#/components/page-skeleton";
 import { TabBar, type Tab } from "#/components/tab-bar";
 import { Skeleton } from "#/components/ui/skeleton";
@@ -7,13 +7,13 @@ import { useHousehold } from "#/hooks/use-household";
 import { requireSignedIn, returnTo } from "#/lib/auth-gate";
 import { isOffline, useOnline } from "#/offline/use-online";
 
+// Four tabs (DESIGN.md, Navigation). Leftovers opens from the week's fridge line and
+// Settings from the gear in the header; both stay routes.
 const tabs: readonly Tab[] = [
   { to: "/week", label: "Week", icon: CalendarDays },
   { to: "/list", label: "List", icon: ShoppingBasket },
-  { to: "/leftovers", label: "Leftovers", icon: Soup },
   { to: "/pantry", label: "Pantry", icon: Refrigerator },
   { to: "/recipes", label: "Recipes", icon: BookOpen },
-  { to: "/settings", label: "Settings", icon: Settings },
 ];
 
 export const Route = createFileRoute("/_app")({
@@ -49,7 +49,7 @@ function AppShell() {
           <Link
             to="/settings"
             aria-label="Settings"
-            className="-mr-2 flex size-10 items-center justify-center rounded-md text-muted-foreground hover:text-foreground"
+            className="-mr-2.5 flex size-11 items-center justify-center rounded-full text-muted-foreground outline-none hover:text-foreground focus-ring"
           >
             <Settings aria-hidden className="size-5" />
           </Link>

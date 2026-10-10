@@ -39,3 +39,29 @@ export function adaptationText(a: Adaptation): string {
       return `Use ${withAmount(a.originalName)}`;
   }
 }
+
+/** How many leftovers are in the fridge itself; the freezer is not lunch. */
+export function fridgeCount(
+  foods: readonly { location: string }[] | undefined,
+): number | undefined {
+  return foods?.filter((food) => food.location === "fridge").length;
+}
+
+/** The fridge in the week's caption: "fridge empty", "3 in the fridge". */
+export function fridgeLine(count: number): string {
+  return count === 0 ? "fridge empty" : `${count} in the fridge`;
+}
+
+/** An adaptation in a few words for a meta line: "elk Italian sausage swapped in". */
+export function adaptationShort(a: Adaptation): string {
+  switch (a.kind) {
+    case "replace":
+      return `${a.newName ?? "an ingredient"} swapped in`;
+    case "add":
+      return `${a.newName ?? "an ingredient"} added`;
+    case "remove":
+      return `${a.originalName ?? "an ingredient"} left out`;
+    case "adjust":
+      return `${a.originalName ?? "an ingredient"} changed`;
+  }
+}
