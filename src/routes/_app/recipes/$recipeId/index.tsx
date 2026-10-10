@@ -101,7 +101,15 @@ function RecipeView({ recipe }: { recipe: Recipe }) {
               const { lead, name, tail } = ingredientLine(row);
               return (
                 <li key={row._id} className="flex items-baseline gap-3 px-4 py-2.5">
-                  <span className="tabular w-20 shrink-0 text-sm">{lead}</span>
+                  <span className="w-20 shrink-0 text-sm">
+                    {lead && (
+                      <>
+                        {/* lead is the figure then its unit, and only when the figure is a number */}
+                        <span className="tabular">{row.quantityText}</span>
+                        {lead.slice(row.quantityText.length)}
+                      </>
+                    )}
+                  </span>
                   <span className="flex-1">
                     {name}
                     {tail.length > 0 && (

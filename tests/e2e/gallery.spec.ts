@@ -47,15 +47,47 @@ test.describe("gallery, built in", () => {
     expect(mono).toEqual([]);
   });
 
-  test("an amount with a figure is tomato; the recipe's words alone stay quiet", async ({
+  test("an amount's figure and unit are tomato 600; words with no figure stay quiet", async ({
     page,
   }) => {
     const column = page.getByRole("region", { name: "This theme" });
-    const tone = (row: string) =>
-      column.getByRole("listitem").filter({ hasText: row }).locator("[data-tone]");
-    await expect(tone("carrots")).toHaveAttribute("data-tone", "accent");
-    await expect(tone("carrots")).toHaveCSS("color", "rgb(185, 58, 32)");
-    await expect(tone("kosher salt")).toHaveAttribute("data-tone", "quiet");
+    // The computed style of the element holding a given run of text in a row's second line.
+    const styleOf = (row: string, text: string) =>
+      column
+        .getByRole("listitem")
+        .filter({ hasText: row })
+        .evaluate((li, wanted) => {
+          const walker = document.createTreeWalker(li, NodeFilter.SHOW_TEXT);
+          for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+            if (node.textContent?.trim() === wanted) {
+              const style = getComputedStyle(node.parentElement!);
+              return {
+                color: style.color,
+                weight: style.fontWeight,
+                numeric: style.fontVariantNumeric,
+              };
+            }
+          }
+          return null;
+        }, text);
+    const tomato = "rgb(185, 58, 32)";
+    expect(await styleOf("carrots", "1")).toEqual({
+      color: tomato,
+      weight: "600",
+      numeric: "tabular-nums",
+    });
+    // The unit: tomato and 600 like its figure, but no tabular figures of its own.
+    expect(await styleOf("carrots", "lb")).toEqual({
+      color: tomato,
+      weight: "600",
+      numeric: "normal",
+    });
+    // An unchecked row whose amount is only words: quiet ink, regular weight.
+    expect(await styleOf("kosher salt", "as needed")).toEqual({
+      color: "rgb(119, 109, 99)",
+      weight: "400",
+      numeric: "normal",
+    });
   });
 
   test("a row is a checkbox the whole width, and checking it lowers the aisle count", async ({
@@ -64,10 +96,10 @@ test.describe("gallery, built in", () => {
     const column = page.getByRole("region", { name: "This theme" });
     const carrots = column.getByRole("checkbox", { name: /^carrots/ });
     await expect(carrots).toHaveAttribute("aria-checked", "false");
-    await expect(column.getByText("3 to get", { exact: true })).toBeVisible();
+    await expect(column.getByText("4 to get", { exact: true })).toBeVisible();
     await carrots.click();
     await expect(carrots).toHaveAttribute("aria-checked", "true");
-    await expect(column.getByText("2 to get", { exact: true })).toBeVisible();
+    await expect(column.getByText("3 to get", { exact: true })).toBeVisible();
   });
 
   test("closing the sheet puts focus back on what opened it, the add button too", async ({

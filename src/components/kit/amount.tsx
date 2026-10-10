@@ -3,8 +3,9 @@ import { amountTone } from "#/lib/amount";
 import { cn } from "#/lib/utils";
 
 /**
- * An amount in the recipe's own words: the figure in tomato at 600 with tabular figures,
- * the unit plain. Words with no figure ("as needed"), or a row that is done, stay quiet.
+ * An amount in the recipe's own words (DESIGN.md, the Amount Rule): figure and unit in
+ * tomato at 600, tabular figures on the numeral only. Words with no figure ("as needed"),
+ * or a row that is done, stay quiet ink at regular weight.
  */
 export function Amount({
   quantityText,
@@ -19,14 +20,17 @@ export function Amount({
 }) {
   const tone = quiet ? "quiet" : amountTone(quantityText);
   const shown = shownUnit(unit);
+  // Only text that parses as a number is a figure; "as needed" stays plain words.
+  const figure = amountTone(quantityText) === "accent";
   return (
-    <span className={cn(tone === "quiet" && "text-muted-foreground", className)}>
-      <span
-        data-tone={tone}
-        className={cn("tabular", tone === "accent" && "font-semibold text-primary")}
-      >
-        {quantityText}
-      </span>
+    <span
+      data-tone={tone}
+      className={cn(
+        tone === "accent" ? "font-semibold text-primary" : "text-muted-foreground",
+        className,
+      )}
+    >
+      {figure ? <span className="tabular">{quantityText}</span> : quantityText}
       {shown && ` ${shown}`}
     </span>
   );

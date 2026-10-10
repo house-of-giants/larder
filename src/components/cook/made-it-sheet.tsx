@@ -264,7 +264,11 @@ function IngredientRow({
     <>
       {amount && (
         <span className="mr-1.5">
-          <span className="tabular">{row.quantityText}</span>
+          {parseQuantity(row.quantityText) === null ? (
+            row.quantityText
+          ) : (
+            <span className="tabular">{row.quantityText}</span>
+          )}
           {shownUnit(row.unit) && ` ${shownUnit(row.unit)}`}
         </span>
       )}

@@ -41,7 +41,14 @@ const produce: Row[] = [
     for: "Salisbury meatballs",
     status: "needed",
   },
-  { name: "kosher salt", quantityText: "as needed", unit: "", for: "Pot roast", status: "onHand" },
+  { name: "kosher salt", quantityText: "as needed", unit: "", for: "Pot roast", status: "needed" },
+  {
+    name: "flat leaf parsley",
+    quantityText: "2",
+    unit: "tbsp",
+    for: "Salisbury meatballs",
+    status: "onHand",
+  },
   {
     name: "baby Yukon Gold potatoes",
     quantityText: "1 1/2",
@@ -121,10 +128,10 @@ function Specimens({ title, dark = false }: { title: string; dark?: boolean }) {
 
       <Specimen title="Type">
         <dl className="flex flex-col gap-5">
-          <Role name="Display" spec="32/1.1, Young Serif">
+          <Role name="Display" spec="32/1.1" face="Young Serif">
             <span className="font-display text-display">{LONGEST_NAME}</span>
           </Role>
-          <Role name="Title" spec="22/1.2, Young Serif">
+          <Role name="Title" spec="22/1.2" face="Young Serif">
             <span className="font-display text-title">{LONGEST_NAME}</span>
           </Role>
           <Role name="Body" spec="17/1.3">
@@ -169,8 +176,7 @@ function Specimens({ title, dark = false }: { title: string; dark?: boolean }) {
         <article className="rounded-lg border border-border bg-card px-4 py-3.5 text-card-foreground">
           <h4 className="font-display text-title">{LONGEST_NAME}</h4>
           <p className="mt-1.5 text-caption text-muted-foreground">
-            Tonight · <Amount quantityText="6" unit="portions" className="text-foreground" /> · elk
-            sausage swapped in
+            Tonight · <Amount quantityText="6" unit="portions" /> · elk sausage swapped in
           </p>
           <div className="mt-3 flex items-center gap-3">
             <Pill variant="pale">
@@ -243,7 +249,8 @@ function Specimens({ title, dark = false }: { title: string; dark?: boolean }) {
             title="Bacon, Egg and Pepper Jack Breakfast Biscuits"
             note={
               <>
-                1 batch makes <Amount quantityText="8" unit="biscuits" />.
+                <span className="tabular">1</span> batch makes{" "}
+                <Amount quantityText="8" unit="biscuits" />.
               </>
             }
             className={cn(dark && "dark")}
@@ -281,11 +288,22 @@ function Specimen({ title, children }: { title: string; children: ReactNode }) {
 }
 
 /** One type role: the sample, then its name and measures under it. */
-function Role({ name, spec, children }: { name: string; spec: string; children: ReactNode }) {
+function Role({
+  name,
+  spec,
+  face,
+  children,
+}: {
+  name: string;
+  spec: string;
+  face?: string;
+  children: ReactNode;
+}) {
   return (
     <div className="flex flex-col-reverse gap-1">
       <dt className="text-caption text-muted-foreground">
         {name} · <span className="tabular">{spec}</span>
+        {face && `, ${face}`}
       </dt>
       <dd>{children}</dd>
     </div>

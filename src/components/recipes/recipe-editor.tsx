@@ -324,7 +324,9 @@ function IngredientRow({
   return (
     <li className="flex flex-col gap-3 rounded-lg border bg-card p-3">
       <div className="flex items-center justify-between gap-2">
-        <span className="tabular text-sm text-muted-foreground">Line {line}</span>
+        <span className="text-sm text-muted-foreground">
+          Line <span className="tabular">{line}</span>
+        </span>
         <div className="flex">
           <Button
             type="button"
