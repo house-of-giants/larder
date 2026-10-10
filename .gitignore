@@ -22,3 +22,7 @@ test-results
 # Local agent scratch: prompts, logs, reports. Never part of this repo.
 .claude/artifacts/
 .claude/settings.local.json
+
+# Impeccable run artifacts (critique snapshots, live-mode scratch). The design sidecar and surface briefs are committed.
+.impeccable/critique/
+.impeccable/live/

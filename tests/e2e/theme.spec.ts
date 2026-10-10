@@ -8,10 +8,10 @@ const clerkConfigured = Boolean(
 );
 
 const THEME_KEY = "larder:theme";
-const LIGHT = "#f6f3ec";
-const DARK = "#080811";
+const LIGHT = "#faf6ee";
+const DARK = "#1e1a16";
 // --background in src/styles.css, as the browser reports the body's computed color.
-const BACKGROUND = { light: "oklch(0.97 0.008 85)", dark: "oklch(0.14 0.02 280)" };
+const BACKGROUND = { light: "rgb(250, 246, 238)", dark: "rgb(30, 26, 22)" };
 
 type Screen = { path: string; ready: (page: Page) => Promise<void> };
 

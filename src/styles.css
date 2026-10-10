@@ -7,15 +7,61 @@
    the choice in Settings or, on System, the phone's own setting. */
 @custom-variant dark (&:where(.dark, .dark *));
 
-@theme inline {
-  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
-  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+/* Young Serif (SIL OFL 1.1, public/fonts/YoungSerif-OFL.txt), self-hosted. Only the
+   display and title roles use it; it has one weight, so it is never set bold. */
+@font-face {
+  font-family: "Young Serif";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/youngserif-latin-ext.woff2") format("woff2");
+  unicode-range:
+    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329,
+    U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113,
+    U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: "Young Serif";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/youngserif-latin.woff2") format("woff2");
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308,
+    U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
 
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
+/* The type roles from DESIGN.md. Serif roles pair with `font-display`:
+   `font-display text-display` for the screen title, `font-display text-title` for headings. */
+@theme {
+  --text-display: 2rem;
+  --text-display--line-height: 1.1;
+  --text-display--letter-spacing: -0.005em;
+  --text-title: 1.375rem;
+  --text-title--line-height: 1.2;
+  --text-body: 1.0625rem;
+  --text-body--line-height: 1.3;
+  /* DESIGN.md's "Secondary" role. Named subhead because `text-secondary` is already the
+     --color-secondary utility, and the color wins that name in Tailwind. */
+  --text-subhead: 0.9375rem;
+  --text-subhead--line-height: 1.35;
+  --text-caption: 0.8125rem;
+  --text-caption--line-height: 1.35;
+  --text-label: 0.6875rem;
+  --text-label--line-height: 1.2;
+  --text-label--letter-spacing: 0.02em;
+}
+
+@theme inline {
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --font-display: "Young Serif", Georgia, "Times New Roman", serif;
+
+  /* --radius is 12px: chips 8, fields 10, cards 14, the sheet's top corners 18. */
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: calc(var(--radius) + 2px);
+  --radius-xl: calc(var(--radius) + 6px);
+  --radius-2xl: calc(var(--radius) * 2);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -34,58 +80,66 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-ring-quiet: var(--ring-quiet);
+  --color-scrim: var(--scrim);
+  --shadow-fab: 0 6px 16px rgba(43, 38, 34, 0.18);
 }
 
 /*
- * Tokens ported from OpenTrainer's OKLCH scale (warm neutrals, hue 85 surfaces).
- * Primary is green (hue 150): a stocked pantry shelf, quiet rather than lime.
+ * World B, "the kitchen counter" (DESIGN.md): cream paper, warm ink, one tomato.
+ * --ring is the focus ring (tomato); --ring-quiet is the unchecked circle's stroke.
  */
 :root {
-  --radius: 0.625rem;
-  --background: oklch(0.97 0.008 85);
-  --foreground: oklch(0.22 0.015 280);
-  --card: oklch(0.995 0.005 85);
-  --card-foreground: oklch(0.22 0.015 280);
-  --popover: oklch(0.995 0.005 85);
-  --popover-foreground: oklch(0.22 0.015 280);
-  --primary: oklch(0.47 0.1 150);
-  --primary-foreground: oklch(0.98 0.01 150);
-  --secondary: oklch(0.92 0.015 85);
-  --secondary-foreground: oklch(0.25 0.02 280);
-  --muted: oklch(0.9 0.012 85);
-  --muted-foreground: oklch(0.45 0.02 280);
-  --accent: oklch(0.9 0.05 150);
-  --accent-foreground: oklch(0.3 0.08 150);
-  --destructive: oklch(0.55 0.2 25);
-  --border: oklch(0.85 0.018 85);
-  --input: oklch(0.88 0.015 85);
-  --ring: oklch(0.47 0.1 150);
+  --radius: 0.75rem;
+  --background: #faf6ee;
+  --foreground: #2b2622;
+  --card: #fffdf8;
+  --card-foreground: #2b2622;
+  --popover: #fffdf8;
+  --popover-foreground: #2b2622;
+  --primary: #b93a20;
+  --primary-foreground: #ffffff;
+  --secondary: #f1ebe0;
+  --secondary-foreground: #2b2622;
+  --muted: #f1ebe0;
+  --muted-foreground: #776d63;
+  --accent: #f6dfd6;
+  --accent-foreground: #8e2a14;
+  --destructive: #b93a20;
+  --border: #e8e0d2;
+  --input: #e8e0d2;
+  --ring: #b93a20;
+  /* DESIGN.md's #a89d8d is 2.47:1 on paper; this is the nearest step on the same line
+     toward Ink Quiet that clears 3:1 on paper and card. */
+  --ring-quiet: #978c7e;
+  --scrim: rgba(43, 38, 34, 0.4);
 }
 
 .dark {
-  --background: oklch(0.14 0.02 280);
-  --foreground: oklch(0.92 0.01 85);
-  --card: oklch(0.22 0.025 280);
-  --card-foreground: oklch(0.92 0.01 85);
-  --popover: oklch(0.22 0.025 280);
-  --popover-foreground: oklch(0.92 0.01 85);
-  --primary: oklch(0.72 0.12 150);
-  --primary-foreground: oklch(0.16 0.04 150);
-  --secondary: oklch(0.26 0.025 280);
-  --secondary-foreground: oklch(0.92 0.01 85);
-  --muted: oklch(0.24 0.02 280);
-  --muted-foreground: oklch(0.68 0.02 85);
-  --accent: oklch(0.32 0.06 150);
-  --accent-foreground: oklch(0.9 0.06 150);
-  --destructive: oklch(0.65 0.2 25);
-  --border: oklch(1 0.03 150 / 18%);
-  --input: oklch(1 0.03 150 / 20%);
-  --ring: oklch(0.68 0.11 150);
+  --background: #1e1a16;
+  --foreground: #f3ece1;
+  --card: #26211c;
+  --card-foreground: #f3ece1;
+  --popover: #2a2521;
+  --popover-foreground: #f3ece1;
+  --primary: #ee7757;
+  --primary-foreground: #1e1a16;
+  --secondary: #2f2925;
+  --secondary-foreground: #f3ece1;
+  --muted: #2f2925;
+  --muted-foreground: #b3a797;
+  --accent: #4a2a21;
+  --accent-foreground: #ffd2c5;
+  --destructive: #ee7757;
+  --border: #3a332c;
+  --input: #3a332c;
+  --ring: #ee7757;
+  --ring-quiet: #7a6f64;
+  --scrim: rgba(0, 0, 0, 0.6);
 }
 
-/* Every quantity and count on screen: monospace, tabular figures. */
-@utility num {
-  font-family: var(--font-mono);
+/* Every quantity and count on screen: tabular figures in the body sans. */
+@utility tabular {
   font-variant-numeric: tabular-nums;
 }
 
@@ -100,8 +154,18 @@
   .dark {
     color-scheme: dark;
   }
+  /* The parts the browser draws, in the palette. */
+  html {
+    caret-color: var(--primary);
+    accent-color: var(--primary);
+    scrollbar-color: var(--border) var(--background);
+  }
+  ::selection {
+    background-color: var(--accent);
+    color: var(--accent-foreground);
+  }
   body {
-    @apply bg-background text-foreground antialiased;
+    @apply bg-background text-body text-foreground antialiased;
   }
   @media (prefers-reduced-motion: reduce) {
     *,

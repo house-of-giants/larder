@@ -47,10 +47,13 @@ nutrition theater, no exclamation points.
   works offline, check-offs queue and replay on reconnect.
 - Kitchen screens are dense but calm: pantry at a glance, this week's recipes, leftovers
   with counts.
-- Tokens start from OpenTrainer's OKLCH system (`apps/web/src/app/globals.css` in that
-  repo) with a different primary hue chosen in Phase 1; shadcn/ui, Tailwind v4, dark
-  mode, reduced motion honored.
-- Monospace tabular numbers for quantities and counts.
+- Visual world (chosen 2026-10-10 from the three-world lab, "B. Kitchen counter"): warm
+  cream page, one tomato accent used once per screen, serif display for screen and aisle
+  titles, sans for everything else, amounts set in the accent under the item name, "for
+  <recipe>" as the quiet second line, a Tonight card leading the week. DESIGN.md in the
+  repo is the token source; shadcn/ui, Tailwind v4, dark mode, reduced motion honored.
+- Tabular figures in the sans for quantities and counts (not monospace; the mono `num`
+  utility fragmented every row and was dropped in the 2026-10-10 overhaul).
 - Every inventory write is an event. Undo is a first-class action on check-off, cook,
   consume, and closeout.
 - The recipe's words win on screen ("1/2 cup", "1 knob", "as needed"); decimals exist for

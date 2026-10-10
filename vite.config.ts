@@ -30,9 +30,12 @@ export default defineConfig({
         },
       },
       manifest,
+      // The serif's two subsets live in public/, which the build glob below does not see
+      // (it runs before public/ is copied out); listed here, they are precached by hash.
+      includeAssets: ["fonts/*.woff2"],
       workbox: {
         // The app shell: every built client asset, precached.
-        globPatterns: ["**/*.{js,css,svg,png,webmanifest}"],
+        globPatterns: ["**/*.{js,css,svg,png,woff2,webmanifest}"],
         // No neutral shell to fall back to (v1 tradeoff). Every page is server-rendered
         // through the root route, which carries the signed-in user's Clerk SSR state, so
         // there is no user-free HTML to precache at build time; making one would mean a
