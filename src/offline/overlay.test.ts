@@ -18,6 +18,7 @@ function item(n: number, name: string, status: ListItem["status"] = "needed"): L
     status,
     checkedAt: undefined,
     sourceRecipeIds: [],
+    sourceRecipeNames: [],
   };
 }
 

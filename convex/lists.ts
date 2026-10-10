@@ -247,6 +247,8 @@ const listItemView = v.object({
   status: itemFields.status,
   checkedAt: itemFields.checkedAt,
   sourceRecipeIds: itemFields.sourceRecipeIds,
+  /** The household's names for sourceRecipeIds, in that order; gone or foreign ids drop out. */
+  sourceRecipeNames: v.array(v.string()),
 });
 
 export const currentList = v.union(
@@ -273,8 +275,23 @@ export async function getCurrentList(ctx: QueryCtx, { householdId }: Caller) {
   const list = await activeList(ctx, householdId, week._id);
   if (list === null) return null;
 
+  // Most items share the week's few recipes, so each is read once.
+  const recipeNames = new Map<Id<"recipes">, string | null>();
+  const recipeName = async (id: Id<"recipes">) => {
+    if (!recipeNames.has(id)) {
+      const recipe = await ctx.db.get("recipes", id);
+      recipeNames.set(id, recipe?.householdId === householdId ? recipe.name : null);
+    }
+    return recipeNames.get(id) ?? null;
+  };
+
   const items = [];
   for (const item of await listItemsOf(ctx, householdId, list._id)) {
+    const sourceRecipeNames = [];
+    for (const id of item.sourceRecipeIds) {
+      const name = await recipeName(id);
+      if (name !== null) sourceRecipeNames.push(name);
+    }
     let kind: "count" | "level" = "count";
     if (item.ingredientId !== undefined) {
       const ingredient = await ctx.db.get("ingredients", item.ingredientId);
@@ -293,6 +310,7 @@ export async function getCurrentList(ctx: QueryCtx, { householdId }: Caller) {
       status: item.status,
       checkedAt: item.checkedAt,
       sourceRecipeIds: item.sourceRecipeIds,
+      sourceRecipeNames,
     });
   }
   // Store order, then what is left to buy before what is already home, then by name.
