@@ -1,14 +1,14 @@
 import { Link } from "@tanstack/react-router";
-import { Button } from "#/components/ui/button";
+import { Pill } from "#/components/kit/pill";
 
 /** For an unknown id, a mangled link, or another household's recipe: all read the same. */
 export function RecipeNotHere() {
   return (
-    <main className="mx-auto flex max-w-2xl flex-col items-start gap-4 px-4 py-6">
-      <h1 className="text-2xl font-semibold tracking-tight">This recipe is not here.</h1>
-      <Button asChild variant="outline">
+    <main className="mx-auto flex max-w-2xl flex-col items-start px-5 pt-3">
+      <h1 className="font-display text-display">This recipe is not here.</h1>
+      <Pill variant="text" asChild className="mt-1 -ml-5">
         <Link to="/recipes">All recipes</Link>
-      </Button>
+      </Pill>
     </main>
   );
 }

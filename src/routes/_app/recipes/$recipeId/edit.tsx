@@ -18,8 +18,8 @@ function EditRecipe() {
   if (recipe === null) return <RecipeNotHere />;
 
   return (
-    <main className="mx-auto flex max-w-2xl flex-col gap-6 px-4 pt-6">
-      <h1 className="text-2xl font-semibold tracking-tight">Edit recipe</h1>
+    <main className="mx-auto flex max-w-2xl flex-col gap-4 px-5 pt-3">
+      <h1 className="font-display text-display">Edit recipe</h1>
       {/* The draft is taken once; edits made elsewhere while this is open do not overwrite it. */}
       <RecipeEditor key={recipe._id} initial={draftFromRecipe(recipe)} recipeId={recipe._id} />
     </main>

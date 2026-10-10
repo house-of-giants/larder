@@ -141,7 +141,7 @@ export function IngredientPicker({
               <Choice active={index === active} onChoose={() => pick(o._id)}>
                 <span className="truncate">{o.name}</span>
                 {o.kind === "level" && (
-                  <span className="shrink-0 text-xs text-muted-foreground">by level</span>
+                  <span className="shrink-0 text-caption text-muted-foreground">by level</span>
                 )}
               </Choice>
             </li>
@@ -160,7 +160,7 @@ export function IngredientPicker({
         </ul>
       )}
       {error && (
-        <p role="alert" className="mt-1 text-sm text-destructive">
+        <p role="alert" className="mt-1 text-caption text-destructive">
           {error}
         </p>
       )}
