@@ -1,8 +1,8 @@
+import { Chip } from "#/components/kit/chip";
 import { LEVELS, type Level } from "#/lib/levels";
-import { cn } from "#/lib/utils";
 import { levelLabels } from "./labels";
 
-/** Four segmented chips, full to out, with the current level filled. */
+/** Four chips, full to out, the current level in tomato pale. */
 export function LevelChips({
   name,
   value,
@@ -15,28 +15,22 @@ export function LevelChips({
   disabled?: boolean;
 }) {
   return (
-    <fieldset className="m-0 flex min-w-0 shrink-0 overflow-hidden rounded-md border bg-background p-0">
+    <fieldset className="m-0 flex min-w-0 shrink-0 gap-1.5 border-0 p-0">
       <legend className="sr-only">How much {name} is left</legend>
       {LEVELS.map((level) => {
         const current = level === value;
         return (
-          <button
+          <Chip
             key={level}
-            type="button"
-            aria-pressed={current}
+            selected={current}
             disabled={disabled}
             onClick={() => {
               if (!current) onChange(level);
             }}
-            className={cn(
-              "min-h-10 min-w-11 border-l px-2 text-xs font-medium transition-colors first:border-l-0 disabled:opacity-60",
-              current
-                ? "bg-primary text-primary-foreground"
-                : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
-            )}
+            className="min-w-11 disabled:opacity-60"
           >
             {levelLabels[level]}
-          </button>
+          </Chip>
         );
       })}
     </fieldset>

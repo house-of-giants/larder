@@ -1,8 +1,9 @@
 import { useMutation } from "convex/react";
-import { useState } from "react";
+import { useEffect, useRef, useState, type FormEvent, type RefObject } from "react";
 import { toast } from "sonner";
+import { HalfSheet } from "#/components/kit/half-sheet";
+import { Pill } from "#/components/kit/pill";
 import { categoryLabels } from "#/components/pantry/labels";
-import { Button } from "#/components/ui/button";
 import { Input } from "#/components/ui/input";
 import { Label } from "#/components/ui/label";
 import {
@@ -15,8 +16,23 @@ import {
 import { errorMessage } from "#/lib/errors";
 import { addItem } from "./list-data";
 
-/** Something the plan did not ask for. It goes on this list only, never the pantry. */
-export function AddSomething({ canSend }: { canSend: boolean }) {
+const FORM_ID = "add-something";
+
+/**
+ * Something the plan did not ask for, in a half sheet off the floating button. It goes on
+ * this list only, never the pantry. With no signal the sheet says so and Add stays off.
+ */
+export function AddSomething({
+  open,
+  onOpenChange,
+  opener,
+  canSend,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  opener: RefObject<HTMLElement | null>;
+  canSend: boolean;
+}) {
   const add = useMutation(addItem);
   const [name, setName] = useState("");
   const [quantity, setQuantity] = useState("");
@@ -26,10 +42,17 @@ export function AddSomething({ canSend }: { canSend: boolean }) {
   const [error, setError] = useState<string | null>(null);
 
   const displayName = name.trim().replace(/\s+/g, " ");
+  // Each opening of the sheet is a session. An add that lands after the sheet was closed
+  // (and maybe opened again for something new) must not clear or close that newer draft.
+  const session = useRef(0);
+  useEffect(() => {
+    session.current += 1;
+  }, [open]);
 
-  async function submit(event: React.FormEvent) {
+  async function submit(event: FormEvent) {
     event.preventDefault();
     if (displayName === "" || !canSend) return;
+    const mine = session.current;
     setPending(true);
     setError(null);
     try {
@@ -40,98 +63,107 @@ export function AddSomething({ canSend }: { canSend: boolean }) {
         category,
       });
       toast(`${displayName}: on the list.`);
+      if (mine !== session.current) return;
       setName("");
       setQuantity("");
       setUnit("");
       setCategory("other");
+      onOpenChange(false);
     } catch (e) {
-      setError(errorMessage(e));
+      if (mine === session.current) setError(errorMessage(e));
+      else toast(`${displayName} was not added: ${errorMessage(e)}`);
     } finally {
       setPending(false);
     }
   }
 
+  const fieldLabel = "text-caption font-normal text-muted-foreground";
+
   return (
-    <form
-      onSubmit={submit}
-      aria-labelledby="add-something-heading"
-      className="flex flex-col gap-3 rounded-lg border bg-card p-4"
+    <HalfSheet
+      open={open}
+      onOpenChange={onOpenChange}
+      opener={opener}
+      title="Add something"
+      note="Goes on this list only, not the pantry."
+      footer={
+        <Pill
+          sheet
+          type="submit"
+          form={FORM_ID}
+          disabled={displayName === "" || pending || !canSend}
+        >
+          Add to the list
+        </Pill>
+      }
     >
-      <h2 id="add-something-heading" className="font-medium">
-        Add something
-      </h2>
-      <div className="flex flex-col gap-2">
-        <Label htmlFor="add-something-name" className="sr-only">
-          What
-        </Label>
-        <Input
-          id="add-something-name"
-          value={name}
-          placeholder="paper towels, limes"
-          autoComplete="off"
-          enterKeyHint="done"
-          className="h-11"
-          onChange={(e) => setName(e.target.value)}
-        />
-      </div>
-      <div className="grid grid-cols-[5rem_5rem_1fr] gap-2">
-        <div className="flex flex-col gap-1">
-          <Label htmlFor="add-something-quantity" className="text-xs text-muted-foreground">
-            How many
+      <form id={FORM_ID} onSubmit={submit} className="flex flex-col gap-3 pb-1">
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="add-something-name" className="text-subhead font-normal">
+            What else?
           </Label>
           <Input
-            id="add-something-quantity"
-            value={quantity}
-            placeholder="2"
+            id="add-something-name"
+            value={name}
             autoComplete="off"
-            className="tabular h-11"
-            onChange={(e) => setQuantity(e.target.value)}
+            enterKeyHint="done"
+            onChange={(e) => setName(e.target.value)}
           />
         </div>
-        <div className="flex flex-col gap-1">
-          <Label htmlFor="add-something-unit" className="text-xs text-muted-foreground">
-            Unit
-          </Label>
-          <Input
-            id="add-something-unit"
-            value={unit}
-            placeholder="each"
-            autoComplete="off"
-            className="h-11"
-            onChange={(e) => setUnit(e.target.value)}
-          />
+        <div className="grid grid-cols-[5rem_5rem_1fr] gap-2">
+          <div className="flex flex-col gap-1">
+            <Label htmlFor="add-something-quantity" className={fieldLabel}>
+              How many
+            </Label>
+            <Input
+              id="add-something-quantity"
+              value={quantity}
+              inputMode="decimal"
+              autoComplete="off"
+              className="tabular"
+              onChange={(e) => setQuantity(e.target.value)}
+            />
+          </div>
+          <div className="flex flex-col gap-1">
+            <Label htmlFor="add-something-unit" className={fieldLabel}>
+              Unit
+            </Label>
+            <Input
+              id="add-something-unit"
+              value={unit}
+              autoComplete="off"
+              onChange={(e) => setUnit(e.target.value)}
+            />
+          </div>
+          <div className="flex min-w-0 flex-col gap-1">
+            <Label htmlFor="add-something-section" className={fieldLabel}>
+              Section
+            </Label>
+            <Select value={category} onValueChange={setCategory}>
+              <SelectTrigger id="add-something-section" className="w-full data-[size=default]:h-11">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.entries(categoryLabels).map(([value, label]) => (
+                  <SelectItem key={value} value={value}>
+                    {label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
-        <div className="flex min-w-0 flex-col gap-1">
-          <Label htmlFor="add-something-section" className="text-xs text-muted-foreground">
-            Section
-          </Label>
-          <Select value={category} onValueChange={setCategory}>
-            <SelectTrigger id="add-something-section" className="w-full data-[size=default]:h-11">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {Object.entries(categoryLabels).map(([value, label]) => (
-                <SelectItem key={value} value={value}>
-                  {label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-      {error && (
-        <p role="alert" className="text-sm text-destructive">
-          {error}
-        </p>
-      )}
-      {canSend ? null : (
-        <p className="text-sm text-muted-foreground">
-          Adding needs a signal. Check-offs still save.
-        </p>
-      )}
-      <Button type="submit" className="h-11" disabled={displayName === "" || pending || !canSend}>
-        Add to the list
-      </Button>
-    </form>
+        {error && (
+          <p role="alert" className="text-caption text-destructive">
+            {error}
+          </p>
+        )}
+        {!canSend && (
+          <p className="text-caption text-muted-foreground">
+            Adding needs a signal. Check-offs still save.
+          </p>
+        )}
+      </form>
+    </HalfSheet>
   );
 }

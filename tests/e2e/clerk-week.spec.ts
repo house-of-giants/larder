@@ -222,8 +222,14 @@ test.describe("a week in one household, signed in with Clerk", () => {
         await expect.soft(butter.locator("input")).toHaveValue("5");
         await shot(one, "04c-reconcile");
 
+        // An edit the field has not saved yet still counts: change butter and tap Looks
+        // right at once; the list is made again from 6 on hand, so 16 tbsp to buy.
+        await butter.locator("input").fill("6");
         await one.getByRole("button", { name: "Looks right" }).click();
         await expect(one).toHaveURL(/\/list$/);
+        await expect
+          .soft(one.locator('[data-testid="list-row"]').filter({ hasText: "unsalted butter" }))
+          .toContainText("16 tbsp");
         await expect.soft(toGet(one, neededCount)).toBeVisible();
         const sections = one.locator('main section[aria-labelledby^="list-"]');
         await expect.soft(sections).toHaveCount(neededSections.length);
@@ -269,7 +275,61 @@ test.describe("a week in one household, signed in with Clerk", () => {
         await expect.soft(toGet(one, neededCount - 3)).toBeVisible();
         await shot(one, "05b-back-online");
 
-        // 5 tbsp on hand plus the 17 bought.
+        // A checked row stays in its aisle, after the rows still to get.
+        const dairy = one.locator('main section[aria-labelledby="list-dairy_refrigerated"]');
+        await expect.soft(dairy.locator(`[data-item-id="${butterId}"]`)).toHaveCount(1);
+        const order = await dairy
+          .locator('[data-testid="list-row"]')
+          .evaluateAll((rows) => rows.map((r) => r.getAttribute("data-status")));
+        expect
+          .soft(order, "dairy has rows to get and rows in the cart")
+          .toEqual(expect.arrayContaining(["needed", "checked"]));
+        expect
+          .soft(order, "checked rows sink to the end of their aisle")
+          .toEqual([...order].sort((a, b) => Number(a === "checked") - Number(b === "checked")));
+
+        // The chip row scrolls sideways and fades at its edge.
+        const chips = await one.locator('nav[aria-label="Store sections"] ul').evaluate((ul) => ({
+          overflows: ul.scrollWidth > ul.clientWidth,
+          mask: getComputedStyle(ul).maskImage || getComputedStyle(ul).webkitMaskImage,
+        }));
+        expect.soft(chips.overflows, "chip row scrolls").toBe(true);
+        expect.soft(chips.mask, "chip row fades").not.toBe("none");
+
+        // Scrolled, the pinned progress line and chips sit flush under the app header.
+        await one.evaluate(() => window.scrollTo(0, 600));
+        const pinned = await one.evaluate(() => {
+          const header = document.querySelector("header")!.getBoundingClientRect();
+          const block = document
+            .querySelector('nav[aria-label="Store sections"]')!
+            .parentElement!.getBoundingClientRect();
+          return { headerBottom: header.bottom, blockTop: block.top, height: block.height };
+        });
+        expect
+          .soft(pinned.blockTop, "pinned block starts at the header's edge")
+          .toBeCloseTo(pinned.headerBottom, 0);
+        expect.soft(pinned.height, "pinned block stays short").toBeLessThan(88);
+
+        // Sticky headings never paint over the tab bar: put the dairy heading under the
+        // Settings tab's centre, then ask what is painted there.
+        const paint = await one.evaluate(() => {
+          const link = document.querySelector('nav[aria-label="Main"] a[href="/settings"]')!;
+          const tab = link.getBoundingClientRect();
+          const x = tab.x + tab.width / 2;
+          const y = tab.y + tab.height / 2;
+          const heading = document.getElementById("list-dairy_refrigerated")!.parentElement!;
+          window.scrollTo(0, 0);
+          const flow = heading.getBoundingClientRect();
+          window.scrollTo(0, flow.top + flow.height / 2 - y);
+          const box = heading.getBoundingClientRect();
+          const under = box.left <= x && x <= box.right && box.top <= y && y <= box.bottom;
+          const hit = document.elementFromPoint(x, y);
+          return { under, onTop: Boolean(hit?.closest('nav[aria-label="Main"]')) };
+        });
+        expect.soft(paint.under, "the dairy heading sits under the Settings tab").toBe(true);
+        expect.soft(paint.onTop, "the tab bar paints over sticky headings").toBe(true);
+
+        // 6 tbsp on hand (set in reconcile) plus the 16 bought.
         await one.goto("/pantry");
         await expect
           .soft(pantryRow(one, "unsalted butter").getByRole("button").first())

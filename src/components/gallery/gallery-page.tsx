@@ -161,7 +161,7 @@ function Specimens({ title, dark = false }: { title: string; dark?: boolean }) {
                 key={r.name}
                 name={r.name}
                 amount={r}
-                for={r.for}
+                note={r.status === "checked" ? "in the cart" : r.for ? `for ${r.for}` : ""}
                 checked={r.status === "checked"}
                 putBack={r.status === "onHand"}
                 onToggle={() => toggle(r.name)}

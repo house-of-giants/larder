@@ -98,24 +98,29 @@ export function PlanSkeleton() {
   );
 }
 
-/** Store mode: the header with the count, the section chips, rows. */
+/** Store mode: the title, the progress line, the section chips, an aisle of rows. */
 export function StoreSkeleton() {
   return (
-    <Frame className="gap-4 pb-8">
-      <div className="flex flex-col gap-1">
-        <div className="flex h-9 items-center justify-between gap-3">
-          <Skeleton className="h-7 w-24" />
-          <Skeleton className="h-6 w-20" />
-        </div>
-        <Skeleton className="h-4 w-28" />
-      </div>
-      <div className="flex h-14 items-center gap-2 overflow-hidden">
-        {["w-12", "w-20", "w-16", "w-24"].map((width) => (
-          <Skeleton key={width} className={cn("h-10 shrink-0 rounded-full", width)} />
+    <Frame className="gap-0 px-5 pt-3 pb-24">
+      <Skeleton className="h-9 w-28" />
+      <Skeleton className="mt-1.5 h-4 w-44" />
+      <div className="flex h-16 items-center gap-2.5 overflow-hidden">
+        {["w-12", "w-20", "w-28", "w-24"].map((width) => (
+          <Skeleton key={width} className={cn("h-11 shrink-0 rounded-sm", width)} />
         ))}
       </div>
-      <Skeleton className="h-4 w-20" />
-      <RowsSkeleton rows={5} />
+      <Skeleton className="mt-4 h-6 w-32" />
+      <div className="mt-2 flex flex-col">
+        {Array.from({ length: 5 }, (_, i) => (
+          <div key={i} className="flex min-h-14 items-center gap-3 border-b border-border">
+            <Skeleton className="size-[22px] shrink-0 rounded-full" />
+            <div className="flex flex-col gap-1.5">
+              <Skeleton className="h-4 w-40" />
+              <Skeleton className="h-3 w-28" />
+            </div>
+          </div>
+        ))}
+      </div>
     </Frame>
   );
 }

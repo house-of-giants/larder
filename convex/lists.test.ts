@@ -305,6 +305,54 @@ describe("lists.current and lists.reconcileItems", () => {
     });
   });
 
+  it("names the recipes each item is for, in the item's recipe order", async () => {
+    const t = newTest();
+    const { as } = await seededList(t);
+    await as.mutation(api.lists.addItem, { displayName: "paper towels" });
+    const list = await as.query(api.lists.current, {});
+    const all = list!.sections.flatMap((s) => s.items);
+    const named = (name: string) => all.find((i) => i.displayName === name)?.sourceRecipeNames;
+    expect(named("carrots")).toEqual(["Rosemary Balsamic Pot Roast with Carrots and Potatoes"]);
+    expect(named("unsalted butter")).toEqual([
+      "Bacon, Egg and Pepper Jack Breakfast Biscuits",
+      "Apple Cinnamon Greek Yogurt Parfaits",
+      "Rosemary Balsamic Pot Roast with Carrots and Potatoes",
+      "Italian Grinder Sliders",
+      "Salisbury Steak Meatballs with Mashed Potatoes",
+    ]);
+    expect(named("paper towels")).toEqual([]);
+  });
+
+  it("never names a recipe from another household, or one that is gone", async () => {
+    const t = newTest();
+    const { as, householdId } = await seededList(t);
+    const bob = await createHousehold(t, { who: "Bob", name: "Oak" });
+    await t.mutation(internal.seed.load, { householdId: bob.householdId });
+    const carrots = await planItem(t, householdId, "carrots");
+    const [own] = carrots.sourceRecipeIds;
+    await t.run(async (ctx) => {
+      const foreign = await ctx.db
+        .query("recipes")
+        .filter((q) => q.eq(q.field("householdId"), bob.householdId))
+        .first();
+      const gone = await ctx.db.insert("recipes", {
+        householdId,
+        name: "Deleted soup",
+        instructions: [],
+        tags: [],
+        needsReview: false,
+        updatedAt: 0,
+      });
+      await ctx.db.delete(gone);
+      await ctx.db.patch(carrots._id, { sourceRecipeIds: [foreign!._id, own, gone] });
+    });
+    const list = await as.query(api.lists.current, {});
+    const item = list!.sections.flatMap((s) => s.items).find((i) => i._id === carrots._id);
+    expect(item?.sourceRecipeNames).toEqual([
+      "Rosemary Balsamic Pot Roast with Carrots and Potatoes",
+    ]);
+  });
+
   it("lists the plan's ingredients with what the pantry holds", async () => {
     const t = newTest();
     const { as, weekId } = await seededList(t);
