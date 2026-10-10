@@ -364,23 +364,42 @@ test.describe("a week in one household, signed in with Clerk", () => {
       });
 
       await test.step("06 Made it takes from the pantry and fills the leftovers", async () => {
+        // Tonight's pale Made it: the biscuits, the week's first selected recipe.
         await one.goto("/week");
-        await one
-          .locator("main li")
-          .filter({ hasText: SLIDERS })
-          .getByRole("button", { name: "Made it", exact: true })
-          .click();
+        const tonight = one.getByRole("region", { name: "Tonight" });
+        await tonight.getByRole("button", { name: "Made it", exact: true }).click();
         const sheet = one.getByRole("dialog");
+        await expect(sheet.getByRole("list", { name: "Ingredients used" })).toBeVisible();
+        await sheet.getByRole("button", { name: "Made it", exact: true }).click();
+        // Tonight moves on to the next recipe while the sheet still says what moved.
+        await expect.soft(tonight.getByRole("heading")).not.toHaveText(BISCUITS);
+        await expect
+          .soft(sheet.getByText(new RegExp(`^Made ${BISCUITS}\\. 8 biscuits in the`)))
+          .toBeVisible();
+        await shot(one, "06a-tonight-summary");
+        await sheet.getByRole("button", { name: "Done" }).click();
+        // The rows hold no verbs: the biscuits row says when it was made.
+        await expect
+          .soft(one.locator("main li").filter({ hasText: BISCUITS }))
+          .toContainText(/Made /);
+        await expect
+          .soft(one.locator("main li").getByRole("button", { name: "Made it" }))
+          .toHaveCount(0);
+
+        // A second recipe from its own page, reached through its row.
+        await one.locator("main li").getByRole("link", { name: SLIDERS }).click();
+        await expect(one).toHaveURL(/\/recipes\//);
+        await one.getByRole("button", { name: "Made it", exact: true }).click();
         await expect
           .soft(sheet.getByRole("button", { name: "1", exact: true }))
           .toHaveAttribute("aria-pressed", "true");
         await expect(sheet.getByRole("list", { name: "Ingredients used" })).toBeVisible();
-        await shot(one, "06a-made-it-sheet");
+        await shot(one, "06b-made-it-sheet");
         await sheet.getByRole("button", { name: "Made it", exact: true }).click();
         await expect
           .soft(one.getByText(new RegExp(`^Made ${SLIDERS}\\. 12 sliders in the`)))
           .toBeVisible();
-        await shot(one, "06b-made-it-summary");
+        await shot(one, "06c-made-it-summary");
         await sheet.getByRole("button", { name: "Done" }).click();
 
         await one.goto("/pantry");
@@ -392,18 +411,19 @@ test.describe("a week in one household, signed in with Clerk", () => {
         await expect
           .soft(pantryRow(one, "Italian seasoning").getByRole("button", { name: "Half" }))
           .toHaveAttribute("aria-pressed", "true");
-        // 22 after shopping, less the 2 tbsp the sliders used.
+        // 22 after shopping, less the 9 tbsp the biscuits used and the 2 the sliders did.
         await expect
           .soft(pantryRow(one, "unsalted butter").getByRole("button").first())
-          .toHaveText(/unsalted butter\s*20 tbsp/);
-        await shot(one, "06c-pantry-after-cook");
+          .toHaveText(/unsalted butter\s*11 tbsp/);
+        await shot(one, "06d-pantry-after-cooks");
 
         await one.goto("/leftovers");
         const sliders = leftoverCard(one, SLIDERS);
         await expect.soft(sliders).toContainText("12 sliders");
+        await expect.soft(leftoverCard(one, BISCUITS)).toContainText("8 biscuits");
         await sliders.getByRole("button", { name: "Ate one" }).click();
         await expect.soft(sliders).toContainText("11 sliders");
-        await shot(one, "06d-leftovers-11");
+        await shot(one, "06e-leftovers-11");
       });
 
       await test.step("07 closing the week, and taking it back", async () => {
@@ -423,20 +443,27 @@ test.describe("a week in one household, signed in with Clerk", () => {
         await expect
           .soft(confirm)
           .toContainText(/Count the leftovers as eaten and start the week of /);
+        await shot(one, "07b-confirm");
         await confirm.getByRole("button", { name: "Close the week" }).click();
         await expect(one).toHaveURL(/\/week$/);
+        await expect.soft(one.locator("main p").filter({ hasText: "· planning ·" })).toBeVisible();
+        await expect.soft(one.getByText("No recipes picked yet.")).toBeVisible();
+        await expect.soft(one.getByText("fridge empty", { exact: true })).toBeVisible();
         const closedToast = one
           .locator("[data-sonner-toast]")
           .filter({ hasText: "Week closed. A new one is ready to plan." });
-        await expect.soft(closedToast).toBeVisible();
-        await expect.soft(closedToast.getByRole("button", { name: "Undo" })).toBeVisible();
-        await expect.soft(one.locator("main p").filter({ hasText: "· planning ·" })).toBeVisible();
-        await expect.soft(one.getByText("No recipes picked yet.")).toBeVisible();
-        await shot(one, "07b-new-week");
+        await shot(one, "07c-new-week");
+        // The toast's Undo takes back this closeout's events, all at once.
+        await closedToast.getByRole("button", { name: "Undo" }).click();
+        await expect.soft(one.getByText("Undone.", { exact: true })).toBeVisible();
+        await expect.soft(one.getByText("2 in the fridge", { exact: true })).toBeVisible();
 
         await one.goto("/leftovers");
-        await expect.soft(one.getByText(/^Nothing left over\./)).toBeVisible();
+        await expect.soft(leftoverCard(one, SLIDERS)).toContainText("11 sliders");
+        await expect.soft(leftoverCard(one, BISCUITS)).toContainText("8 biscuits");
+        await shot(one, "07d-leftovers-back");
 
+        // The drawer agrees: the closeout row is undone and offers nothing more.
         await one.goto("/settings");
         await one.getByRole("button", { name: "Recent changes" }).click();
         const drawer = one.getByRole("dialog");
@@ -444,17 +471,10 @@ test.describe("a week in one household, signed in with Clerk", () => {
         const closed = drawer
           .locator("li")
           .filter({ has: one.getByText(`Closed out ${SLIDERS}: eaten`, { exact: true }) });
-        await expect(closed.getByRole("button", { name: "Undo" })).toBeVisible();
-        await shot(one, "07c-undo-drawer");
-        await closed.getByRole("button", { name: "Undo" }).click();
-        // The row can no longer be undone, and says why.
+        await expect(closed).toBeVisible();
         await expect.soft(closed.getByRole("button", { name: "Undo" })).toHaveCount(0);
         await expect.soft(closed).toContainText("Undone.");
-        await shot(one, "07d-closeout-undone");
-
-        await one.goto("/leftovers");
-        await expect.soft(leftoverCard(one, SLIDERS)).toContainText("11 sliders");
-        await shot(one, "07e-leftovers-back");
+        await shot(one, "07e-undo-drawer");
       });
 
       await test.step("08 signing out, and back in", async () => {
