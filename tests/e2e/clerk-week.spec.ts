@@ -451,6 +451,8 @@ test.describe("a week in one household, signed in with Clerk", () => {
         await expect(roastRows).toBeVisible();
         const body = sheet.locator('[data-slot="half-sheet-body"]');
         const pill = sheet.getByRole("button", { name: "Made it", exact: true });
+        // Measured once the sheet has finished rising.
+        await sheet.evaluate((el) => Promise.all(el.getAnimations().map((a) => a.finished)));
         const pillBefore = await pill.boundingBox();
         const scroll = await body.evaluate((el) => ({
           scrolls: el.scrollHeight > el.clientHeight,
