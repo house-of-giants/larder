@@ -584,8 +584,18 @@ test.describe("a week in one household, signed in with Clerk", () => {
         convexRun("testing:deleteDevHousehold", { householdId });
       }
       for (const context of contexts) await context.close();
-      // The three sign-ups come off the development instance, which caps at 100 users.
-      for (const email of Object.values(EMAIL)) await deleteTestUser(email);
+      // The three sign-ups come off the development instance, which caps at 100 users. A
+      // failed cleanup fails the run, after every user has been tried: a quiet leak here
+      // is what filled the instance once.
+      const leaks: string[] = [];
+      for (const email of Object.values(EMAIL)) {
+        try {
+          await deleteTestUser(email);
+        } catch (error) {
+          leaks.push(error instanceof Error ? error.message : String(error));
+        }
+      }
+      if (leaks.length > 0) throw new Error(`Test users not cleaned up:\n${leaks.join("\n")}`);
     }
   });
 });
