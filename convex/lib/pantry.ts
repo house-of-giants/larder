@@ -27,6 +27,20 @@ export function pantrySnapshot(row: PantrySnapshot): PantrySnapshot {
     : { kind: "level", level: row.level, ...common };
 }
 
+/**
+ * A snapshot as a ledger payload holds it. Events written before pantry rows had a `kind`
+ * carry only `count` or `level`.
+ */
+export type StoredPantrySnapshot = PantrySnapshot | OmitEach<PantrySnapshot, "kind">;
+
+/** A stored snapshot with its `kind`: a legacy one is a level if it has a level, else a count. */
+export function normalizeSnapshot(snapshot: StoredPantrySnapshot): PantrySnapshot;
+export function normalizeSnapshot(snapshot: StoredPantrySnapshot | null): PantrySnapshot | null;
+export function normalizeSnapshot(snapshot: StoredPantrySnapshot | null): PantrySnapshot | null {
+  if (snapshot === null || "kind" in snapshot) return snapshot;
+  return "level" in snapshot ? { ...snapshot, kind: "level" } : { ...snapshot, kind: "count" };
+}
+
 /** The ingredient, only if it belongs to this household. */
 export async function requireIngredient(
   ctx: QueryCtx,

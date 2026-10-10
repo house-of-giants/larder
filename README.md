@@ -33,9 +33,11 @@ bunx convex env set CLERK_JWT_ISSUER_DOMAIN https://<instance>.clerk.accounts.de
 
 `convex/seed/` holds a real week of fixtures: 92 ingredients, 7 recipes, the pantry on hand,
 and a planned week. Load them into a household you belong to (find its id in the Convex
-dashboard's `households` table):
+dashboard's `households` table). Seeding runs only on a deployment that allows it, so set
+that once on the dev deployment, never on production:
 
 ```sh
+bunx convex env set SEED_ALLOWED true
 bunx convex run seed:load '{"householdId":"<id>"}'
 ```
 

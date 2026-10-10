@@ -522,3 +522,64 @@ describe("offline replay", () => {
     expect(countOf(await pantryOf(t, butter.ingredientId!))?.quantityDecimal).toBe(5);
   });
 });
+
+describe("un-check of a check-off recorded before pantry rows had a kind", () => {
+  // Ledger events written before the pantryItems union carry snapshots with `count` or
+  // `level` and no `kind`. Undo must still read them.
+  async function makeLegacy(t: Test, householdId: Id<"households">, listItemId: Id<"listItems">) {
+    await t.run(async (ctx) => {
+      const event = await ctx.db
+        .query("inventoryEvents")
+        .withIndex("by_householdId_listItemId", (q) =>
+          q.eq("householdId", householdId).eq("refs.listItemId", listItemId),
+        )
+        .order("desc")
+        .first();
+      if (event === null || event.type !== "purchase") throw new Error("No purchase event");
+      const strip = (snapshot: Record<string, unknown> | null) => {
+        if (snapshot === null) return null;
+        const { kind: _kind, ...rest } = snapshot;
+        return rest;
+      };
+      await ctx.db.patch("inventoryEvents", event._id, {
+        payload: {
+          ...event.payload,
+          before: strip(event.payload.before),
+          after: strip(event.payload.after),
+        },
+      });
+    });
+  }
+
+  it("puts a level back to what it was", async () => {
+    const t = newTest();
+    const { as, householdId } = await seededList(t);
+    const dijon = await planItem(t, householdId, "Dijon mustard", "tsp");
+    await as.mutation(api.lists.setItemStatus, { listItemId: dijon._id, status: "checked" });
+    await makeLegacy(t, householdId, dijon._id);
+
+    await as.mutation(api.lists.setItemStatus, { listItemId: dijon._id, status: "needed" });
+    expect(levelOf(await pantryOf(t, dijon.ingredientId!))).toBe("low");
+  });
+
+  it("removes the row a level check-off created", async () => {
+    const t = newTest();
+    const { as, householdId } = await seededList(t);
+    const dijon = await planItem(t, householdId, "Dijon mustard", "tsp");
+    await t.run(async (ctx) => {
+      const row = await ctx.db
+        .query("pantryItems")
+        .withIndex("by_householdId_ingredientId", (q) =>
+          q.eq("householdId", householdId).eq("ingredientId", dijon.ingredientId!),
+        )
+        .unique();
+      await ctx.db.delete("pantryItems", row!._id);
+    });
+    await as.mutation(api.lists.setItemStatus, { listItemId: dijon._id, status: "checked" });
+    expect(levelOf(await pantryOf(t, dijon.ingredientId!))).toBe("full");
+    await makeLegacy(t, householdId, dijon._id);
+
+    await as.mutation(api.lists.setItemStatus, { listItemId: dijon._id, status: "needed" });
+    expect(await pantryOf(t, dijon.ingredientId!)).toBeNull();
+  });
+});

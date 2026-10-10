@@ -12,7 +12,13 @@ import {
   STORE_SECTIONS,
   generateList,
 } from "./lib/list_generation";
-import { type PantrySnapshot, findPantryRow, pantrySnapshot } from "./lib/pantry";
+import {
+  type PantrySnapshot,
+  type StoredPantrySnapshot,
+  findPantryRow,
+  normalizeSnapshot,
+  pantrySnapshot,
+} from "./lib/pantry";
 import { formatQuantity, parseQuantity } from "./lib/quantities";
 import { findOpenWeek, requireWeek, weekRows } from "./lib/weeks";
 import schema, { level, pantryCount } from "./schema";
@@ -355,6 +361,12 @@ type PurchasePayload = {
   replacedCount?: { quantityText: string; quantityDecimal: number; unit: string };
 };
 
+/** A purchase payload as stored: snapshots may predate `kind` (see normalizeSnapshot). */
+type StoredPurchasePayload = Omit<PurchasePayload, "before" | "after"> & {
+  before: StoredPantrySnapshot | null;
+  after: StoredPantrySnapshot;
+};
+
 /** Writes the pantry row to `after` (or deletes it when null) and stamps updatedAt. */
 async function putPantryRow(
   ctx: MutationCtx,
@@ -469,7 +481,9 @@ async function undoneRow(
   purchase: Doc<"inventoryEvents">,
   existing: Doc<"pantryItems"> | null,
 ): Promise<PantrySnapshot | null | undefined> {
-  const payload = purchase.payload as PurchasePayload;
+  const payload = purchase.payload as StoredPurchasePayload;
+  const before = normalizeSnapshot(payload.before);
+  const after = normalizeSnapshot(payload.after);
   if (existing === null) return undefined;
   const untouched = (await latestEvent(ctx, householdId, { pantryItemId: existing._id }))?._id;
   const touchedSince = untouched !== purchase._id;
@@ -477,14 +491,14 @@ async function undoneRow(
   // A level: back to what it was, only while it is still the full the check-off set. Only
   // the level changes; where the row lives, its note, and its expiry stay as edited since.
   if (payload.added === undefined) {
-    if (existing.kind !== "level" || payload.after.kind !== "level") return undefined;
-    if (existing.level !== payload.after.level) return undefined;
-    if (payload.before === null) {
+    if (existing.kind !== "level" || after.kind !== "level") return undefined;
+    if (existing.level !== after.level) return undefined;
+    if (before === null) {
       // The check-off made the row: gone again if untouched, else out (no row meant out).
       return touchedSince ? pantrySnapshot({ ...existing, level: "out" }) : null;
     }
-    if (payload.before.kind !== "level") return undefined;
-    return pantrySnapshot({ ...existing, level: payload.before.level });
+    if (before.kind !== "level") return undefined;
+    return pantrySnapshot({ ...existing, level: before.level });
   }
 
   const added = payload.added;
@@ -502,7 +516,7 @@ async function undoneRow(
   }
 
   // A row the check-off created, untouched since: it goes away again.
-  if (payload.before === null && !touchedSince) return null;
+  if (before === null && !touchedSince) return null;
   const total = Math.max(0, count.quantityDecimal - added.quantityDecimal);
   return pantrySnapshot({
     ...existing,
