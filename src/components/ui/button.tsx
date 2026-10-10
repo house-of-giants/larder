@@ -16,7 +16,8 @@ const buttonVariants = cva(
         ghost: "text-foreground hover:bg-secondary",
         link: "text-primary underline-offset-4 hover:underline",
         // The pills from DESIGN.md; `Pill` in src/components/kit sets these with size="pill".
-        pill: "rounded-full bg-primary text-subhead font-semibold text-primary-foreground hover:bg-primary/90 active:brightness-95",
+        // Disabled, the primary goes to the well: half-strength tomato would read as the pale pill.
+        pill: "rounded-full bg-primary text-subhead font-semibold text-primary-foreground hover:bg-primary/90 active:brightness-95 disabled:bg-muted disabled:text-muted-foreground disabled:opacity-100",
         "pill-pale":
           "rounded-full bg-accent text-subhead font-semibold text-accent-foreground hover:brightness-[0.98] active:brightness-95",
         "pill-outline":
