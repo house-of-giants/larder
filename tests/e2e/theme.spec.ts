@@ -159,6 +159,37 @@ function themeTests(screen: Screen) {
   }
 }
 
+/** HSL lightness, 0 to 1, of a computed `rgb()` or `rgba()` color. */
+function lightness(color: string): number {
+  const [r, g, b] = (color.match(/[\d.]+/g) ?? []).slice(0, 3).map(Number);
+  return (Math.max(r, g, b) + Math.min(r, g, b)) / 2 / 255;
+}
+
+// Clerk draws its card from the app's tokens over its own dark base theme; the card must
+// follow the page into dark, and the app's tomato must win over the base theme's white
+// primary.
+function clerkCardTests() {
+  for (const theme of ["light", "dark"] as const) {
+    test(`Clerk's card follows the page, ${theme}`, async ({ page }) => {
+      await page.emulateMedia({ colorScheme: theme });
+      await open(page, signInScreen, theme);
+      const card = page.locator(".cl-card").first();
+      await expect(card).toBeVisible();
+      const colors = await page.evaluate(() => {
+        const css = (selector: string) => {
+          const el = document.querySelector(selector);
+          return el ? getComputedStyle(el).backgroundColor : "";
+        };
+        return { card: css(".cl-card"), primary: css(".cl-formButtonPrimary") };
+      });
+      if (theme === "dark") expect(lightness(colors.card)).toBeLessThan(0.3);
+      else expect(lightness(colors.card)).toBeGreaterThan(0.7);
+      // Tomato: #b93a20 light, #ee7757 dark.
+      expect(colors.primary).toBe(theme === "dark" ? "rgb(238, 119, 87)" : "rgb(185, 58, 32)");
+    });
+  }
+}
+
 test.describe("theme, without Clerk keys", () => {
   test.skip(clerkConfigured, "Clerk keys are set; the sign-in suite runs instead.");
   themeTests(setupScreen);
@@ -167,4 +198,5 @@ test.describe("theme, without Clerk keys", () => {
 test.describe("theme, with Clerk keys", () => {
   test.skip(!clerkConfigured, "No Clerk keys; the setup-screen suite runs instead.");
   themeTests(signInScreen);
+  clerkCardTests();
 });
