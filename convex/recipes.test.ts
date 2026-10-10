@@ -366,6 +366,29 @@ describe("recipes.list, archive, restore", () => {
   });
 });
 
+describe("recipes.archivedCount", () => {
+  it("counts this household's archived recipes, never another household's", async () => {
+    const t = newTest();
+    const a = await kitchen(t, "Alice");
+    const b = await kitchen(t, "Bob");
+    expect(await a.as.query(api.recipes.archivedCount, {})).toBe(0);
+
+    const parfaits = await a.as.mutation(api.recipes.upsert, { ...a.base, name: "Parfaits" });
+    await a.as.mutation(api.recipes.upsert, { ...a.base, name: "Biscuits" });
+    await a.as.mutation(api.recipes.archive, { id: parfaits });
+    const bobs = await b.as.mutation(api.recipes.upsert, { ...b.base, name: "Bob's stew" });
+    const bobsOther = await b.as.mutation(api.recipes.upsert, { ...b.base, name: "Bob's soup" });
+    await b.as.mutation(api.recipes.archive, { id: bobs });
+    await b.as.mutation(api.recipes.archive, { id: bobsOther });
+
+    expect(await a.as.query(api.recipes.archivedCount, {})).toBe(1);
+    expect(await b.as.query(api.recipes.archivedCount, {})).toBe(2);
+
+    await a.as.mutation(api.recipes.restore, { id: parfaits });
+    expect(await a.as.query(api.recipes.archivedCount, {})).toBe(0);
+  });
+});
+
 describe("household isolation", () => {
   it("hides one household's recipes from another", async () => {
     const t = newTest();

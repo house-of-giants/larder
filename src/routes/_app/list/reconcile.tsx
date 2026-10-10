@@ -133,7 +133,7 @@ function ReconcileList({ weekId, items }: { weekId: Id<"weeks">; items: Reconcil
         })
       )}
       {/* In thumb reach above the tab bar, on a paper fade, wherever the list is scrolled. */}
-      <div className="sticky bottom-[calc(4rem+1px+env(safe-area-inset-bottom))] z-10 -mx-5 mt-2 flex flex-col items-center gap-2 bg-linear-to-b from-transparent to-background to-40% px-5 pt-9 pb-3">
+      <div className="sticky bottom-(--nav-offset) z-10 -mx-5 mt-2 flex flex-col items-center gap-2 bg-linear-to-b from-transparent to-background to-40% px-5 pt-9 pb-3">
         <Pill onClick={done} disabled={pending} className="min-w-50">
           Looks right
         </Pill>

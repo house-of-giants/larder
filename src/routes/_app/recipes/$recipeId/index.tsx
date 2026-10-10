@@ -5,11 +5,18 @@ import { toast } from "sonner";
 import { api } from "../../../../../convex/_generated/api";
 import { ConfirmDialog } from "#/components/confirm-dialog";
 import { MadeItButton } from "#/components/cook/made-it-button";
+import { Amount } from "#/components/kit/amount";
+import { Pill } from "#/components/kit/pill";
 import { RecipeSkeleton } from "#/components/page-skeleton";
 import { CheckMarker } from "#/components/recipes/check-marker";
 import { RecipeNotHere } from "#/components/recipes/recipe-not-here";
-import { ingredientLine, safeHref, shownUnit, type Recipe } from "#/components/recipes/recipe-text";
-import { Button } from "#/components/ui/button";
+import {
+  ingredientLine,
+  safeHref,
+  type Recipe,
+  type RecipeRow,
+} from "#/components/recipes/recipe-text";
+import { TagList } from "#/components/recipes/tag-list";
 import { errorMessage } from "#/lib/errors";
 
 export const Route = createFileRoute("/_app/recipes/$recipeId/")({
@@ -29,106 +36,80 @@ function RecipeView({ recipe }: { recipe: Recipe }) {
   const archived = recipe.archivedAt !== undefined;
   const href = safeHref(recipe.source?.url);
   const sourceLabel = recipe.source?.title ?? recipe.source?.url;
+  const keeping =
+    recipe.freezerFriendly === undefined
+      ? null
+      : recipe.freezerFriendly
+        ? "Freezes well."
+        : "Not one for the freezer.";
 
   return (
-    <main className="mx-auto flex max-w-2xl flex-col gap-6 px-4 py-6">
-      <header className="flex flex-col gap-2">
-        {recipe.needsReview && !archived && (
-          <div>
-            <CheckMarker />
-          </div>
-        )}
-        <h1 className="text-2xl font-semibold tracking-tight">{recipe.name}</h1>
+    <main className="mx-auto flex max-w-2xl flex-col px-5 pt-3 pb-24">
+      <header className="flex flex-col">
+        <h1 className="font-display text-display">{recipe.name}</h1>
         {recipe.yield && (
-          <p className="text-muted-foreground">
-            Makes <span className="tabular">{recipe.yield.quantityText}</span>
-            {shownUnit(recipe.yield.unit) && ` ${shownUnit(recipe.yield.unit)}`}
+          <p className="mt-1.5 text-subhead">
+            Makes <Amount quantityText={recipe.yield.quantityText} unit={recipe.yield.unit} />
           </p>
         )}
-        {sourceLabel && (
-          <p className="text-sm text-muted-foreground">
-            From{" "}
-            {href ? (
-              <a
-                href={href}
-                target="_blank"
-                rel="noreferrer"
-                className="underline underline-offset-4"
-              >
-                {sourceLabel}
-              </a>
-            ) : (
-              sourceLabel
+        {(sourceLabel || keeping) && (
+          <p className="mt-1 text-caption text-muted-foreground">
+            {sourceLabel && (
+              <>
+                From{" "}
+                {href ? (
+                  <a
+                    href={href}
+                    target="_blank"
+                    rel="noreferrer"
+                    // A 44px tap target around the caption-sized words, without moving the line.
+                    className="relative rounded-sm underline decoration-ring-quiet underline-offset-4 after:absolute after:-inset-x-1 after:-inset-y-4 hover:text-foreground focus-ring"
+                  >
+                    {sourceLabel}
+                  </a>
+                ) : (
+                  sourceLabel
+                )}
+                {keeping && " · "}
+              </>
             )}
+            {keeping}
           </p>
         )}
-        {recipe.freezerFriendly !== undefined && (
-          <p className="text-sm text-muted-foreground">
-            {recipe.freezerFriendly ? "Freezes well." : "Not one for the freezer."}
-          </p>
-        )}
+        {recipe.needsReview && !archived && <CheckMarker className="mt-1.5" />}
         {recipe.tags.length > 0 && (
-          <ul className="flex flex-wrap gap-1.5" aria-label="Tags">
-            {recipe.tags.map((tag) => (
-              <li
-                key={tag}
-                className="rounded-full bg-secondary px-2 py-0.5 text-xs text-secondary-foreground"
-              >
-                {tag}
-              </li>
-            ))}
-          </ul>
+          <div className="mt-2.5">
+            <TagList tags={recipe.tags} />
+          </div>
         )}
       </header>
 
       {archived && (
-        <p className="rounded-lg border bg-muted px-4 py-3 text-sm">
+        <p className="mt-4 text-body text-muted-foreground">
           Archived. It stays off the recipe list until you restore it.
         </p>
       )}
 
       <Actions recipe={recipe} />
 
-      <section className="flex flex-col gap-3" aria-labelledby="ingredients-heading">
-        <h2 id="ingredients-heading" className="font-medium">
+      <section className="mt-6 flex flex-col" aria-labelledby="ingredients-heading">
+        <h2 id="ingredients-heading" className="pb-1 font-display text-title">
           Ingredients
         </h2>
         {recipe.ingredients.length === 0 ? (
-          <p className="text-muted-foreground">No ingredients yet.</p>
+          <p className="pt-1 text-body text-muted-foreground">No ingredients yet.</p>
         ) : (
-          <ul className="flex flex-col divide-y rounded-lg border bg-card">
-            {recipe.ingredients.map((row) => {
-              const { lead, name, tail } = ingredientLine(row);
-              return (
-                <li key={row._id} className="flex items-baseline gap-3 px-4 py-2.5">
-                  <span className="w-20 shrink-0 text-sm">
-                    {lead && (
-                      <>
-                        {/* lead is the figure then its unit, and only when the figure is a number */}
-                        <span className="tabular">{row.quantityText}</span>
-                        {lead.slice(row.quantityText.length)}
-                      </>
-                    )}
-                  </span>
-                  <span className="flex-1">
-                    {name}
-                    {tail.length > 0 && (
-                      <span className="text-muted-foreground">, {tail.join(", ")}</span>
-                    )}
-                  </span>
-                  {row.optional && (
-                    <span className="shrink-0 text-xs text-muted-foreground">optional</span>
-                  )}
-                </li>
-              );
-            })}
+          <ul className="flex flex-col">
+            {recipe.ingredients.map((row) => (
+              <IngredientRow key={row._id} row={row} />
+            ))}
           </ul>
         )}
       </section>
 
       {(recipe.storageNotes || recipe.reheatingNotes) && (
-        <section className="flex flex-col gap-3" aria-labelledby="keeping-heading">
-          <h2 id="keeping-heading" className="font-medium">
+        <section className="mt-6 flex flex-col gap-3" aria-labelledby="keeping-heading">
+          <h2 id="keeping-heading" className="font-display text-title">
             Keeping
           </h2>
           {recipe.storageNotes && <Note label="Storage" text={recipe.storageNotes} />}
@@ -136,22 +117,29 @@ function RecipeView({ recipe }: { recipe: Recipe }) {
         </section>
       )}
 
-      <section className="flex flex-col gap-3" aria-labelledby="steps-heading">
-        <h2 id="steps-heading" className="font-medium">
+      <section className="mt-6 flex flex-col gap-2" aria-labelledby="steps-heading">
+        <h2 id="steps-heading" className="font-display text-title">
           Steps
         </h2>
         {recipe.instructions.length === 0 ? (
-          <p className="text-muted-foreground">No steps written down yet.</p>
+          <div className="flex flex-col items-start">
+            <p className="text-body text-muted-foreground">No steps written down yet.</p>
+            <Pill variant="text" asChild className="-ml-5">
+              <Link to="/recipes/$recipeId/edit" params={{ recipeId: recipe._id }}>
+                Add steps
+              </Link>
+            </Pill>
+          </div>
         ) : (
           <ol className="flex flex-col gap-3">
             {recipe.instructions.map((step, index) => (
               // Steps have no ids; their position is their identity.
               // oxlint-disable-next-line react/no-array-index-key
-              <li key={index} className="flex gap-3">
+              <li key={index} className="flex gap-3 text-body">
                 <span className="tabular w-6 shrink-0 text-right text-muted-foreground">
                   {index + 1}.
                 </span>
-                <span className="whitespace-pre-line">{step}</span>
+                <span className="max-w-[65ch] whitespace-pre-line">{step}</span>
               </li>
             ))}
           </ol>
@@ -161,6 +149,31 @@ function RecipeView({ recipe }: { recipe: Recipe }) {
   );
 }
 
+/** "1/2 cup pecans": the amount first, in tomato, as in the Made it sheet. */
+function IngredientRow({ row }: { row: RecipeRow }) {
+  const { lead, name, tail } = ingredientLine(row);
+  return (
+    <li className="flex min-h-11 items-baseline gap-3 border-b border-border py-2.5 text-body last:border-b-0">
+      <span className="min-w-0 flex-1">
+        {lead && (
+          <>
+            <Amount quantityText={row.quantityText} unit={row.unit} />{" "}
+          </>
+        )}
+        {name}
+        {tail.length > 0 && <span className="text-muted-foreground">, {tail.join(", ")}</span>}
+      </span>
+      {row.optional && (
+        <span className="shrink-0 text-caption text-muted-foreground">optional</span>
+      )}
+    </li>
+  );
+}
+
+/**
+ * The page's one coloured control is the pale Made it pill; Edit and Archive are text
+ * actions beside it. Archived, Restore takes the pale pill's place.
+ */
 function Actions({ recipe }: { recipe: Recipe }) {
   const archive = useMutation(api.recipes.archive);
   const restore = useMutation(api.recipes.restore);
@@ -180,25 +193,24 @@ function Actions({ recipe }: { recipe: Recipe }) {
   }
 
   return (
-    <div className="flex flex-wrap gap-2">
-      {!archived && <MadeItButton recipeId={recipe._id} recipeName={recipe.name} />}
-      <Button asChild variant={archived ? "default" : "outline"}>
+    <div className="mt-4 flex flex-wrap items-center gap-x-1 gap-y-2">
+      {archived ? (
+        <Pill variant="pale" disabled={pending} onClick={bringBack}>
+          Restore
+        </Pill>
+      ) : (
+        <MadeItButton recipeId={recipe._id} recipeName={recipe.name} />
+      )}
+      <Pill variant="text" asChild>
         <Link to="/recipes/$recipeId/edit" params={{ recipeId: recipe._id }}>
           Edit
         </Link>
-      </Button>
-      {archived ? (
-        <Button type="button" variant="outline" disabled={pending} onClick={bringBack}>
-          Restore
-        </Button>
-      ) : (
+      </Pill>
+      {!archived && (
         <ConfirmDialog
-          trigger={
-            <Button type="button" variant="outline">
-              Archive
-            </Button>
-          }
+          trigger={<Pill variant="text">Archive</Pill>}
           title="Archive this recipe?"
+          destructive
           description="It leaves the recipe list. Nothing is deleted, and Show archived brings it back."
           confirmLabel="Archive"
           onConfirm={async () => {
@@ -213,9 +225,9 @@ function Actions({ recipe }: { recipe: Recipe }) {
 
 function Note({ label, text }: { label: string; text: string }) {
   return (
-    <div className="flex flex-col gap-1">
-      <h3 className="text-sm text-muted-foreground">{label}</h3>
-      <p className="whitespace-pre-line">{text}</p>
+    <div className="flex flex-col gap-0.5">
+      <h3 className="text-caption text-muted-foreground">{label}</h3>
+      <p className="max-w-[65ch] text-body whitespace-pre-line">{text}</p>
     </div>
   );
 }

@@ -70,9 +70,13 @@ const headerName = (page: Page, name: string) =>
 /** "N to get" at the top of store mode. */
 const toGet = (page: Page, n: number) => page.getByText(new RegExp(`^${n} to get$`));
 
-/** A pantry row by its exact name; its first button carries the name and the amount. */
+/** A pantry row by its exact name. */
 const pantryRow = (page: Page, name: string) =>
   page.locator("main li").filter({ has: page.getByText(name, { exact: true }) });
+
+/** The line under a pantry row's name: "22 tbsp", "Half", or "out". */
+const pantryAmount = (page: Page, name: string) =>
+  pantryRow(page, name).getByTestId("pantry-amount");
 
 /**
  * Counts every Sonner toast that reaches the page from now on, even one already gone by the
@@ -153,7 +157,7 @@ test.describe("a week in one household, signed in with Clerk", () => {
         await shot(one, "01b-join");
 
         await one.locator("#household-name").fill(HOUSEHOLD);
-        await one.getByRole("button", { name: "Start", exact: true }).click();
+        await one.getByRole("button", { name: "Start a household", exact: true }).click();
         await expect(one).toHaveURL(/\/week$/);
         // households.current, rendered: the name is only in the signed-in member's row.
         await expect(headerName(one, HOUSEHOLD)).toBeVisible();
@@ -164,6 +168,20 @@ test.describe("a week in one household, signed in with Clerk", () => {
       await test.step("02 an invite link brings a second person into the household", async () => {
         invite = await readInvite(one);
         householdIds.push(householdIdByInviteCode(invite.code));
+        // The whole link shows, the code at its end included: nothing scrolls inside the field.
+        // Measured only once the field is on screen with a size, so a hidden one cannot pass.
+        const inviteField = one.getByLabel("Invite link");
+        await expect(inviteField).toBeVisible();
+        const box = await inviteField.boundingBox();
+        expect.soft(box?.width ?? 0, "the invite field has a width").toBeGreaterThan(0);
+        expect
+          .soft(box?.height ?? 0, "the invite field is at least 44px tall")
+          .toBeGreaterThanOrEqual(44);
+        const shown = await inviteField.evaluate((field) => ({
+          wide: field.scrollWidth <= field.clientWidth,
+          tall: field.scrollHeight <= field.clientHeight,
+        }));
+        expect.soft(shown, "the invite link shows whole").toEqual({ wide: true, tall: true });
         await shot(one, "02a-settings-invite");
 
         const two = await newPerson();
@@ -200,7 +218,7 @@ test.describe("a week in one household, signed in with Clerk", () => {
           timeout: 30_000,
         });
         await three.locator("#household-name").fill(OTHER);
-        await three.getByRole("button", { name: "Start", exact: true }).click();
+        await three.getByRole("button", { name: "Start a household", exact: true }).click();
         await expect(headerName(three, OTHER)).toBeVisible();
         householdIds.push(householdIdByInviteCode((await readInvite(three)).code));
 
@@ -383,9 +401,7 @@ test.describe("a week in one household, signed in with Clerk", () => {
 
         // 6 tbsp on hand (set in reconcile) plus the 16 bought.
         await one.goto("/pantry");
-        await expect
-          .soft(pantryRow(one, "unsalted butter").getByRole("button").first())
-          .toHaveText(/unsalted butter\s*22 tbsp/);
+        await expect.soft(pantryAmount(one, "unsalted butter")).toHaveText("22 tbsp");
         await one.getByLabel("Find in the pantry").fill("butter");
         await shot(one, "05c-pantry-butter-22");
       });
@@ -476,17 +492,17 @@ test.describe("a week in one household, signed in with Clerk", () => {
 
         await one.goto("/pantry");
         for (const name of ["Hawaiian rolls", "sliced ham"]) {
-          await expect
-            .soft(pantryRow(one, name).getByRole("button").first())
-            .toHaveText(new RegExp(`${name}\\s*Out`));
+          await expect.soft(pantryAmount(one, name)).toHaveText("out");
         }
+        await expect.soft(pantryAmount(one, "Italian seasoning")).toHaveText("Half");
+        // The level chips live in the item sheet now, one tap from the row.
+        await pantryRow(one, "Italian seasoning").getByRole("button").first().click();
         await expect
-          .soft(pantryRow(one, "Italian seasoning").getByRole("button", { name: "Half" }))
+          .soft(one.getByRole("dialog").getByRole("button", { name: "Half" }))
           .toHaveAttribute("aria-pressed", "true");
+        await one.getByRole("dialog").getByRole("button", { name: "Close" }).click();
         // 22 after shopping, less the 9 tbsp the biscuits used and the 2 the sliders did.
-        await expect
-          .soft(pantryRow(one, "unsalted butter").getByRole("button").first())
-          .toHaveText(/unsalted butter\s*11 tbsp/);
+        await expect.soft(pantryAmount(one, "unsalted butter")).toHaveText("11 tbsp");
         await shot(one, "06d-pantry-after-cooks");
 
         await one.goto("/leftovers");

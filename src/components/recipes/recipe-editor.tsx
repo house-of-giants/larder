@@ -1,10 +1,11 @@
 import { useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery } from "convex/react";
-import { ArrowDown, ArrowUp, Plus, X } from "lucide-react";
+import { ArrowDown, ArrowUp, ChevronRight, Plus, X } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
-import { Button } from "#/components/ui/button";
+import { Chip } from "#/components/kit/chip";
+import { Pill } from "#/components/kit/pill";
 import { Input } from "#/components/ui/input";
 import { Label } from "#/components/ui/label";
 import { Textarea } from "#/components/ui/textarea";
@@ -91,7 +92,8 @@ export function RecipeEditor({ initial, recipeId }: RecipeEditorProps) {
 
   return (
     <form
-      className="flex flex-col gap-8"
+      // Fields and headings stop clear of the sticky footer when focus or a jump scrolls to them.
+      className="flex flex-col gap-8 [&_h2]:scroll-mb-36 [&_input]:scroll-mb-36 [&_textarea]:scroll-mb-36"
       onSubmit={(e) => {
         e.preventDefault();
         void save();
@@ -138,7 +140,6 @@ export function RecipeEditor({ initial, recipeId }: RecipeEditorProps) {
             <Input
               id="recipe-yield"
               className="tabular"
-              placeholder="12"
               value={draft.yieldText}
               autoComplete="off"
               onChange={(e) => set("yieldText", e.target.value)}
@@ -147,7 +148,6 @@ export function RecipeEditor({ initial, recipeId }: RecipeEditorProps) {
           <Field label="Of what" htmlFor="recipe-yield-unit">
             <Input
               id="recipe-yield-unit"
-              placeholder="slider"
               value={draft.yieldUnit}
               autoComplete="off"
               onChange={(e) => set("yieldUnit", e.target.value)}
@@ -164,7 +164,6 @@ export function RecipeEditor({ initial, recipeId }: RecipeEditorProps) {
         <Field label="Tags" htmlFor="recipe-tags" hint="Separate with commas.">
           <Input
             id="recipe-tags"
-            placeholder="dinner, meal-prep"
             value={draft.tags}
             autoComplete="off"
             onChange={(e) => set("tags", e.target.value)}
@@ -180,7 +179,7 @@ export function RecipeEditor({ initial, recipeId }: RecipeEditorProps) {
       </Section>
 
       <Section title="Ingredients">
-        <ol className="flex flex-col gap-4">
+        <ol className="flex flex-col border-t border-border">
           {draft.ingredients.map((row, index) => (
             <IngredientRow
               key={row.key}
@@ -200,27 +199,38 @@ export function RecipeEditor({ initial, recipeId }: RecipeEditorProps) {
             />
           ))}
         </ol>
-        <Button
-          type="button"
-          variant="outline"
-          className="self-start"
+        <Pill
+          variant="text"
+          className="-ml-5 self-start"
           onClick={() => set("ingredients", [...draft.ingredients, emptyIngredient()])}
         >
           <Plus aria-hidden />
           Add ingredient
-        </Button>
+        </Pill>
       </Section>
 
       <Section title="Steps">
-        <ol className="flex flex-col gap-3">
+        <ol className="flex flex-col gap-4">
           {draft.steps.map((step, index) => (
-            <li key={step.key} className="flex items-start gap-2">
-              <Label
-                htmlFor={`step-${step.key}`}
-                className="tabular mt-2.5 w-6 shrink-0 justify-end"
-              >
-                {index + 1}.
-              </Label>
+            <li key={step.key} className="flex flex-col gap-1">
+              <div className="flex min-h-11 items-center justify-between gap-3">
+                <Label htmlFor={`step-${step.key}`} className={labelClass}>
+                  Step <span className="tabular">{index + 1}</span>
+                </Label>
+                <Pill
+                  variant="text"
+                  className="-mr-5"
+                  aria-label={`Remove step ${index + 1}`}
+                  onClick={() =>
+                    set(
+                      "steps",
+                      draft.steps.filter((s) => s.key !== step.key),
+                    )
+                  }
+                >
+                  Remove
+                </Pill>
+              </div>
               <Textarea
                 id={`step-${step.key}`}
                 value={step.text}
@@ -233,32 +243,17 @@ export function RecipeEditor({ initial, recipeId }: RecipeEditorProps) {
                   )
                 }
               />
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                aria-label={`Remove step ${index + 1}`}
-                onClick={() =>
-                  set(
-                    "steps",
-                    draft.steps.filter((s) => s.key !== step.key),
-                  )
-                }
-              >
-                <X aria-hidden />
-              </Button>
             </li>
           ))}
         </ol>
-        <Button
-          type="button"
-          variant="outline"
-          className="self-start"
+        <Pill
+          variant="text"
+          className="-ml-5 self-start"
           onClick={() => set("steps", [...draft.steps, emptyStep()])}
         >
           <Plus aria-hidden />
           Add step
-        </Button>
+        </Pill>
       </Section>
 
       <Section title="Keeping">
@@ -278,19 +273,20 @@ export function RecipeEditor({ initial, recipeId }: RecipeEditorProps) {
         </Field>
       </Section>
 
-      <div className="sticky bottom-[calc(3.5rem+env(safe-area-inset-bottom))] z-10 -mx-4 flex flex-col gap-2 border-t bg-background/95 px-4 py-3 backdrop-blur">
+      {/* Pinned over the tab bar on its own paper, with a hairline above, in thumb reach. */}
+      <div className="sticky bottom-(--nav-offset) z-10 -mx-5 flex flex-col gap-2 border-t border-border bg-background px-5 py-3">
         {error && (
-          <p role="alert" className="text-sm text-destructive">
+          <p role="alert" className="text-caption text-destructive">
             {error}
           </p>
         )}
-        <div className="flex gap-2">
-          <Button type="button" variant="outline" className="flex-1" onClick={cancel}>
+        <div className="flex items-center justify-end gap-2">
+          <Pill variant="text" onClick={cancel}>
             Cancel
-          </Button>
-          <Button type="submit" className="flex-1" disabled={saving}>
+          </Pill>
+          <Pill type="submit" className="min-w-32" disabled={saving}>
             {saving ? "Saving" : "Save"}
-          </Button>
+          </Pill>
         </div>
       </div>
     </form>
@@ -322,41 +318,29 @@ function IngredientRow({
   const line = index + 1;
 
   return (
-    <li className="flex flex-col gap-3 rounded-lg border bg-card p-3">
+    <li className="flex flex-col gap-3 border-b border-border pt-1 pb-4">
       <div className="flex items-center justify-between gap-2">
-        <span className="text-sm text-muted-foreground">
+        <span className="text-caption text-muted-foreground">
           Line <span className="tabular">{line}</span>
         </span>
-        <div className="flex">
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            aria-label={`Move line ${line} up`}
+        <div className="-mr-2.5 flex">
+          <IconAction
+            label={`Move line ${line} up`}
             disabled={index === 0}
             onClick={() => onMove(-1)}
           >
             <ArrowUp aria-hidden />
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            aria-label={`Move line ${line} down`}
+          </IconAction>
+          <IconAction
+            label={`Move line ${line} down`}
             disabled={index === count - 1}
             onClick={() => onMove(1)}
           >
             <ArrowDown aria-hidden />
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            aria-label={`Remove line ${line}`}
-            onClick={onRemove}
-          >
+          </IconAction>
+          <IconAction label={`Remove line ${line}`} onClick={onRemove}>
             <X aria-hidden />
-          </Button>
+          </IconAction>
         </div>
       </div>
 
@@ -377,7 +361,6 @@ function IngredientRow({
           <Input
             id={id("quantity")}
             className="tabular"
-            placeholder="1/2"
             value={row.quantityText}
             autoComplete="off"
             onChange={(e) => onChange({ quantityText: e.target.value })}
@@ -387,7 +370,6 @@ function IngredientRow({
           <Input
             id={id("unit")}
             list={unitListId}
-            placeholder="cup"
             value={row.unit}
             autoComplete="off"
             autoCapitalize="none"
@@ -398,7 +380,6 @@ function IngredientRow({
       <Field label="Preparation" htmlFor={id("preparation")}>
         <Input
           id={id("preparation")}
-          placeholder="chopped"
           value={row.preparation}
           autoComplete="off"
           onChange={(e) => onChange({ preparation: e.target.value })}
@@ -413,7 +394,11 @@ function IngredientRow({
       </Check>
 
       <details className="group">
-        <summary className="cursor-pointer py-1 text-sm text-muted-foreground select-none">
+        <summary className="flex min-h-11 cursor-pointer list-none items-center gap-1.5 self-start rounded-sm text-subhead text-muted-foreground select-none focus-ring [&::-webkit-details-marker]:hidden">
+          <ChevronRight
+            aria-hidden
+            className="size-4 transition-transform duration-[120ms] group-open:rotate-90"
+          />
           More
         </summary>
         <div className="mt-3 flex flex-col gap-3">
@@ -445,13 +430,13 @@ function IngredientRow({
                 />
               </div>
               {row.deductionIngredientId !== null && (
-                <Button
-                  type="button"
-                  variant="ghost"
+                <Pill
+                  variant="text"
+                  className="-mr-5"
                   onClick={() => onChange({ deductionIngredientId: null })}
                 >
                   Clear
-                </Button>
+                </Pill>
               )}
             </div>
           </Field>
@@ -477,10 +462,12 @@ function move<T>(items: readonly T[], index: number, by: -1 | 1): T[] {
   return next;
 }
 
+const labelClass = "text-subhead font-normal";
+
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="flex flex-col gap-4">
-      <h2 className="font-medium">{title}</h2>
+      <h2 className="font-display text-title">{title}</h2>
       {children}
     </section>
   );
@@ -498,14 +485,17 @@ function Field({
   children: ReactNode;
 }) {
   return (
-    <div className="flex flex-col gap-2">
-      <Label htmlFor={htmlFor}>{label}</Label>
+    <div className="flex flex-col gap-1.5">
+      <Label htmlFor={htmlFor} className={labelClass}>
+        {label}
+      </Label>
       {children}
-      {hint && <p className="text-sm text-muted-foreground">{hint}</p>}
+      {hint && <p className="text-caption text-muted-foreground">{hint}</p>}
     </div>
   );
 }
 
+/** A yes-or-no about the recipe, as a chip: tomato pale when on. */
 function Check({
   id,
   checked,
@@ -518,15 +508,33 @@ function Check({
   children: ReactNode;
 }) {
   return (
-    <label htmlFor={id} className="flex min-h-11 items-center gap-3 text-sm">
-      <input
-        id={id}
-        type="checkbox"
-        className="size-5 accent-primary"
-        checked={checked}
-        onChange={(e) => onChange(e.target.checked)}
-      />
+    <Chip id={id} selected={checked} className="self-start" onClick={() => onChange(!checked)}>
       {children}
-    </label>
+    </Chip>
+  );
+}
+
+/** A 44px round icon button in quiet ink, for moving and removing a line. */
+function IconAction({
+  label,
+  disabled = false,
+  onClick,
+  children,
+}: {
+  label: string;
+  disabled?: boolean;
+  onClick: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      disabled={disabled}
+      onClick={onClick}
+      className="flex size-11 items-center justify-center rounded-full text-muted-foreground outline-none hover:text-foreground focus-ring disabled:opacity-40 [&_svg]:size-[18px]"
+    >
+      {children}
+    </button>
   );
 }

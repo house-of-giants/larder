@@ -50,6 +50,7 @@ const cases: Case[] = [
     args: {},
   },
   { name: "households.leave", kind: "mutation", fn: api.households.leave, args: {} },
+  { name: "households.refreshName", kind: "mutation", fn: api.households.refreshName, args: {} },
   { name: "events.recent", kind: "query", fn: api.events.recent, args: {} },
   // Phase 2. convex-test ids are a counter then the table name; these pass `v.id` and
   // point at nothing, which is fine: the refusal comes first.
@@ -99,6 +100,7 @@ const cases: Case[] = [
     args: { ingredientId: "1ingredients" },
   },
   { name: "recipes.list", kind: "query", fn: api.recipes.list, args: {} },
+  { name: "recipes.archivedCount", kind: "query", fn: api.recipes.archivedCount, args: {} },
   { name: "recipes.get", kind: "query", fn: api.recipes.get, args: { id: "1recipes" } },
   { name: "recipes.ingredientOptions", kind: "query", fn: api.recipes.ingredientOptions, args: {} },
   {

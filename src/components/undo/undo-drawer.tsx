@@ -1,47 +1,47 @@
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { api } from "../../../convex/_generated/api";
 import { ConfirmDialog } from "#/components/confirm-dialog";
-import { Button } from "#/components/ui/button";
+import { HalfSheet } from "#/components/kit/half-sheet";
+import { Pill } from "#/components/kit/pill";
 import { Skeleton } from "#/components/ui/skeleton";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "#/components/ui/sheet";
 import { errorMessage } from "#/lib/errors";
+import { cn } from "#/lib/utils";
+import { changeWhen } from "./change-when";
 
 type Row = FunctionReturnType<typeof api.undo.recent>[number];
 
 const shown = 30;
 
-/** The last changes to the pantry and the leftovers, with Undo on the ones that can be. */
+/**
+ * The last changes to the pantry and the leftovers, in a half sheet. A row that can be
+ * taken back reads in ink with Undo beside it; one that cannot reads quiet, with why.
+ */
 export function UndoDrawer() {
   const [open, setOpen] = useState(false);
+  const opener = useRef<HTMLButtonElement>(null);
   return (
-    <section className="flex flex-col items-start gap-2" aria-labelledby="undo-heading">
-      <h2 id="undo-heading" className="font-medium">
+    <section className="flex flex-col items-start" aria-labelledby="undo-heading">
+      <h2 id="undo-heading" className="font-display text-title">
         Undo
       </h2>
-      <p className="text-sm text-muted-foreground">
+      <p className="mt-1 text-caption text-muted-foreground">
         Take back a check-off, a cook, a portion eaten, or a closeout.
       </p>
-      <Button type="button" variant="outline" onClick={() => setOpen(true)}>
+      <Pill ref={opener} variant="text" className="-ml-5" onClick={() => setOpen(true)}>
         Recent changes
-      </Button>
-      <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent side="bottom" className="mx-auto max-h-[85dvh] w-full max-w-2xl rounded-t-xl">
-          <SheetHeader>
-            <SheetTitle>Recent changes</SheetTitle>
-            <SheetDescription>Newest first.</SheetDescription>
-          </SheetHeader>
-          {open && <RecentList />}
-        </SheetContent>
-      </Sheet>
+      </Pill>
+      <HalfSheet
+        open={open}
+        onOpenChange={setOpen}
+        opener={opener}
+        title="Recent changes"
+        note="Newest first."
+      >
+        {open && <RecentList />}
+      </HalfSheet>
     </section>
   );
 }
@@ -52,7 +52,7 @@ function RecentList() {
 
   if (rows === undefined) {
     return (
-      <div aria-busy="true" className="flex flex-col gap-2 px-4 pb-6">
+      <div aria-busy="true" className="flex flex-col gap-2 pb-6">
         <span className="sr-only">Loading</span>
         <Skeleton className="h-12 w-full" />
         <Skeleton className="h-12 w-full" />
@@ -60,10 +60,10 @@ function RecentList() {
     );
   }
   if (rows.length === 0) {
-    return <p className="px-4 pb-6 text-muted-foreground">Nothing changed yet.</p>;
+    return <p className="pb-6 text-body text-muted-foreground">Nothing changed yet.</p>;
   }
   return (
-    <ul className="flex min-h-0 flex-col divide-y overflow-y-auto border-t px-4 pb-[env(safe-area-inset-bottom)]">
+    <ul className="flex flex-col pb-[calc(1rem+env(safe-area-inset-bottom))]">
       {rows.map((row) => (
         <RecentRow key={row.eventId} row={row} />
       ))}
@@ -81,21 +81,23 @@ function RecentRow({ row }: { row: Row }) {
   }
 
   return (
-    <li className="flex min-h-14 items-center justify-between gap-3 py-2">
+    <li className="flex min-h-14 items-center justify-between gap-3 border-b border-border py-2 last:border-b-0">
       <div className="flex min-w-0 flex-col">
-        <span className="truncate">{row.line}</span>
-        <span className="tabular text-xs text-muted-foreground">{when(row.at)}</span>
+        <span className={cn("text-subhead", !row.canUndo && "text-muted-foreground")}>
+          {row.line}
+        </span>
+        <span className="mt-0.5 text-caption text-muted-foreground">
+          {changeWhen(row.at)}
+          {!row.canUndo && row.reason && ` · ${row.reason}`}
+        </span>
       </div>
-      {!row.canUndo && row.reason && (
-        <span className="shrink-0 text-xs text-muted-foreground">{row.reason}</span>
-      )}
       {row.canUndo &&
         (row.isCook ? (
           <ConfirmDialog
             trigger={
-              <Button type="button" variant="outline" size="sm" className="h-10 shrink-0">
+              <Pill variant="text" className="-mr-5 shrink-0">
                 Undo
-              </Button>
+              </Pill>
             }
             title="Undo this cook?"
             description="Everything it took from the pantry goes back, and its leftovers come off the list."
@@ -103,11 +105,9 @@ function RecentRow({ row }: { row: Row }) {
             onConfirm={take}
           />
         ) : (
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="h-10 shrink-0"
+          <Pill
+            variant="text"
+            className="-mr-5 shrink-0"
             disabled={pending}
             onClick={async () => {
               setPending(true);
@@ -121,16 +121,8 @@ function RecentRow({ row }: { row: Row }) {
             }}
           >
             Undo
-          </Button>
+          </Pill>
         ))}
     </li>
   );
-}
-
-function when(at: number): string {
-  return new Date(at).toLocaleString(undefined, {
-    weekday: "short",
-    hour: "numeric",
-    minute: "2-digit",
-  });
 }

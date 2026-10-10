@@ -24,11 +24,11 @@ export function InstallHint() {
   const standalone = useSyncExternalStore(subscribe, readStandalone, () => true);
   if (standalone) return null;
   return (
-    <section className="flex flex-col gap-2" aria-labelledby="install-heading">
-      <h2 id="install-heading" className="font-medium">
+    <section className="flex flex-col" aria-labelledby="install-heading">
+      <h2 id="install-heading" className="font-display text-title">
         Add to home screen
       </h2>
-      <ul className="flex flex-col gap-1 text-sm text-muted-foreground">
+      <ul className="mt-1 flex flex-col gap-1 text-subhead text-muted-foreground">
         <li>
           <span className="text-foreground">iPhone:</span> Share, then Add to Home Screen.
         </li>

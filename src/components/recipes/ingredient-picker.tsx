@@ -141,7 +141,7 @@ export function IngredientPicker({
               <Choice active={index === active} onChoose={() => pick(o._id)}>
                 <span className="truncate">{o.name}</span>
                 {o.kind === "level" && (
-                  <span className="shrink-0 text-xs text-muted-foreground">by level</span>
+                  <span className="shrink-0 text-caption text-muted-foreground">by level</span>
                 )}
               </Choice>
             </li>
@@ -160,7 +160,7 @@ export function IngredientPicker({
         </ul>
       )}
       {error && (
-        <p role="alert" className="mt-1 text-sm text-destructive">
+        <p role="alert" className="mt-1 text-caption text-destructive">
           {error}
         </p>
       )}
@@ -183,7 +183,7 @@ function Choice({
     <button
       type="button"
       className={cn(
-        "flex min-h-11 w-full items-center justify-between gap-3 px-3 text-left text-sm hover:bg-accent/60 focus-visible:bg-accent focus-visible:outline-none",
+        "flex min-h-11 w-full items-center justify-between gap-3 rounded-sm px-3 text-left text-subhead hover:bg-accent/60 focus-ring-inset",
         active && "bg-accent text-accent-foreground",
         className,
       )}

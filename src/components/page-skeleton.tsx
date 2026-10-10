@@ -8,7 +8,7 @@ function Frame({ className, children }: { className?: string; children: ReactNod
   return (
     <main
       aria-busy="true"
-      className={cn("mx-auto flex max-w-2xl flex-col gap-6 px-4 py-6", className)}
+      className={cn("mx-auto flex max-w-2xl flex-col gap-4 px-5 pt-3 pb-24", className)}
     >
       <span className="sr-only">Loading</span>
       {children}
@@ -16,55 +16,53 @@ function Frame({ className, children }: { className?: string; children: ReactNod
   );
 }
 
-/** A page title, with a button beside it when the screen has one. */
-function Title({ action = false, line = false }: { action?: boolean; line?: boolean }) {
+/** The serif screen title, and the quiet line under it when the screen has one. */
+function Title({ line = false }: { line?: boolean }) {
   return (
-    <div className="flex flex-col gap-2">
-      <div className="flex h-9 items-center justify-between gap-4">
-        <Skeleton className="h-7 w-40" />
-        {action && <Skeleton className="h-9 w-32" />}
-      </div>
-      {line && <Skeleton className="h-4 w-56" />}
+    <div className="flex flex-col gap-1.5">
+      <Skeleton className="h-9 w-44" />
+      {line && <Skeleton className="h-4 w-52" />}
     </div>
   );
 }
 
-/** A bordered run of rows, the shape of the pantry, the plan, and the recipe list. */
+/**
+ * Rows on the page with a hairline under each, the shape of the pantry, the recipes, the
+ * plan and reconcile: a name, and the quiet second line under it.
+ */
 export function RowsSkeleton({
   rows = 4,
-  rowClassName = "h-6",
+  rowClassName = "h-5",
 }: {
   rows?: number;
   rowClassName?: string;
 }) {
   return (
-    <div className="flex flex-col divide-y rounded-lg border bg-card">
+    <div className="flex flex-col">
       {Array.from({ length: rows }, (_, i) => (
-        <div key={i} className="flex min-h-14 items-center justify-between gap-4 px-4">
-          <Skeleton className={cn("w-2/5", rowClassName)} />
-          <Skeleton className="h-6 w-16" />
+        <div
+          key={i}
+          className="flex min-h-14 flex-col justify-center gap-1.5 border-b border-border py-1.5 last:border-b-0"
+        >
+          <Skeleton className={cn("w-3/5", rowClassName)} />
+          <Skeleton className="h-3.5 w-24" />
         </div>
       ))}
     </div>
   );
 }
 
-function Cards({ count, className }: { count: number; className: string }) {
-  return (
-    <div className="flex flex-col gap-3">
-      {Array.from({ length: count }, (_, i) => (
-        <Skeleton key={i} className={cn("w-full rounded-lg", className)} />
-      ))}
-    </div>
-  );
+/** A serif heading over rows: an aisle, a place in the pantry, a section of a recipe. */
+function Heading() {
+  return <Skeleton className="mt-2 h-6 w-28" />;
 }
 
 /** Generic: a title, a line, a block. For the household loading behind the tabs. */
 export function PageSkeleton() {
   return (
-    <Frame className="gap-4">
+    <Frame>
       <Title line />
-      <Skeleton className="h-24 w-full" />
+      <RowsSkeleton rows={3} />
     </Frame>
   );
 }
@@ -94,8 +92,8 @@ export function PlanSkeleton() {
     <Frame>
       <Title line />
       {[2, 3].map((rows) => (
-        <div key={rows} className="flex flex-col gap-2">
-          <Skeleton className="h-4 w-24" />
+        <div key={rows} className="flex flex-col">
+          <Heading />
           <RowsSkeleton rows={rows} />
         </div>
       ))}
@@ -130,68 +128,100 @@ export function StoreSkeleton() {
   );
 }
 
-/** Before you shop: rows with an editor under each name. */
+/** Before you shop: rows with an editor beside each name. */
 export function ReconcileSkeleton() {
   return (
     <Frame>
       <Title line />
-      <Skeleton className="h-4 w-24" />
-      <RowsSkeleton rows={4} rowClassName="h-10" />
+      <RowsSkeleton rows={5} />
     </Frame>
   );
 }
 
-/** Pantry: title with Add, the search field, a location of rows. */
+/** Pantry: the title and its count line, the search field, a place of rows. */
 export function PantrySkeleton() {
   return (
-    <Frame>
-      <Title action />
-      <Skeleton className="h-9 w-full" />
-      <div className="flex flex-col gap-2">
-        <Skeleton className="h-4 w-20" />
-        <RowsSkeleton rows={5} />
+    <Frame className="gap-0">
+      <Title line />
+      <Skeleton className="mt-3 h-11 w-full rounded-md" />
+      <Heading />
+      <div className="mt-2">
+        <RowsSkeleton rows={6} />
       </div>
     </Frame>
   );
 }
 
-/** Leftovers: one tall card per thing in the fridge. */
+/** Recipes: the title and its count line, then the recipe rows. */
+export function RecipesSkeleton() {
+  return (
+    <Frame className="gap-2">
+      <Title line />
+      <RowsSkeleton rows={6} />
+    </Frame>
+  );
+}
+
+/** Leftovers: a row per thing in the fridge, its count and its text actions under it. */
 export function LeftoversSkeleton() {
   return (
-    <Frame>
-      <Title />
-      <Cards count={2} className="h-40" />
+    <Frame className="gap-2">
+      <Title line />
+      {[0, 1].map((i) => (
+        <div key={i} className="flex flex-col gap-2 border-b border-border py-3">
+          <Skeleton className="h-5 w-3/5" />
+          <Skeleton className="h-3.5 w-40" />
+          <Skeleton className="h-5 w-28" />
+          <div className="flex gap-3">
+            <Skeleton className="h-11 w-24 rounded-full" />
+            <Skeleton className="h-11 w-16 rounded-full" />
+            <Skeleton className="h-11 w-28 rounded-full" />
+          </div>
+        </div>
+      ))}
     </Frame>
   );
 }
 
-/** Close the week: a card per leftover with its three-way choice, then the button. */
+/** Close the week: a row per leftover with its three chips, then the pill. */
 export function CloseoutSkeleton() {
   return (
-    <Frame>
+    <Frame className="gap-2">
       <Title line />
-      <Cards count={2} className="h-28" />
-      <Skeleton className="h-12 w-full" />
+      {[0, 1].map((i) => (
+        <div key={i} className="flex flex-col gap-2 border-b border-border py-3">
+          <Skeleton className="h-5 w-3/5" />
+          <Skeleton className="h-3.5 w-36" />
+          <div className="flex gap-2">
+            <Skeleton className="h-8 w-20 rounded-sm" />
+            <Skeleton className="h-8 w-20 rounded-sm" />
+            <Skeleton className="h-8 w-16 rounded-sm" />
+          </div>
+        </div>
+      ))}
+      <Skeleton className="mt-6 h-11 w-50 self-center rounded-full" />
     </Frame>
   );
 }
 
-/** One recipe: title, buttons, ingredient rows, steps. */
+/** One recipe: the serif name, Makes, the pill and its text actions, ingredients, steps. */
 export function RecipeSkeleton() {
   return (
-    <Frame>
-      <Title line />
-      <div className="flex gap-2">
-        <Skeleton className="h-9 w-24" />
-        <Skeleton className="h-9 w-16" />
-        <Skeleton className="h-9 w-20" />
+    <Frame className="gap-0">
+      <Skeleton className="h-9 w-4/5" />
+      <Skeleton className="mt-2 h-4 w-36" />
+      <Skeleton className="mt-1.5 h-3.5 w-52" />
+      <div className="mt-4 flex gap-3">
+        <Skeleton className="h-11 w-28 rounded-full" />
+        <Skeleton className="h-11 w-14 rounded-full" />
+        <Skeleton className="h-11 w-20 rounded-full" />
       </div>
-      <RowsSkeleton rows={5} rowClassName="h-5" />
-      <div className="flex flex-col gap-3">
-        <Skeleton className="h-4 w-full" />
-        <Skeleton className="h-4 w-4/5" />
-        <Skeleton className="h-4 w-3/5" />
-      </div>
+      <Skeleton className="mt-6 mb-1 h-6 w-32" />
+      {Array.from({ length: 5 }, (_, i) => (
+        <div key={i} className="flex min-h-11 items-center border-b border-border">
+          <Skeleton className="h-4 w-3/5" />
+        </div>
+      ))}
     </Frame>
   );
 }
@@ -202,9 +232,9 @@ export function FormSkeleton({ fields = 4 }: { fields?: number }) {
     <Frame>
       <Title />
       {Array.from({ length: fields }, (_, i) => (
-        <div key={i} className="flex flex-col gap-2">
+        <div key={i} className="flex flex-col gap-1.5">
           <Skeleton className="h-4 w-24" />
-          <Skeleton className="h-9 w-full" />
+          <Skeleton className="h-11 w-full rounded-md" />
         </div>
       ))}
     </Frame>

@@ -22,6 +22,7 @@ const ingredientId = "1ingredients";
 
 const cases: Case[] = [
   { name: "list", kind: "query", fn: api.recipes.list, args: {} },
+  { name: "archivedCount", kind: "query", fn: api.recipes.archivedCount, args: {} },
   { name: "get", kind: "query", fn: api.recipes.get, args: { id: recipeId } },
   { name: "ingredientOptions", kind: "query", fn: api.recipes.ingredientOptions, args: {} },
   {
