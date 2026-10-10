@@ -51,6 +51,14 @@ describe("yieldOf", () => {
     });
   });
 
+  it("keeps the recipe's own fractional words at one batch, not a recomputed number", () => {
+    const loaf = { quantityText: "1.5", quantityDecimal: 1.5, unit: "pan" };
+    expect(yieldOf(recipe("b", "selected", { yield: loaf }))).toEqual({
+      figure: "1.5",
+      unit: "pans",
+    });
+  });
+
   it("scales by the batches and writes the number the recipe's way", () => {
     const half = { text: "1/2", decimal: 0.5 };
     const roast = { quantityText: "6", quantityDecimal: 6, unit: "portion" };

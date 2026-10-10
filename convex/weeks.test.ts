@@ -136,6 +136,33 @@ describe("weeks.create and weeks.current", () => {
     expect(after).toMatchObject({ ingredientCount: 10, onHandCount: 5 });
   });
 
+  it("counts an ingredient once when the recipe lists it twice", async () => {
+    const t = newTest();
+    const { as, householdId } = await createHousehold(t, { who: "Alice", name: "Elm" });
+    await t.mutation(internal.seed.load, { householdId });
+    // A second bacon row (for the top, say), and a second buttermilk row, which is not here.
+    await t.run(async (ctx) => {
+      const recipe = (await ctx.db.query("recipes").collect()).find((r) => r.name === BISCUITS)!;
+      const rows = await ctx.db
+        .query("recipeIngredients")
+        .withIndex("by_householdId_recipeId", (q) =>
+          q.eq("householdId", householdId).eq("recipeId", recipe._id),
+        )
+        .collect();
+      for (const name of ["bacon", "buttermilk"]) {
+        const ingredient = (await ctx.db.query("ingredients").collect()).find(
+          (i) => i.householdId === householdId && i.name === name,
+        )!;
+        const { _id, _creationTime, ...row } = rows.find((r) => r.ingredientId === ingredient._id)!;
+        await ctx.db.insert("recipeIngredients", { ...row, order: 99 });
+      }
+    });
+    const biscuits = (await as.query(api.weeks.current, {}))?.recipes.find(
+      (r) => r.name === BISCUITS,
+    );
+    expect(biscuits).toMatchObject({ ingredientCount: 10, onHandCount: 7 });
+  });
+
   it("never counts another household's pantry row as on hand", async () => {
     const t = newTest();
     const { as, householdId } = await createHousehold(t, { who: "Alice", name: "Elm" });
