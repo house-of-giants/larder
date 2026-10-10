@@ -2,7 +2,7 @@ import { useMutation } from "convex/react";
 import { useState, type FormEvent } from "react";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
-import { Button } from "#/components/ui/button";
+import { Pill } from "#/components/kit/pill";
 import { Input } from "#/components/ui/input";
 import { Label } from "#/components/ui/label";
 import {
@@ -58,6 +58,8 @@ export function StockForm({
   onSave,
   busy = false,
   onPendingChange,
+  id: formId,
+  showLevel = true,
 }: {
   idPrefix: string;
   name: string;
@@ -70,6 +72,10 @@ export function StockForm({
   busy?: boolean;
   /** Told when a Save starts and ends, so the sheet can hold its other buttons. */
   onPendingChange?: (pending: boolean) => void;
+  /** The form's id, for a submit pill outside it (a sheet footer); it then has no button. */
+  id?: string;
+  /** A level's chips; off where the sheet sets the level itself, on tap. */
+  showLevel?: boolean;
 }) {
   const [quantityText, setQuantityText] = useState(initial.quantityText);
   const [unit, setUnit] = useState(initial.unit);
@@ -109,17 +115,19 @@ export function StockForm({
   }
 
   const id = (field: string) => `${idPrefix}-${field}`;
+  const label = "text-caption font-normal text-muted-foreground";
 
   return (
-    <form className="flex flex-col gap-4" onSubmit={submit} noValidate>
+    <form id={formId} className="flex flex-col gap-4" onSubmit={submit} noValidate>
       {kind === "count" ? (
-        <div className="grid grid-cols-[1fr_1fr] gap-3">
-          <div className="flex flex-col gap-2">
-            <Label htmlFor={id("quantity")}>How many</Label>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="flex flex-col gap-1">
+            <Label htmlFor={id("quantity")} className={label}>
+              How many
+            </Label>
             <Input
               id={id("quantity")}
               value={quantityText}
-              placeholder="1 1/2"
               autoComplete="off"
               enterKeyHint="done"
               className="tabular"
@@ -128,17 +136,18 @@ export function StockForm({
               onChange={(e) => setQuantityText(e.target.value)}
             />
             {quantityError && (
-              <p id={id("quantity-error")} role="alert" className="text-sm text-destructive">
+              <p id={id("quantity-error")} role="alert" className="text-caption text-destructive">
                 {quantityError}
               </p>
             )}
           </div>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor={id("unit")}>Unit</Label>
+          <div className="flex flex-col gap-1">
+            <Label htmlFor={id("unit")} className={label}>
+              Unit
+            </Label>
             <Input
               id={id("unit")}
               value={unit}
-              placeholder="each"
               autoComplete="off"
               autoCapitalize="none"
               enterKeyHint="done"
@@ -147,23 +156,27 @@ export function StockForm({
               onChange={(e) => setUnit(e.target.value)}
             />
             {unitError && (
-              <p id={id("unit-error")} role="alert" className="text-sm text-destructive">
+              <p id={id("unit-error")} role="alert" className="text-caption text-destructive">
                 {unitError}
               </p>
             )}
           </div>
         </div>
       ) : (
-        <div className="flex flex-col gap-2">
-          <span className="text-sm font-medium">How much is left</span>
-          <LevelChips name={name} value={level} onChange={setLevel} disabled={pending} />
-        </div>
+        showLevel && (
+          <div className="flex flex-col gap-1">
+            <span className={label}>How much is left</span>
+            <LevelChips name={name} value={level} onChange={setLevel} disabled={pending} />
+          </div>
+        )
       )}
 
-      <div className="flex flex-col gap-2">
-        <Label htmlFor={id("location")}>Where it lives</Label>
+      <div className="flex flex-col gap-1">
+        <Label htmlFor={id("location")} className={label}>
+          Where it lives
+        </Label>
         <Select value={location} onValueChange={(value) => setLocation(value as Location)}>
-          <SelectTrigger id={id("location")} className="w-full">
+          <SelectTrigger id={id("location")} className="w-full data-[size=default]:h-11">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -176,11 +189,14 @@ export function StockForm({
         </Select>
       </div>
 
-      <Button type="submit" disabled={pending}>
-        {submitLabel}
-      </Button>
+      {/* With a form id, the pill that submits it lives in the sheet's footer. */}
+      {formId === undefined && (
+        <Pill sheet type="submit" disabled={pending}>
+          {submitLabel}
+        </Pill>
+      )}
       {saveError && (
-        <p role="alert" className="-mt-2 text-sm text-destructive">
+        <p role="alert" className="text-caption text-destructive">
           {saveError}
         </p>
       )}

@@ -21,6 +21,9 @@ import { cn } from "#/lib/utils";
  * is gone by then (what opened the sheet was the thing it changed), focus goes to
  * `fallbackFocus`, a stable element such as the screen's title with `tabIndex={-1}`.
  *
+ * `quietOpen` keeps focus on the sheet itself when it opens, so a sheet whose first
+ * control may be a field (the pantry item) raises no keyboard until a field is tapped.
+ *
  * The body scrolls between the title block and the footer; once it is scrolled, a hairline
  * under the title block shows where the rows go under it.
  */
@@ -32,6 +35,7 @@ export function HalfSheet({
   title,
   note,
   footer,
+  quietOpen = false,
   className,
   children,
 }: {
@@ -42,6 +46,7 @@ export function HalfSheet({
   title: string;
   note?: ReactNode;
   footer?: ReactNode;
+  quietOpen?: boolean;
   className?: string;
   children?: ReactNode;
 }) {
@@ -51,6 +56,11 @@ export function HalfSheet({
       <SheetContent
         side="bottom"
         showCloseButton={false}
+        onOpenAutoFocus={(event) => {
+          if (!quietOpen) return;
+          event.preventDefault();
+          (event.currentTarget as HTMLElement).focus();
+        }}
         onCloseAutoFocus={(event) => {
           const target = opener?.current?.isConnected ? opener.current : fallbackFocus?.current;
           if (!target?.isConnected) return;

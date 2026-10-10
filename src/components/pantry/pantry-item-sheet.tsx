@@ -1,51 +1,42 @@
 import { useMutation } from "convex/react";
-import { useState } from "react";
+import { type RefObject, useState } from "react";
 import { api } from "../../../convex/_generated/api";
-import { Button } from "#/components/ui/button";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "#/components/ui/sheet";
+import { Chip } from "#/components/kit/chip";
+import { HalfSheet } from "#/components/kit/half-sheet";
+import { Pill } from "#/components/kit/pill";
 import { errorMessage } from "#/lib/errors";
+import { LEVELS, type Level } from "#/lib/levels";
 import { countOf, levelOf } from "#/lib/pantry-amount";
-import { locationLabels } from "./labels";
+import { levelLabels, locationLabels } from "./labels";
 import { isOut, type PantryRowData } from "./pantry-data";
 import { StockForm, useSaveStock } from "./stock-form";
 
-/** Edit one pantry row: amount or level, where it lives, out, or off the shelf. */
+/**
+ * One pantry row in a half sheet. Out comes first: for a level, the four chips (Full to
+ * Out), each saved on tap; for a count, an Out text action. Then the amount and where it
+ * lives, saved by the footer pill, and last, under a hairline, Remove from pantry.
+ * Nothing takes focus on open, so no keyboard rises until a field is tapped.
+ */
 export function PantryItemSheet({
   row,
   open,
   onOpenChange,
+  opener,
 }: {
   row: PantryRowData;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  opener: RefObject<HTMLElement | null>;
 }) {
-  return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" className="mx-auto w-full max-w-2xl rounded-t-xl">
-        <SheetHeader>
-          <SheetTitle>{row.name}</SheetTitle>
-          <SheetDescription>{locationLabels[row.location]}</SheetDescription>
-        </SheetHeader>
-        <SheetBody row={row} close={() => onOpenChange(false)} />
-      </SheetContent>
-    </Sheet>
-  );
-}
-
-// Mounted only while the sheet is open, so every opening starts from the saved row.
-function SheetBody({ row, close }: { row: PantryRowData; close: () => void }) {
+  const formId = `pantry-${row.ingredientId}-form`;
   const saveStock = useSaveStock();
   const markOut = useMutation(api.pantry.markOut);
+  const setLevel = useMutation(api.pantry.setLevel);
   const remove = useMutation(api.pantry.remove);
   const [error, setError] = useState<string | null>(null);
-  // One flag for Save, Out, and Remove: while any of them is writing, the others wait.
+  // One flag for Save, Out, a level and Remove: while any of them is writing, the others wait.
   const [pending, setPending] = useState(false);
+  const close = () => onOpenChange(false);
 
   async function run(action: () => Promise<unknown>) {
     setPending(true);
@@ -61,49 +52,96 @@ function SheetBody({ row, close }: { row: PantryRowData; close: () => void }) {
   }
 
   return (
-    <div className="flex flex-col gap-4 px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
-      <StockForm
-        idPrefix={`pantry-${row.ingredientId}`}
-        name={row.name}
-        kind={row.kind}
-        initial={{
-          quantityText: countOf(row)?.quantityText ?? "",
-          unit: countOf(row)?.unit ?? "",
-          level: levelOf(row) ?? "full",
-          location: row.location,
-        }}
-        busy={pending}
-        onPendingChange={setPending}
-        onSave={async (values) => {
-          await saveStock(row.ingredientId, values);
-          close();
-        }}
-      />
-      <div className="flex gap-2">
-        <Button
-          type="button"
-          variant="outline"
-          className="flex-1"
-          disabled={pending || isOut(row)}
-          onClick={() => run(() => markOut({ ingredientId: row.ingredientId }))}
-        >
-          Out
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          className="flex-1 text-destructive"
-          disabled={pending}
-          onClick={() => run(() => remove({ ingredientId: row.ingredientId }))}
-        >
-          Remove from pantry
-        </Button>
-      </div>
-      {error && (
-        <p role="alert" className="-mt-2 text-sm text-destructive">
-          {error}
-        </p>
+    <HalfSheet
+      open={open}
+      onOpenChange={(next) => {
+        onOpenChange(next);
+        if (!next) setError(null);
+      }}
+      opener={opener}
+      quietOpen
+      title={row.name}
+      note={locationLabels[row.location]}
+      footer={
+        <div className="flex flex-col">
+          <Pill sheet type="submit" form={formId} disabled={pending}>
+            Save
+          </Pill>
+          <div className="mt-3 border-t border-border pt-1">
+            <Pill
+              variant="text"
+              className="-ml-5 text-destructive"
+              disabled={pending}
+              onClick={() => run(() => remove({ ingredientId: row.ingredientId }))}
+            >
+              Remove from pantry
+            </Pill>
+          </div>
+        </div>
+      }
+    >
+      {/* Mounted only while open, so every opening starts from the saved row. */}
+      {open && (
+        <div className="flex flex-col gap-4 pb-2">
+          {row.kind === "level" ? (
+            <fieldset className="m-0 flex min-w-0 flex-col gap-1 border-0 p-0">
+              <legend className="text-subhead">How much is left</legend>
+              <div className="flex gap-2">
+                {LEVELS.map((level: Level) => {
+                  const current = level === row.level;
+                  return (
+                    <Chip
+                      key={level}
+                      selected={current}
+                      disabled={pending}
+                      className="min-w-14 disabled:opacity-60"
+                      onClick={() => {
+                        if (current) return;
+                        void run(() => setLevel({ ingredientId: row.ingredientId, level }));
+                      }}
+                    >
+                      {levelLabels[level]}
+                    </Chip>
+                  );
+                })}
+              </div>
+            </fieldset>
+          ) : (
+            <Pill
+              variant="text"
+              className="-ml-5 self-start"
+              disabled={pending || isOut(row)}
+              onClick={() => run(() => markOut({ ingredientId: row.ingredientId }))}
+            >
+              Out
+            </Pill>
+          )}
+          <StockForm
+            id={formId}
+            idPrefix={`pantry-${row.ingredientId}`}
+            name={row.name}
+            kind={row.kind}
+            showLevel={false}
+            initial={{
+              quantityText: countOf(row)?.quantityText ?? "",
+              unit: countOf(row)?.unit ?? "",
+              level: levelOf(row) ?? "full",
+              location: row.location,
+            }}
+            busy={pending}
+            onPendingChange={setPending}
+            onSave={async (values) => {
+              await saveStock(row.ingredientId, values);
+              close();
+            }}
+          />
+          {error && (
+            <p role="alert" className="text-caption text-destructive">
+              {error}
+            </p>
+          )}
+        </div>
       )}
-    </div>
+    </HalfSheet>
   );
 }
