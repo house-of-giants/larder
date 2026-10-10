@@ -45,7 +45,10 @@ export function AdaptationSheet({
 }) {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" className="mx-auto w-full max-w-2xl rounded-t-xl">
+      <SheetContent
+        side="bottom"
+        className="mx-auto w-full max-w-2xl rounded-t-xl lg:ml-(--column-start)"
+      >
         <SheetHeader>
           <SheetTitle>Change for this week</SheetTitle>
           <SheetDescription>{recipeName}</SheetDescription>
