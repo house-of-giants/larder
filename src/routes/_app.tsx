@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { api } from "../../convex/_generated/api";
 import { BookOpen, CalendarDays, Refrigerator, Settings, ShoppingBasket } from "lucide-react";
 import { PageSkeleton } from "#/components/page-skeleton";
+import { Rail } from "#/components/rail";
 import { TabBar, type Tab } from "#/components/tab-bar";
 import { Skeleton } from "#/components/ui/skeleton";
 import { useHousehold } from "#/hooks/use-household";
@@ -11,13 +12,14 @@ import { requireSignedIn, returnTo } from "#/lib/auth-gate";
 import { isOffline, useOnline } from "#/offline/use-online";
 
 // Four tabs (DESIGN.md, Navigation). Leftovers opens from the week's fridge line and
-// Settings from the gear in the header; both stay routes.
+// Settings from the gear in the header (the foot of the rail at lg); both stay routes.
 const tabs: readonly Tab[] = [
   { to: "/week", label: "Week", icon: CalendarDays },
   { to: "/list", label: "List", icon: ShoppingBasket },
   { to: "/pantry", label: "Pantry", icon: Refrigerator },
   { to: "/recipes", label: "Recipes", icon: BookOpen },
 ];
+const settingsTab: Tab = { to: "/settings", label: "Settings", icon: Settings };
 
 export const Route = createFileRoute("/_app")({
   // With no signal the server gate cannot answer, so a tab tap in the aisle would fail.
@@ -47,27 +49,36 @@ function AppShell() {
   // this phone saved instead of waiting on it. Online, the tabs stay put while it loads.
   const loading = household === undefined && online;
 
+  const name = loading ? (
+    <Skeleton className="h-5 w-32" />
+  ) : (
+    <p className="truncate">{household?.household.name ?? "Larder"}</p>
+  );
+
   return (
-    // Clears the tab bar: --nav-offset is its 64px, its hairline, and the bottom inset.
+    // Clears the tab bar: --nav-offset is its 64px, its hairline, and the bottom inset (the
+    // inset alone at lg, where the rail replaces it).
     <div className="min-h-dvh pb-(--nav-offset)">
-      <header className="sticky top-0 z-30 border-b bg-background pt-[env(safe-area-inset-top)]">
-        <div className="mx-auto flex h-12 max-w-2xl items-center justify-between gap-4 px-4">
-          {loading ? (
-            <Skeleton className="h-5 w-32" />
-          ) : (
-            <p className="truncate font-medium">{household?.household.name ?? "Larder"}</p>
-          )}
-          <Link
-            to="/settings"
-            aria-label="Settings"
-            className="-mr-2.5 flex size-11 items-center justify-center rounded-full text-muted-foreground outline-none hover:text-foreground focus-ring"
-          >
-            <Settings aria-hidden className="size-5" />
-          </Link>
-        </div>
-      </header>
-      {loading ? <PageSkeleton /> : <Outlet />}
-      <TabBar tabs={tabs} />
+      <Rail household={name} tabs={tabs} settings={settingsTab} className="hidden lg:flex" />
+      {/* At lg the one column sits beside the rail, left-aligned, and the header spans it
+          alone; the household name and the gear live in the rail there. */}
+      <div className="lg:ml-(--column-start) lg:max-w-2xl">
+        <header className="sticky top-0 z-30 border-b bg-background pt-[env(safe-area-inset-top)]">
+          {/* 48px at every width: the sticky headings below are offset by it. */}
+          <div className="mx-auto flex h-12 max-w-2xl items-center justify-between gap-4 px-4">
+            <div className="min-w-0 font-medium lg:hidden">{name}</div>
+            <Link
+              to="/settings"
+              aria-label="Settings"
+              className="-mr-2.5 flex size-11 items-center justify-center rounded-full text-muted-foreground outline-none hover:text-foreground focus-ring lg:hidden"
+            >
+              <Settings aria-hidden className="size-5" />
+            </Link>
+          </div>
+        </header>
+        {loading ? <PageSkeleton /> : <Outlet />}
+      </div>
+      <TabBar tabs={tabs} className="lg:hidden" />
     </div>
   );
 }

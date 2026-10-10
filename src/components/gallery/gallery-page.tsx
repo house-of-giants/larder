@@ -1,6 +1,13 @@
 // Every kit primitive in the copy of a real week, once in the page's theme and once in
 // dark. Lives outside src/routes so a build without VITE_GALLERY drops it entirely.
-import { BookOpen, CalendarDays, CookingPot, Refrigerator, ShoppingBasket } from "lucide-react";
+import {
+  BookOpen,
+  CalendarDays,
+  CookingPot,
+  Refrigerator,
+  Settings,
+  ShoppingBasket,
+} from "lucide-react";
 import { useRef, useState, type MouseEvent, type ReactNode } from "react";
 import { AisleHeading } from "#/components/kit/aisle-heading";
 import { Amount } from "#/components/kit/amount";
@@ -9,6 +16,7 @@ import { Fab } from "#/components/kit/fab";
 import { HalfSheet } from "#/components/kit/half-sheet";
 import { ListRow } from "#/components/kit/list-row";
 import { Pill } from "#/components/kit/pill";
+import { Rail } from "#/components/rail";
 import { TabBar, type Tab } from "#/components/tab-bar";
 import { Input } from "#/components/ui/input";
 import { Label } from "#/components/ui/label";
@@ -22,6 +30,7 @@ const tabs: readonly Tab[] = [
   { to: "/pantry", label: "Pantry", icon: Refrigerator },
   { to: "/recipes", label: "Recipes", icon: BookOpen },
 ];
+const settingsTab: Tab = { to: "/settings", label: "Settings", icon: Settings };
 
 type Row = {
   name: string;
@@ -232,8 +241,24 @@ function Specimens({ title, dark = false }: { title: string; dark?: boolean }) {
 
       <Specimen title="Tab bar and add button">
         <div className="relative -mx-5 h-40 overflow-hidden">
-          <Fab label="Add something" className="absolute bottom-20" onClick={openSheet} />
+          <Fab
+            label="Add something"
+            className="absolute bottom-20 lg:right-4 lg:left-auto"
+            onClick={openSheet}
+          />
           <TabBar tabs={tabs} current="/list" className="absolute" />
+        </div>
+      </Specimen>
+
+      <Specimen title="Rail, 1024px and wider">
+        <div className="relative -mx-5 h-80 overflow-hidden">
+          <Rail
+            household={<p className="truncate">Dev household</p>}
+            tabs={tabs}
+            settings={settingsTab}
+            current="/list"
+            className="absolute"
+          />
         </div>
       </Specimen>
 

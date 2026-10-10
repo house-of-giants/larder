@@ -97,6 +97,14 @@
    * leaves (the desktop rail), this drops to the inset alone.
    */
   --nav-offset: calc(4rem + 1px + env(safe-area-inset-bottom));
+  /*
+   * The desktop shell (lg and wider): a 240px rail, a 32px gutter, then the one 672px
+   * column (max-w-2xl), left-aligned. Only `lg:` classes read these; sheets and the Fab
+   * use the column's edges, so they sit over the column rather than the viewport.
+   */
+  --rail-width: 15rem;
+  --column-start: calc(var(--rail-width) + 2rem);
+  --column-end: calc(var(--column-start) + 42rem);
   --radius: 0.75rem;
   --background: #faf6ee;
   --foreground: #2b2622;
@@ -122,6 +130,13 @@
      toward Ink Quiet that clears 3:1 on paper and card. */
   --ring-quiet: #978c7e;
   --scrim: rgba(43, 38, 34, 0.4);
+}
+
+/* lg (64rem): the tab bar leaves for the rail, so bottom-pinned things sit on the inset alone. */
+@media (width >= 64rem) {
+  :root {
+    --nav-offset: env(safe-area-inset-bottom);
+  }
 }
 
 .dark {

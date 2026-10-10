@@ -12,7 +12,9 @@ import { cn } from "#/lib/utils";
 /**
  * The half sheet (DESIGN.md): rises from the bottom over the scrim, Paper Sheet fill, 18px
  * top corners, a serif title with a quiet note under it, and a footer in thumb reach for
- * the one full-width primary pill (`<Pill sheet>`). The X or the scrim cancels.
+ * the one full-width primary pill (`<Pill sheet>`). The X or the scrim cancels. At lg it
+ * keeps the column's 672px and sits over the column, beside the rail; the scrim still
+ * covers the whole window.
  *
  * The sheet is controlled, so Radix has no trigger to hand focus back to. Pass `opener`,
  * a ref to whatever opened it (a Pill, the Fab, a row), and closing returns focus there.
@@ -70,7 +72,7 @@ export function HalfSheet({
         // With no note there is nothing to describe the sheet; say so rather than repeat the title.
         {...(note ? {} : { "aria-describedby": undefined })}
         className={cn(
-          "mx-auto max-h-[92dvh] max-w-2xl gap-0 rounded-t-[18px] border-0 bg-popover px-5 pt-4 text-popover-foreground shadow-none ease-[cubic-bezier(0.2,0,0,1)] data-[state=closed]:duration-200 data-[state=open]:duration-[240ms]",
+          "mx-auto max-h-[92dvh] max-w-2xl gap-0 lg:ml-(--column-start) rounded-t-[18px] border-0 bg-popover px-5 pt-4 text-popover-foreground shadow-none ease-[cubic-bezier(0.2,0,0,1)] data-[state=closed]:duration-200 data-[state=open]:duration-[240ms]",
           className,
         )}
       >
