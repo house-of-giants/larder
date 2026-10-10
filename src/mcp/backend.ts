@@ -29,10 +29,19 @@ export type LarderBackend = {
 };
 
 /**
- * A ConvexError's own sentence ("Close the current week first.") as a plain Error. Any other
- * error (an argument that failed a validator) loses Convex's request-id prefix and never
- * carries the agent secret, which validator messages can echo back.
+ * An error's message with Convex's request-id prefix dropped and every given secret
+ * replaced. Validator errors echo the arguments sent, and agent calls carry the secret.
  */
+export function redactedMessage(error: unknown, secrets: readonly string[]): string {
+  let message = error instanceof Error ? error.message : String(error);
+  message = message.replace(/^\[Request ID: [^\]]*\] Server Error\n/, "");
+  for (const secret of secrets) {
+    if (secret !== "") message = message.split(secret).join("[redacted]");
+  }
+  return message.trim();
+}
+
+/** A ConvexError's own sentence ("Close the current week first.") as a plain Error. */
 async function plainErrors<T>(secret: string, call: () => Promise<T>): Promise<T> {
   try {
     return await call();
@@ -40,18 +49,14 @@ async function plainErrors<T>(secret: string, call: () => Promise<T>): Promise<T
     if (error instanceof ConvexError && typeof error.data === "string") {
       throw new Error(error.data);
     }
-    const message = error instanceof Error ? error.message : String(error);
-    throw new Error(
-      message
-        .replace(/^\[Request ID: [^\]]*\] Server Error\n/, "")
-        .split(secret)
-        .join("[redacted]")
-        .trim(),
-    );
+    throw new Error(redactedMessage(error, [secret]));
   }
 }
 
-export function convexBackend(client: ConvexHttpClient, identity: AgentIdentity): LarderBackend {
+export function convexBackend(
+  client: Pick<ConvexHttpClient, "query" | "mutation">,
+  identity: AgentIdentity,
+): LarderBackend {
   const query =
     <F extends FunctionReference<"query">>(fn: F) =>
     (args: OwnArgs<F>) =>

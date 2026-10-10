@@ -2,8 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { handleMcpRequest } from "#/mcp/handler";
 
 // The MCP door for agents: Streamable HTTP, POST only, a household agent token as the
-// bearer. Tokens are made on the settings screen. Stateless, so GET (a server-sent event
-// stream) and DELETE (ending a session) have nothing to serve.
+// bearer. Tokens are made on the settings screen. Stateless, so every other method (GET's
+// event stream, DELETE's session end, PUT, PATCH, OPTIONS, HEAD) is refused with 405.
 
 const notAllowed = () =>
   new Response(JSON.stringify({ error: "method_not_allowed" }), {
@@ -17,17 +17,13 @@ export const Route = createFileRoute("/mcp")({
       POST: async ({ request }) => {
         const convexUrl = process.env.VITE_CONVEX_URL ?? import.meta.env.VITE_CONVEX_URL;
         const agentSecret = process.env.AGENT_SECRET;
-        if (!convexUrl || !agentSecret) {
-          console.error("The MCP door needs VITE_CONVEX_URL and AGENT_SECRET on the server.");
-          return new Response(JSON.stringify({ error: "not_configured" }), {
-            status: 503,
-            headers: { "content-type": "application/json" },
-          });
-        }
-        return await handleMcpRequest(request, { convexUrl, agentSecret });
+        return await handleMcpRequest(
+          request,
+          convexUrl && agentSecret ? { convexUrl, agentSecret } : null,
+        );
       },
-      GET: notAllowed,
-      DELETE: notAllowed,
+      // Start falls back to ANY for any method without its own handler (HEAD tries GET first).
+      ANY: notAllowed,
     },
   },
 });

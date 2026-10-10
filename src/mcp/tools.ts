@@ -353,7 +353,7 @@ export function registerLarderTools(server: McpServer, backend: LarderBackend) {
           ),
       }),
       output: z.object({ item: pantryItem }),
-      annotations: write({ idempotent: true }),
+      annotations: write(),
     },
     async ({ ingredientId, quantityText, unit, level, location }) => {
       if ((level === undefined) === (quantityText === undefined)) {
@@ -383,7 +383,7 @@ export function registerLarderTools(server: McpServer, backend: LarderBackend) {
         ingredientId: id("ingredients", "The ingredient, from pantry_list or ingredients_list."),
       }),
       output: z.object({ item: pantryItem }),
-      annotations: write({ idempotent: true }),
+      annotations: write({ destructive: true }),
     },
     async ({ ingredientId }) => {
       const item = await backend.pantryMarkOut({ ingredientId });
@@ -468,7 +468,7 @@ export function registerLarderTools(server: McpServer, backend: LarderBackend) {
         notes: z.string().optional().describe("Free text for the household."),
       }),
       output: z.object({ ingredient }),
-      annotations: write(),
+      annotations: write({ destructive: true, idempotent: true }),
     },
     async (args) => {
       const saved = await backend.ingredientsUpsert(args);
@@ -576,7 +576,7 @@ export function registerLarderTools(server: McpServer, backend: LarderBackend) {
           }),
         ),
       }),
-      annotations: write(),
+      annotations: write({ destructive: true }),
     },
     async (args) => {
       const result = await backend.recipesUpsert(args);
@@ -844,7 +844,7 @@ export function registerLarderTools(server: McpServer, backend: LarderBackend) {
         noFoodReason: z.string().optional(),
         deductions: z.array(deduction),
       }),
-      annotations: write(),
+      annotations: write({ destructive: true }),
     },
     async (args) => {
       const made = await backend.cookMade(args);
@@ -897,7 +897,7 @@ export function registerLarderTools(server: McpServer, backend: LarderBackend) {
         remaining: amount,
         status: foodStatus,
       }),
-      annotations: write(),
+      annotations: write({ destructive: true }),
     },
     async (args) => {
       const result = await backend.leftoversConsume(args);

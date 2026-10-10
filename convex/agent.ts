@@ -20,6 +20,7 @@ import {
   listLeftovers,
 } from "./leftovers";
 import { agentArgs, asAgent, requireAgentSecret } from "./lib/agent";
+import { requireWeek } from "./lib/weeks";
 import type { Caller } from "./lib/auth";
 import {
   addItemArgs,
@@ -249,6 +250,8 @@ export const weeksSetRecipes = mutation({
   returns: currentWeek,
   handler: async (ctx, args) => {
     const [caller, { weekId, recipes }] = await asAgent(ctx, args);
+    // Checked here too, so an empty batch cannot probe another household's week id.
+    await requireWeek(ctx, caller.householdId, weekId);
     for (const recipe of recipes) {
       await setWeekRecipe(ctx, caller, { weekId, ...recipe });
     }

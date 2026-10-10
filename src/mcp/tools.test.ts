@@ -244,7 +244,7 @@ afterEach(async () => {
 });
 
 async function connect(backend: LarderBackend) {
-  const handler = createMcpHandler(() => createLarderServer(backend), { responseMode: "json" });
+  const handler = createMcpHandler(() => createLarderServer(backend));
   const client = new Client(
     { name: "tools-test", version: "1.0.0" },
     { versionNegotiation: { mode: "auto" } },
@@ -489,7 +489,30 @@ describe("the MCP tool surface", () => {
       .filter((t) => t.annotations?.destructiveHint === true)
       .map((t) => t.name)
       .sort();
-    expect(destructive).toEqual(["leftovers_discard", "recipes_archive", "week_closeout"]);
+    // Anything that takes inventory away, or replaces or clears what was saved, is destructive.
+    expect(destructive).toEqual([
+      "cook_made",
+      "ingredients_upsert",
+      "leftovers_consume",
+      "leftovers_discard",
+      "pantry_mark_out",
+      "recipes_archive",
+      "recipes_upsert",
+      "week_closeout",
+    ]);
+    // Idempotent only where a repeat changes nothing and writes no new ledger event.
+    const idempotent = tools
+      .filter((t) => t.annotations?.idempotentHint === true)
+      .map((t) => t.name)
+      .sort();
+    expect(idempotent).toEqual([
+      "ingredients_upsert",
+      "list_generate",
+      "list_set_item_status",
+      "recipes_archive",
+      "weeks_set_recipes",
+      "weeks_set_status",
+    ]);
     const readOnly = tools.filter((t) => t.annotations?.readOnlyHint).map((t) => t.name);
     expect(readOnly.sort()).toEqual(
       [

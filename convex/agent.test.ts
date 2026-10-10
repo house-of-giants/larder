@@ -284,3 +284,15 @@ describe("agent.recipesUpsert by names", () => {
     ]);
   });
 });
+
+describe("agent.weeksSetRecipes", () => {
+  it("refuses another household's week, even with no recipes to set", async () => {
+    const t = convexTest(schema, modules);
+    const a = await householdWithToken(t, "Ana");
+    const b = await createHousehold(t, { who: "Ben", name: "B" });
+    const theirWeek = await b.as.mutation(api.weeks.create, { weekOf: "2026-10-09" });
+    await expect(
+      t.mutation(api.agent.weeksSetRecipes, { ...a.agent, weekId: theirWeek, recipes: [] }),
+    ).rejects.toMatchObject({ data: "That week is not here." });
+  });
+});
