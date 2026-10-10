@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { api } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import schema from "./schema";
+import { normalizeName } from "../src/lib/aliases";
 import { createHousehold, type Test } from "./test_helpers";
 
 const modules = import.meta.glob("./**/*.ts");
@@ -22,6 +23,7 @@ async function addIngredient(
     ctx.db.insert("ingredients", {
       householdId,
       name,
+      nameKey: normalizeName(name),
       kind,
       category: "other",
       aliases: [],
@@ -31,13 +33,10 @@ async function addIngredient(
   );
 }
 
-function rowsFor(t: Test, recipeId: Id<"recipes">) {
-  return t.run((ctx) =>
-    ctx.db
-      .query("recipeIngredients")
-      .withIndex("by_recipeId", (q) => q.eq("recipeId", recipeId))
-      .collect(),
-  );
+/** Every row that names the recipe, whichever household wrote it. */
+async function rowsFor(t: Test, recipeId: Id<"recipes">) {
+  const rows = await t.run((ctx) => ctx.db.query("recipeIngredients").collect());
+  return rows.filter((r) => r.recipeId === recipeId);
 }
 
 /** A household with three ingredients and a two-line recipe body to build on. */

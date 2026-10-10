@@ -83,12 +83,14 @@ export const upsert = mutation({
     const existing =
       args.id === undefined ? null : await requireIngredient(ctx, householdId, args.id);
 
-    const key = normalizeName(name);
-    const others = await ctx.db
+    const nameKey = normalizeName(name);
+    const sameName = await ctx.db
       .query("ingredients")
-      .withIndex("by_householdId", (q) => q.eq("householdId", householdId))
+      .withIndex("by_householdId_nameKey", (q) =>
+        q.eq("householdId", householdId).eq("nameKey", nameKey),
+      )
       .collect();
-    const taken = others.find((i) => i._id !== existing?._id && normalizeName(i.name) === key);
+    const taken = sameName.find((i) => i._id !== existing?._id);
     if (taken) {
       throw new ConvexError(`${taken.name} is already in the list.`);
     }
@@ -101,6 +103,7 @@ export const upsert = mutation({
 
     const fields = {
       name,
+      nameKey,
       kind: args.kind,
       category,
       defaultUnit: optionalText(args.defaultUnit),
@@ -135,6 +138,22 @@ export const resolve = query({
   ),
   handler: async (ctx, args) => {
     const { householdId } = await requireMember(ctx);
+
+    // The name itself, in any case or spacing: one indexed read. Anything else (aliases,
+    // plurals, two ingredients under one name) goes through the full resolver below.
+    const nameKey = normalizeName(args.name);
+    const sameName = await ctx.db
+      .query("ingredients")
+      .withIndex("by_householdId_nameKey", (q) =>
+        q.eq("householdId", householdId).eq("nameKey", nameKey),
+      )
+      .take(2);
+    if (nameKey !== "" && sameName.length === 1) {
+      const [only] = sameName;
+      const how = only.name === args.name.trim() ? ("exact" as const) : ("case" as const);
+      return { kind: "match" as const, ingredientId: only._id, name: only.name, how };
+    }
+
     const ingredients = await ctx.db
       .query("ingredients")
       .withIndex("by_householdId", (q) => q.eq("householdId", householdId))

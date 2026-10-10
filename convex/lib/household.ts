@@ -1,8 +1,10 @@
 import type { Id, TableNames } from "../_generated/dataModel";
+import { internal } from "../_generated/api";
 import type { MutationCtx } from "../_generated/server";
 
 // Every table that carries a householdId, each with a `by_householdId` index.
-// A new household-scoped table must be added here, or deleting a household leaves it behind.
+// A new household-scoped table must be added here, or the sweep after a household is
+// deleted leaves it behind.
 export const householdScopedTables = [
   "members",
   "householdTokens",
@@ -20,18 +22,14 @@ export const householdScopedTables = [
   "inventoryEvents",
 ] as const satisfies readonly Exclude<TableNames, "households">[];
 
-/** Deletes the household and every row that belongs to it, in one transaction. */
+/**
+ * Deletes the household now, so no one can open or join it, and schedules
+ * households.sweep to delete its rows in batches: a long-lived household has more rows
+ * than one mutation may write.
+ */
 export async function deleteHousehold(ctx: MutationCtx, householdId: Id<"households">) {
-  for (const table of householdScopedTables) {
-    const rows = await ctx.db
-      .query(table)
-      .withIndex("by_householdId", (q) => q.eq("householdId", householdId))
-      .collect();
-    for (const row of rows) {
-      await ctx.db.delete(row._id);
-    }
-  }
-  await ctx.db.delete(householdId);
+  await ctx.db.delete("households", householdId);
+  await ctx.scheduler.runAfter(0, internal.households.sweep, { householdId });
 }
 
 const inviteAlphabet = "0123456789abcdefghjkmnpqrstvwxyz"; // 32 symbols, no i, l, o, u

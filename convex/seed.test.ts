@@ -1,9 +1,10 @@
 import { convexTest } from "convex-test";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { householdScopedTables } from "./lib/household";
 import schema from "./schema";
+import { countOf, levelOf } from "../src/lib/pantry-amount";
 import { createHousehold, type Test } from "./test_helpers";
 
 const modules = import.meta.glob("./**/*.ts");
@@ -43,6 +44,54 @@ const seeded = {
   weekAdaptations: 1,
   inventoryEvents: 59,
 };
+
+// seed.load and the testing helpers run only where SEED_ALLOWED is "true" (the dev
+// deployment). The config resets stubs between tests (unstubEnvs).
+beforeEach(() => {
+  vi.stubEnv("SEED_ALLOWED", "true");
+});
+
+describe("dev-only guard", () => {
+  const refusal = /SEED_ALLOWED/;
+
+  it.each([undefined, "", "false", "TRUE"])(
+    "refuses seed.load and the testing helpers when SEED_ALLOWED is %j",
+    async (value) => {
+      const t = convexTest(schema, modules);
+      const { householdId } = await createHousehold(t, { who: "Alice", name: "A" });
+      vi.stubEnv("SEED_ALLOWED", value);
+
+      await expect(t.mutation(internal.seed.load, { householdId })).rejects.toThrow(refusal);
+      await expect(
+        t.mutation(internal.testing.createDevHousehold, { name: "Dev", clerkUserId: "user_dev" }),
+      ).rejects.toThrow(refusal);
+      await expect(t.query(internal.testing.summary, { householdId })).rejects.toThrow(refusal);
+
+      // Nothing was wiped, filled, or created on the way to the refusal.
+      expect(Object.values(await countsFor(t, householdId)).every((n) => n === 0)).toBe(true);
+      const households = await t.run((ctx) => ctx.db.query("households").collect());
+      expect(households.map((h) => h.name)).toEqual(["A"]);
+    },
+  );
+
+  it("lets the testing helpers make a dev household and count what the seed put in it", async () => {
+    const t = convexTest(schema, modules);
+    const householdId = await t.mutation(internal.testing.createDevHousehold, {
+      name: "Dev",
+      clerkUserId: "user_dev",
+    });
+    await t.mutation(internal.seed.load, { householdId });
+
+    expect(await t.query(internal.testing.summary, { householdId })).toEqual({
+      ingredients: seeded.ingredients,
+      pantryItems: seeded.pantryItems,
+      recipes: seeded.recipes,
+      recipeIngredients: seeded.recipeIngredients,
+      weeks: seeded.weeks,
+      inventoryEvents: seeded.inventoryEvents,
+    });
+  });
+});
 
 describe("seed.load", () => {
   it("loads the fixture week into one household, and only that household", async () => {
@@ -130,13 +179,13 @@ describe("seed.load", () => {
 
     const pantry = await as.query(api.pantry.list, {});
     const byName = new Map(pantry.map((r) => [r.name, r]));
-    expect(byName.get("bacon")?.count).toEqual({
+    expect(countOf(byName.get("bacon"))).toEqual({
       quantityText: "10",
       quantityDecimal: 10,
       unit: "slice",
     });
-    expect(byName.get("Dijon mustard")?.level).toBe("low");
-    expect(byName.get("Dijon mustard")?.count).toBeUndefined();
+    expect(levelOf(byName.get("Dijon mustard"))).toBe("low");
+    expect(countOf(byName.get("Dijon mustard"))).toBeUndefined();
     expect(byName.get("small red onion")).toMatchObject({
       location: "counter",
       purchaseNote: "buy 1 small red onion",
@@ -165,6 +214,7 @@ describe("seed.load", () => {
       after: {
         ingredientId: byName.get("bacon")?.ingredientId,
         location: "fridge",
+        kind: "count",
         count: { quantityText: "10", quantityDecimal: 10, unit: "slice" },
       },
     });

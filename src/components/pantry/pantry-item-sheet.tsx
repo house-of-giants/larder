@@ -10,6 +10,7 @@ import {
   SheetTitle,
 } from "#/components/ui/sheet";
 import { errorMessage } from "#/lib/errors";
+import { countOf, levelOf } from "#/lib/pantry-amount";
 import { locationLabels } from "./labels";
 import { isOut, type PantryRowData } from "./pantry-data";
 import { StockForm, useSaveStock } from "./stock-form";
@@ -66,9 +67,9 @@ function SheetBody({ row, close }: { row: PantryRowData; close: () => void }) {
         name={row.name}
         kind={row.kind}
         initial={{
-          quantityText: row.count?.quantityText ?? "",
-          unit: row.count?.unit ?? "",
-          level: row.level ?? "full",
+          quantityText: countOf(row)?.quantityText ?? "",
+          unit: countOf(row)?.unit ?? "",
+          level: levelOf(row) ?? "full",
           location: row.location,
         }}
         busy={pending}

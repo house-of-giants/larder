@@ -51,10 +51,10 @@ export type ListIngredient = {
   tracked: boolean;
 };
 
-export type ListPantryRow = {
-  count?: { quantityDecimal: number; unit: string };
-  level?: Level;
-};
+/** What the pantry holds of an ingredient: a count or a level, like the pantry row. */
+export type ListPantryRow =
+  | { kind: "count"; count: { quantityDecimal: number; unit: string } }
+  | { kind: "level"; level: Level };
 
 export type ListInput<I extends string, R extends string> = {
   /** Selected recipes only, in the order the week lists them. */
@@ -231,7 +231,7 @@ export function generateList<I extends string, R extends string>(
     };
 
     if (ingredient.kind === "level") {
-      const level = pantry?.level;
+      const level = pantry?.kind === "level" ? pantry.level : undefined;
       if (level === "full" || level === "half") continue;
       items.push({
         ...line,
@@ -241,7 +241,7 @@ export function generateList<I extends string, R extends string>(
       continue;
     }
 
-    const count = pantry?.count;
+    const count = pantry?.kind === "count" ? pantry.count : undefined;
     const onHand =
       count !== undefined && count.unit.trim() === agg.unit ? count.quantityDecimal : 0;
     if (agg.decimal === null) {

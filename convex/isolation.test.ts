@@ -165,8 +165,8 @@ const cases: Case[] = [
 ];
 
 // Every Convex function module, so a public function added in any phase must be listed
-// above. Not function modules: schema, auth config, generated code, shared helpers in
-// lib/, tests and their helpers. health.ping is deliberately open: it reports whether
+// above. Not function modules: schema, app and auth config, generated code, shared
+// helpers in lib/, tests and their helpers. health.ping is deliberately open: it reports whether
 // the caller is signed in.
 const functionModules = import.meta.glob<Record<string, unknown>>(
   [
@@ -176,7 +176,7 @@ const functionModules = import.meta.glob<Record<string, unknown>>(
     "!./**/*.test.ts",
     "!./test_helpers.ts",
     "!./schema.ts",
-    // Throws at import without CLERK_JWT_ISSUER_DOMAIN; it holds no functions.
+    "!./convex.config.ts",
     "!./auth.config.ts",
     "!./health.ts",
   ],

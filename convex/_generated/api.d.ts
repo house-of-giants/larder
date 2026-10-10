@@ -13,6 +13,7 @@ import type * as health from "../health.js";
 import type * as households from "../households.js";
 import type * as ingredients from "../ingredients.js";
 import type * as lib_auth from "../lib/auth.js";
+import type * as lib_dev_only from "../lib/dev_only.js";
 import type * as lib_household from "../lib/household.js";
 import type * as lib_ledger from "../lib/ledger.js";
 import type * as lib_list_generation from "../lib/list_generation.js";
@@ -39,6 +40,7 @@ declare const fullApi: ApiFromModules<{
   households: typeof households;
   ingredients: typeof ingredients;
   "lib/auth": typeof lib_auth;
+  "lib/dev_only": typeof lib_dev_only;
   "lib/household": typeof lib_household;
   "lib/ledger": typeof lib_ledger;
   "lib/list_generation": typeof lib_list_generation;

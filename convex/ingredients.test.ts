@@ -128,6 +128,28 @@ describe("ingredients.upsert", () => {
 });
 
 describe("ingredients.resolve", () => {
+  it("matches the household's own name exactly or in other case and spacing, never another's", async () => {
+    const t = newTest();
+    const a = await createHousehold(t, { who: "Alice", name: "Elm" });
+    const b = await createHousehold(t, { who: "Bob", name: "Oak" });
+    const dijon = await a.as.mutation(api.ingredients.upsert, {
+      name: "Dijon mustard",
+      aliases: [],
+      ...mustard,
+    });
+    await b.as.mutation(api.ingredients.upsert, { name: "dijon mustard", aliases: [], ...mustard });
+
+    await expect(a.as.query(api.ingredients.resolve, { name: " Dijon mustard " })).resolves.toEqual(
+      { kind: "match", ingredientId: dijon, name: "Dijon mustard", how: "exact" },
+    );
+    await expect(a.as.query(api.ingredients.resolve, { name: "DIJON  Mustard" })).resolves.toEqual({
+      kind: "match",
+      ingredientId: dijon,
+      name: "Dijon mustard",
+      how: "case",
+    });
+  });
+
   it("returns both mustards as candidates for plain mustard", async () => {
     const t = newTest();
     const { as } = await createHousehold(t, { who: "Alice", name: "Elm" });

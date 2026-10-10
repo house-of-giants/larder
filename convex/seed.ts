@@ -3,14 +3,18 @@
 //
 //   bunx convex run seed:load '{"householdId":"<id>"}'
 //
-// Internal only, so no client can call it. Re-running replaces the household's kitchen
-// data instead of adding to it; members and agent tokens are left alone.
+// Internal only, so no client can call it, and it runs only on a deployment with
+// SEED_ALLOWED=true (dev). Re-running replaces the household's kitchen data instead of
+// adding to it; members and agent tokens are left alone.
 
 import { v } from "convex/values";
 import { LEVELS } from "../src/lib/levels";
 import { LOCATIONS } from "../src/lib/locations";
+import type { WithoutSystemFields } from "convex/server";
+import { normalizeName } from "../src/lib/aliases";
 import type { Doc, Id } from "./_generated/dataModel";
 import { internalMutation } from "./_generated/server";
+import { requireSeedAllowed } from "./lib/dev_only";
 import { householdScopedTables } from "./lib/household";
 import { recordInventoryEvent } from "./lib/ledger";
 import { pantrySnapshot } from "./lib/pantry";
@@ -48,6 +52,7 @@ export const load = internalMutation({
     inventoryEvents: v.number(),
   }),
   handler: async (ctx, { householdId }) => {
+    requireSeedAllowed();
     if ((await ctx.db.get(householdId)) === null) {
       throw new Error("No household with that id.");
     }
@@ -77,6 +82,7 @@ export const load = internalMutation({
       const id = await ctx.db.insert("ingredients", {
         householdId,
         name: i.name,
+        nameKey: normalizeName(i.name),
         kind: oneOf(i.kind, ["count", "level"]),
         category: i.category,
         defaultUnit: present(i.defaultUnit),
@@ -142,15 +148,18 @@ export const load = internalMutation({
     };
 
     for (const p of pantryFixtures) {
-      const row: Omit<Doc<"pantryItems">, "_id" | "_creationTime"> = {
+      const common = {
         householdId,
         ingredientId: ingredientId(p.ingredient),
         location: oneOf(p.location, LOCATIONS),
-        count: present(p.count),
-        level: p.level === undefined ? undefined : oneOf(p.level, LEVELS),
         purchaseNote: present(p.purchaseNote),
         updatedAt: now,
       };
+      // A fixture row is a count or a level, like the table.
+      const row: WithoutSystemFields<Doc<"pantryItems">> =
+        p.count !== undefined
+          ? { kind: "count", count: p.count, ...common }
+          : { kind: "level", level: oneOf(p.level ?? "", LEVELS), ...common };
       const pantryItemId = await ctx.db.insert("pantryItems", row);
       await recordInventoryEvent(ctx, {
         householdId,

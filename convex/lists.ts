@@ -12,10 +12,16 @@ import {
   STORE_SECTIONS,
   generateList,
 } from "./lib/list_generation";
-import { type PantrySnapshot, findPantryRow, pantrySnapshot } from "./lib/pantry";
+import {
+  type PantrySnapshot,
+  type StoredPantrySnapshot,
+  findPantryRow,
+  normalizeSnapshot,
+  pantrySnapshot,
+} from "./lib/pantry";
 import { formatQuantity, parseQuantity } from "./lib/quantities";
 import { findOpenWeek, requireWeek, weekRows } from "./lib/weeks";
-import schema from "./schema";
+import schema, { level, pantryCount } from "./schema";
 
 // The week's shopping list. Plan items come from lists.generate; ad-hoc items are typed in
 // the store and never touch the pantry or the ledger. Checking off a plan item puts it in
@@ -46,11 +52,12 @@ async function activeList(
 }
 
 async function listItemsOf(ctx: QueryCtx, householdId: Id<"households">, listId: Id<"lists">) {
-  const rows = await ctx.db
+  return await ctx.db
     .query("listItems")
-    .withIndex("by_listId", (q) => q.eq("listId", listId))
+    .withIndex("by_householdId_listId", (q) =>
+      q.eq("householdId", householdId).eq("listId", listId),
+    )
     .collect();
-  return rows.filter((r) => r.householdId === householdId);
 }
 
 /**
@@ -86,14 +93,15 @@ export const generate = mutation({
       if (recipe === null || recipe.householdId !== householdId) continue;
       const rows = await ctx.db
         .query("recipeIngredients")
-        .withIndex("by_recipeId", (q) => q.eq("recipeId", recipe._id))
+        .withIndex("by_householdId_recipeId", (q) =>
+          q.eq("householdId", householdId).eq("recipeId", recipe._id),
+        )
         .collect();
       recipes.push({
         recipeId: recipe._id,
         name: recipe.name,
         multiplier: wr.multiplier.decimal,
         ingredients: rows
-          .filter((r) => r.householdId === householdId)
           .sort((a, b) => a.order - b.order)
           .map((r) => ({
             ingredientId: r.ingredientId,
@@ -144,7 +152,7 @@ export const generate = mutation({
       .withIndex("by_householdId", (q) => q.eq("householdId", householdId))
       .collect();
     const pantry = new Map<Id<"ingredients">, ListPantryRow>(
-      pantryRows.map((p) => [p.ingredientId, { count: p.count, level: p.level }]),
+      pantryRows.map((p) => [p.ingredientId, p]),
     );
 
     const { items } = generateList({
@@ -353,6 +361,12 @@ type PurchasePayload = {
   replacedCount?: { quantityText: string; quantityDecimal: number; unit: string };
 };
 
+/** A purchase payload as stored: snapshots may predate `kind` (see normalizeSnapshot). */
+type StoredPurchasePayload = Omit<PurchasePayload, "before" | "after"> & {
+  before: StoredPantrySnapshot | null;
+  after: StoredPantrySnapshot;
+};
+
 /** Writes the pantry row to `after` (or deletes it when null) and stamps updatedAt. */
 async function putPantryRow(
   ctx: MutationCtx,
@@ -398,7 +412,7 @@ async function applyPurchase(
   let after: PantrySnapshot;
 
   if (ingredient.kind === "level") {
-    after = pantrySnapshot({ ...kept, level: "full" });
+    after = pantrySnapshot({ ...kept, kind: "level", level: "full" });
   } else {
     // What was bought: the purchase, or the required amount when nothing was left to buy.
     const purchase = item.purchase;
@@ -412,11 +426,12 @@ async function applyPurchase(
     if (bought === null) return;
     const unit = bought.unit.trim();
     payload.added = { quantityDecimal: bought.quantityDecimal, unit };
-    const count = existing?.count;
+    const count = existing?.kind === "count" ? existing.count : undefined;
     const sameUnit = count !== undefined && count.unit.trim() === unit;
     const total = (sameUnit ? count.quantityDecimal : 0) + bought.quantityDecimal;
     after = pantrySnapshot({
       ...kept,
+      kind: "count",
       count: { quantityText: formatQuantity(total), quantityDecimal: total, unit },
     });
     if (count !== undefined && !sameUnit) payload.replacedCount = count;
@@ -466,7 +481,9 @@ async function undoneRow(
   purchase: Doc<"inventoryEvents">,
   existing: Doc<"pantryItems"> | null,
 ): Promise<PantrySnapshot | null | undefined> {
-  const payload = purchase.payload as PurchasePayload;
+  const payload = purchase.payload as StoredPurchasePayload;
+  const before = normalizeSnapshot(payload.before);
+  const after = normalizeSnapshot(payload.after);
   if (existing === null) return undefined;
   const untouched = (await latestEvent(ctx, householdId, { pantryItemId: existing._id }))?._id;
   const touchedSince = untouched !== purchase._id;
@@ -474,17 +491,20 @@ async function undoneRow(
   // A level: back to what it was, only while it is still the full the check-off set. Only
   // the level changes; where the row lives, its note, and its expiry stay as edited since.
   if (payload.added === undefined) {
-    if (existing.level !== payload.after.level) return undefined;
-    if (payload.before === null) {
+    if (existing.kind !== "level" || after.kind !== "level") return undefined;
+    if (existing.level !== after.level) return undefined;
+    if (before === null) {
       // The check-off made the row: gone again if untouched, else out (no row meant out).
       return touchedSince ? pantrySnapshot({ ...existing, level: "out" }) : null;
     }
-    return pantrySnapshot({ ...existing, level: payload.before.level });
+    if (before.kind !== "level") return undefined;
+    return pantrySnapshot({ ...existing, level: before.level });
   }
 
   const added = payload.added;
+  if (existing.kind !== "count") return undefined;
   const count = existing.count;
-  if (count === undefined || count.unit.trim() !== added.unit) return undefined;
+  if (count.unit.trim() !== added.unit) return undefined;
 
   // Another unit was replaced: put it back only while the row holds exactly what was bought;
   // edited since in the bought unit, the purchase is taken back out like any other.
@@ -492,11 +512,11 @@ async function undoneRow(
     payload.replacedCount !== undefined &&
     sameAmount(count.quantityDecimal, added.quantityDecimal)
   ) {
-    return pantrySnapshot({ ...existing, count: payload.before?.count });
+    return pantrySnapshot({ ...existing, count: payload.replacedCount });
   }
 
   // A row the check-off created, untouched since: it goes away again.
-  if (payload.before === null && !touchedSince) return null;
+  if (before === null && !touchedSince) return null;
   const total = Math.max(0, count.quantityDecimal - added.quantityDecimal);
   return pantrySnapshot({
     ...existing,
@@ -583,8 +603,8 @@ export const reconcileItems = query({
       kind: v.union(v.literal("count"), v.literal("level")),
       category: v.string(),
       defaultUnit: v.optional(v.string()),
-      count: schema.tables.pantryItems.validator.fields.count,
-      level: schema.tables.pantryItems.validator.fields.level,
+      count: v.optional(pantryCount),
+      level: v.optional(level),
       required: v.array(v.object({ quantityText: v.string(), unit: v.string() })),
     }),
   ),
@@ -613,8 +633,8 @@ export const reconcileItems = query({
         kind: ingredient.kind,
         category: ingredient.category,
         defaultUnit: ingredient.defaultUnit,
-        count: pantry?.count,
-        level: pantry?.level,
+        count: pantry?.kind === "count" ? pantry.count : undefined,
+        level: pantry?.kind === "level" ? pantry.level : undefined,
         required: required.sort((a, b) => byText(a.unit, b.unit)),
       });
     }

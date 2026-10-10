@@ -1,7 +1,13 @@
 import { ConvexError, v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { internal } from "./_generated/api";
+import { internalMutation, mutation, query } from "./_generated/server";
 import { findMember, requireIdentity, requireMember } from "./lib/auth";
-import { deleteHousehold, normalizeInviteCode, uniqueInviteCode } from "./lib/household";
+import {
+  deleteHousehold,
+  householdScopedTables,
+  normalizeInviteCode,
+  uniqueInviteCode,
+} from "./lib/household";
 
 function householdName(raw: string): string {
   const name = raw.trim();
@@ -140,6 +146,39 @@ export const leave = mutation({
       .first();
     if (remaining === null) {
       await deleteHousehold(ctx, householdId);
+    }
+    return null;
+  },
+});
+
+/** Rows one sweep run deletes before it hands the rest to the next run. */
+export const sweepBatch = 500;
+
+/**
+ * Deletes a deleted household's rows, table by table, at most `sweepBatch` per run, and
+ * schedules itself again until none are left. Scheduled by deleteHousehold.
+ */
+export const sweep = internalMutation({
+  args: { householdId: v.id("households") },
+  returns: v.null(),
+  handler: async (ctx, { householdId }) => {
+    if ((await ctx.db.get("households", householdId)) !== null) {
+      throw new Error("That household still exists; only a deleted household is swept.");
+    }
+    let budget = sweepBatch;
+    for (const table of householdScopedTables) {
+      const rows = await ctx.db
+        .query(table)
+        .withIndex("by_householdId", (q) => q.eq("householdId", householdId))
+        .take(budget);
+      for (const row of rows) {
+        await ctx.db.delete(table, row._id);
+      }
+      budget -= rows.length;
+      if (budget === 0) {
+        await ctx.scheduler.runAfter(0, internal.households.sweep, { householdId });
+        return null;
+      }
     }
     return null;
   },

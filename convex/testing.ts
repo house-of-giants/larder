@@ -1,15 +1,18 @@
 import { v } from "convex/values";
 import { internalMutation, internalQuery } from "./_generated/server";
+import { requireSeedAllowed } from "./lib/dev_only";
 import { uniqueInviteCode } from "./lib/household";
 
-// Dev-only helpers, callable with `bunx convex run testing:<name>` on a deployment. They
-// are internal functions, so no client can reach them. The member they create carries a
+// Dev-only helpers, callable with `bunx convex run testing:<name>` on the dev deployment.
+// They are internal functions, so no client can reach them, and they refuse to run unless
+// the deployment sets SEED_ALLOWED=true. The member they create carries a
 // made-up Clerk user id; it exists so seed.load has a household to fill before real
 // sign-in exists.
 export const createDevHousehold = internalMutation({
   args: { name: v.string(), clerkUserId: v.string() },
   returns: v.id("households"),
   handler: async (ctx, args) => {
+    requireSeedAllowed();
     const now = Date.now();
     const householdId = await ctx.db.insert("households", {
       name: args.name,
@@ -37,6 +40,7 @@ export const summary = internalQuery({
     inventoryEvents: v.number(),
   }),
   handler: async (ctx, { householdId }) => {
+    requireSeedAllowed();
     const count = async (
       table:
         | "ingredients"
