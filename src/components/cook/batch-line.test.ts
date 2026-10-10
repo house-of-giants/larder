@@ -10,8 +10,8 @@ describe("batchLine", () => {
     expect(sentence(batchLine("1", biscuits))).toBe("1 batch makes 8 biscuits.");
   });
 
-  it("writes half a batch as ½ and halves the yield", () => {
-    expect(sentence(batchLine("1/2", biscuits))).toBe("½ batch makes 4 biscuits.");
+  it("writes half a batch as the recipe would (1/2) and halves the yield", () => {
+    expect(sentence(batchLine("1/2", biscuits))).toBe("1/2 batch makes 4 biscuits.");
   });
 
   it("takes the plural for more than one batch", () => {

@@ -2,12 +2,6 @@ import { shownUnit } from "#/components/recipes/recipe-text";
 import { formatQuantity, parseQuantity } from "#/lib/quantities";
 import { pluralUnit } from "#/lib/units";
 
-/** A batch count as the squares and the caption write it: half is "½", the rest as typed. */
-export function batchFigure(multiplierText: string): string {
-  const text = multiplierText.trim();
-  return text === "1/2" ? "½" : text;
-}
-
 /** "batch" for one or less, "batches" for more. */
 export function batchWord(decimal: number): string {
   return decimal > 1 ? "batches" : "batch";
@@ -32,7 +26,7 @@ export function batchLine(
   }
   const unit = pluralUnit(figure, shownUnit(made.unit));
   return {
-    lead: `${batchFigure(multiplierText)} ${batchWord(batches)} ${batches > 1 ? "make" : "makes"}`,
+    lead: `${multiplierText.trim()} ${batchWord(batches)} ${batches > 1 ? "make" : "makes"}`,
     made: unit ? `${figure} ${unit}` : figure,
   };
 }

@@ -71,6 +71,7 @@ export function MultiplierField({
     >
       <BatchPicker
         id={id}
+        compact
         value={draft ?? text}
         pressed={text}
         error={error}
