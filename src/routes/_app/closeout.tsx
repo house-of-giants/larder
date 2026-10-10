@@ -1,5 +1,5 @@
 import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useConvex, useConvexAuth, useMutation, useQuery } from "convex/react";
+import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { api } from "../../../convex/_generated/api";
@@ -43,8 +43,7 @@ function Closeout() {
 
 function CloseoutForm({ week, foods }: { week: CurrentWeek; foods: Leftover[] }) {
   const run = useMutation(api.closeout.run);
-  const undoEvent = useMutation(api.undo.event);
-  const convex = useConvex();
+  const undoEvents = useMutation(api.undo.events);
   const navigate = useNavigate();
   // Only the overrides; everything else is all eaten.
   const [outcomes, setOutcomes] = useState<ReadonlyMap<Id<"preparedFoods">, Outcome>>(new Map());
@@ -57,28 +56,21 @@ function CloseoutForm({ week, foods }: { week: CurrentWeek; foods: Leftover[] })
 
   /** Thrown errors stay in the confirm dialog as a sentence. */
   async function close() {
-    await run({ weekId: week._id, decisions, weekOf: nextWeekOf });
-    // The closeout wrote one event per food still in the fridge, the newest events in the
-    // household; their undo is the one the Recent changes drawer offers.
-    const events =
-      foods.length === 0
-        ? []
-        : (await convex.query(api.undo.recent, { limit: foods.length }))
-            .filter((row) => row.type === "closeout" && row.canUndo)
-            .map((row) => row.eventId);
+    const { undoEventIds } = await run({ weekId: week._id, decisions, weekOf: nextWeekOf });
+    // The closeout's own events; with nothing in the fridge there is nothing to take back.
     toast(
       "Week closed. A new one is ready to plan.",
-      events.length === 0
+      undoEventIds.length === 0
         ? undefined
-        : { action: { label: "Undo", onClick: () => void takeBack(events) } },
+        : { action: { label: "Undo", onClick: () => void takeBack(undoEventIds) } },
     );
     await navigate({ to: "/week" });
   }
 
-  /** Puts the leftovers back as they were; the new week stays. */
-  async function takeBack(events: Id<"inventoryEvents">[]) {
+  /** Puts the leftovers back as they were, all or none; the new week stays. */
+  async function takeBack(eventIds: Id<"inventoryEvents">[]) {
     try {
-      for (const eventId of events) await undoEvent({ eventId });
+      await undoEvents({ eventIds });
       toast("Undone.");
     } catch (e) {
       toast.error(errorMessage(e));

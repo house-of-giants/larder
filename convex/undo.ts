@@ -1,6 +1,6 @@
 import { ConvexError, v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
-import { type QueryCtx, mutation, query } from "./_generated/server";
+import { type MutationCtx, type QueryCtx, mutation, query } from "./_generated/server";
 import { latestEvent, reversePurchase } from "./lists";
 import { amountWords } from "./lib/amounts";
 import { requireMember } from "./lib/auth";
@@ -224,53 +224,83 @@ export const event = mutation({
   returns: v.null(),
   handler: async (ctx, args) => {
     const { householdId, member } = await requireMember(ctx);
-    const target = await ctx.db.get("inventoryEvents", args.eventId);
-    if (target === null || target.householdId !== householdId) {
-      throw new ConvexError(eventNotHere);
-    }
-    if (target.type === "undo") {
-      throw new ConvexError("That is an undo already.");
-    }
-
-    if (target.refs.cookingEventId !== undefined) {
-      await undoCook(ctx, householdId, member._id, target.refs.cookingEventId);
-      return null;
-    }
-    if (await findUndo(ctx, householdId, target)) {
-      throw new ConvexError(alreadyUndone);
-    }
-
-    if (target.type === "purchase" && target.refs.listItemId !== undefined) {
-      const item = await ctx.db.get("listItems", target.refs.listItemId);
-      if (item === null || item.householdId !== householdId) {
-        throw new ConvexError(eventNotHere);
-      }
-      // The item's newest-inserted event must be this purchase; anything after it wins.
-      const latest = await latestEvent(ctx, householdId, { listItemId: item._id });
-      if (latest?._id !== target._id || item.status !== "checked") {
-        throw new ConvexError("That item changed since. Undo the newer one first.");
-      }
-      // The list's own un-check: the pantry gives back what the check-off added.
-      const ingredient =
-        item.ingredientId === undefined ? null : await ctx.db.get("ingredients", item.ingredientId);
-      if (ingredient !== null && ingredient.householdId === householdId) {
-        await reversePurchase(
-          ctx,
-          { householdId, actor: { kind: "member", memberId: member._id }, item, ingredient },
-          target,
-        );
-      }
-      await ctx.db.patch("listItems", item._id, { status: "needed", checkedAt: undefined });
-      return null;
-    }
-    if (target.type === "consumption") {
-      await undoConsumption(ctx, householdId, member._id, target);
-      return null;
-    }
-    if (target.type === "closeout") {
-      await undoCloseout(ctx, householdId, member._id, target);
-      return null;
-    }
-    throw new ConvexError("That one cannot be undone here.");
+    await undoOne(ctx, householdId, member._id, args.eventId);
+    return null;
   },
 });
+
+/**
+ * Several events undone in one transaction (a closeout's, from its toast). Each is checked
+ * as `event` checks it; one that is not this household's, or is undone already, refuses
+ * the lot and nothing is written.
+ */
+export const events = mutation({
+  args: { eventIds: v.array(v.id("inventoryEvents")) },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const { householdId, member } = await requireMember(ctx);
+    if (new Set(args.eventIds).size !== args.eventIds.length) {
+      throw new ConvexError(alreadyUndone);
+    }
+    for (const eventId of args.eventIds) {
+      await undoOne(ctx, householdId, member._id, eventId);
+    }
+    return null;
+  },
+});
+
+async function undoOne(
+  ctx: MutationCtx,
+  householdId: Id<"households">,
+  memberId: Id<"members">,
+  eventId: Id<"inventoryEvents">,
+): Promise<void> {
+  const target = await ctx.db.get("inventoryEvents", eventId);
+  if (target === null || target.householdId !== householdId) {
+    throw new ConvexError(eventNotHere);
+  }
+  if (target.type === "undo") {
+    throw new ConvexError("That is an undo already.");
+  }
+
+  if (target.refs.cookingEventId !== undefined) {
+    await undoCook(ctx, householdId, memberId, target.refs.cookingEventId);
+    return;
+  }
+  if (await findUndo(ctx, householdId, target)) {
+    throw new ConvexError(alreadyUndone);
+  }
+
+  if (target.type === "purchase" && target.refs.listItemId !== undefined) {
+    const item = await ctx.db.get("listItems", target.refs.listItemId);
+    if (item === null || item.householdId !== householdId) {
+      throw new ConvexError(eventNotHere);
+    }
+    // The item's newest-inserted event must be this purchase; anything after it wins.
+    const latest = await latestEvent(ctx, householdId, { listItemId: item._id });
+    if (latest?._id !== target._id || item.status !== "checked") {
+      throw new ConvexError("That item changed since. Undo the newer one first.");
+    }
+    // The list's own un-check: the pantry gives back what the check-off added.
+    const ingredient =
+      item.ingredientId === undefined ? null : await ctx.db.get("ingredients", item.ingredientId);
+    if (ingredient !== null && ingredient.householdId === householdId) {
+      await reversePurchase(
+        ctx,
+        { householdId, actor: { kind: "member", memberId }, item, ingredient },
+        target,
+      );
+    }
+    await ctx.db.patch("listItems", item._id, { status: "needed", checkedAt: undefined });
+    return;
+  }
+  if (target.type === "consumption") {
+    await undoConsumption(ctx, householdId, memberId, target);
+    return;
+  }
+  if (target.type === "closeout") {
+    await undoCloseout(ctx, householdId, memberId, target);
+    return;
+  }
+  throw new ConvexError("That one cannot be undone here.");
+}

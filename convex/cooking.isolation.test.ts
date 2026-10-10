@@ -117,6 +117,13 @@ const cases: Case[] = [
     args: ({ consumptionEventId }) => ({ eventId: consumptionEventId }),
     foreign: true,
   },
+  {
+    name: "undo.events",
+    kind: "mutation",
+    fn: api.undo.events,
+    args: ({ consumptionEventId }) => ({ eventIds: [consumptionEventId] }),
+    foreign: true,
+  },
 ];
 
 function publicFunctionNames() {
