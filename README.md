@@ -91,8 +91,9 @@ bun run test:e2e       # playwright against the built server (run `bun run build
 ## Deploy
 
 Vercel builds every PR as a preview against the dev Convex deployment. Production builds
-(`vercel.json`) run `convex deploy` first, which pushes `convex/` to the production
-deployment and hands the build its `VITE_CONVEX_URL`.
+(`vercel.json`) run `convex deploy --cmd 'bun run build'`: it runs the app build first,
+with the production `VITE_CONVEX_URL` injected, and pushes `convex/` to the production
+deployment only once that build succeeds.
 
 ### First production deploy
 

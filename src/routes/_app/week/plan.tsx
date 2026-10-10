@@ -63,7 +63,14 @@ function Plan() {
         </p>
       )}
 
-      <Group title="Selected" empty="Nothing picked yet.">
+      <Group
+        title="Selected"
+        empty={
+          others.length > 0 || group("candidate").length > 0
+            ? "Nothing picked yet. Pick from the recipes below."
+            : "Nothing picked yet."
+        }
+      >
         {group("selected").map((r) => (
           <SelectedRecipe
             key={r.weekRecipeId}

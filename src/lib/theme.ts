@@ -22,23 +22,38 @@ export function resolveTheme(preference: ThemePreference, systemDark: boolean): 
 }
 
 /**
- * Reads the stored choice and applies it: `.dark` on <html> (which also flips
- * `color-scheme`, see src/styles.css) and the theme-color meta. Its source text is also
- * inlined into <head> as `themeScript`, so it runs before first paint; it must use only
- * its arguments and browser globals.
+ * Applies a theme choice: `.dark` on <html> (which also flips `color-scheme`, see
+ * src/styles.css) and the theme-color meta. With no `chosen`, it reads the stored choice.
+ * Its source text is also inlined into <head> as `themeScript`, so it runs before first
+ * paint; it must use only its arguments and browser globals.
+ *
+ * The theme-color tag is this function's alone: the server renders none, so React never
+ * hydrates (and duplicates) one the script has changed. It makes the tag once and reuses it.
  */
-export function applyStoredTheme(key: string, colors: Record<Theme, string>): void {
-  let stored: string | null = null;
-  try {
-    stored = localStorage.getItem(key);
-  } catch {
-    // Private mode or blocked storage: follow the phone.
+export function applyStoredTheme(
+  key: string,
+  colors: Record<Theme, string>,
+  chosen?: string | null,
+): void {
+  let stored = chosen;
+  if (stored === undefined) {
+    try {
+      stored = localStorage.getItem(key);
+    } catch {
+      // Private mode or blocked storage: follow the phone.
+      stored = null;
+    }
   }
   const dark =
     stored === "dark" || (stored !== "light" && matchMedia("(prefers-color-scheme: dark)").matches);
   document.documentElement.classList.toggle("dark", dark);
-  const meta = document.querySelector('meta[name="theme-color"]');
-  if (meta) meta.setAttribute("content", dark ? colors.dark : colors.light);
+  let meta = document.querySelector('meta[name="theme-color"]');
+  if (!meta) {
+    meta = document.createElement("meta");
+    meta.setAttribute("name", "theme-color");
+    document.head.appendChild(meta);
+  }
+  meta.setAttribute("content", dark ? colors.dark : colors.light);
 }
 
 /** The inline head script: the function above, called with the key and colors. */

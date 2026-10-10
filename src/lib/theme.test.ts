@@ -1,12 +1,6 @@
 import { describe, expect, it } from "vitest";
-import {
-  THEME_KEY,
-  applyStoredTheme,
-  parsePreference,
-  resolveTheme,
-  themeColors,
-  themeScript,
-} from "#/lib/theme";
+import { fakeBrowser, type FakeBrowser } from "#/lib/__fixtures__/fake-browser";
+import { parsePreference, resolveTheme, themeColors, themeScript } from "#/lib/theme";
 
 describe("parsePreference", () => {
   it("keeps light and dark", () => {
@@ -32,37 +26,6 @@ describe("resolveTheme", () => {
     expect(resolveTheme("dark", false)).toBe("dark");
   });
 });
-
-/** Just enough of a browser for the head script: storage, the media query, <html>, the meta. */
-function fakeBrowser({ stored, systemDark }: { stored?: string; systemDark: boolean }) {
-  const classes = new Set<string>();
-  const meta = { content: themeColors.light };
-  const storage = new Map<string, string>(stored === undefined ? [] : [[THEME_KEY, stored]]);
-  return {
-    classes,
-    meta,
-    localStorage: { getItem: (key: string) => storage.get(key) ?? null },
-    matchMedia: (query: string) => ({
-      matches: query === "(prefers-color-scheme: dark)" && systemDark,
-    }),
-    document: {
-      documentElement: {
-        classList: {
-          toggle: (name: string, on: boolean) => {
-            if (on) classes.add(name);
-            else classes.delete(name);
-          },
-        },
-      },
-      querySelector: (selector: string) =>
-        selector === 'meta[name="theme-color"]'
-          ? { setAttribute: (_: string, value: string) => (meta.content = value) }
-          : null,
-    },
-  };
-}
-
-type FakeBrowser = ReturnType<typeof fakeBrowser>;
 
 // The inline script is the function's own source text, so run that text, not the import:
 // it must not lean on anything outside itself.
@@ -90,15 +53,13 @@ describe("the head script", () => {
       browser.classes.add(dark ? "stale" : "dark");
       runScript(browser);
       expect(browser.classes.has("dark")).toBe(dark);
-      expect(browser.meta.content).toBe(dark ? themeColors.dark : themeColors.light);
+      expect(browser.themeColors()).toEqual([dark ? themeColors.dark : themeColors.light]);
     });
   }
 
   it("falls back to the phone when storage throws (private mode)", () => {
     const browser = fakeBrowser({ systemDark: true });
-    browser.localStorage.getItem = () => {
-      throw new Error("SecurityError");
-    };
+    browser.state.storageThrows = true;
     runScript(browser);
     expect(browser.classes.has("dark")).toBe(true);
   });
@@ -118,7 +79,15 @@ describe("the head script", () => {
     }
   });
 
-  it("is the same code the app calls at runtime", () => {
-    expect(themeScript).toContain(applyStoredTheme.toString());
+  // The server renders no theme-color tag (React would add a second one when hydrating a
+  // tag the script had changed); the script owns exactly one.
+  it("makes the one theme-color tag, then keeps reusing it", () => {
+    const browser = fakeBrowser({ stored: "dark", systemDark: false });
+    runScript(browser);
+    expect(browser.themeColors()).toEqual([themeColors.dark]);
+    browser.flipSystem(true);
+    runScript(browser);
+    runScript(browser);
+    expect(browser.themeColors()).toEqual([themeColors.dark]);
   });
 });

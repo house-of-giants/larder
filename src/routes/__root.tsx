@@ -13,7 +13,8 @@ import { ErrorScreen, NotFound } from "#/components/route-states";
 import { Toaster } from "#/components/ui/sonner";
 import { clerkConfigured } from "#/lib/clerk-config";
 import { convex } from "#/lib/convex";
-import { themeColors, themeScript } from "#/lib/theme";
+import { useThemeSync } from "#/hooks/use-theme";
+import { themeScript } from "#/lib/theme";
 import { OfflineIdentityProvider } from "#/offline/identity";
 import { registerServiceWorker } from "#/offline/register-sw";
 import appCss from "#/styles.css?url";
@@ -32,8 +33,6 @@ export const Route = createRootRoute({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
-      // The head script below switches this to the dark color when the theme is dark.
-      { name: "theme-color", content: themeColors.light },
       // Installed from the home screen, the app opens without browser chrome.
       { name: "apple-mobile-web-app-capable", content: "yes" },
       { name: "mobile-web-app-capable", content: "yes" },
@@ -48,7 +47,8 @@ export const Route = createRootRoute({
       { rel: "apple-touch-icon", sizes: "180x180", href: "/apple-touch-icon.png" },
       { rel: "manifest", href: "/manifest.webmanifest" },
     ],
-    // Applies the saved theme before the first paint, so dark mode never flashes light.
+    // Applies the saved theme before the first paint, so dark mode never flashes light. It
+    // also writes the theme-color meta, which is deliberately not in the list above.
     scripts: [{ children: themeScript }],
   }),
   shellComponent: RootDocument,
@@ -64,6 +64,8 @@ export const Route = createRootRoute({
 function RootDocument({ children }: { children: ReactNode }) {
   // Effects run only in the browser, so the server render never touches the worker.
   useEffect(registerServiceWorker, []);
+  // On System, follows the phone as it flips; picks up a choice made in another tab.
+  useThemeSync();
   // Undefined only when the root loader itself failed; the error screen needs no providers.
   const configured = useMatch({
     from: rootRouteId,
