@@ -1,4 +1,4 @@
-import { useId, useState, type ReactNode } from "react";
+import { useId, useState, type ReactNode, type Ref } from "react";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { Input } from "#/components/ui/input";
 import { resolveIngredient } from "#/lib/aliases";
@@ -15,6 +15,9 @@ type IngredientPickerProps = {
   onCreate?: (name: string) => Promise<Id<"ingredients">>;
   placeholder?: string;
   invalid?: boolean;
+  /** Choices in the flow under the field, with no shadow, instead of floating over the page. */
+  inline?: boolean;
+  ref?: Ref<HTMLDivElement>;
 };
 
 /**
@@ -29,6 +32,8 @@ export function IngredientPicker({
   onCreate,
   placeholder = "Find an ingredient",
   invalid = false,
+  inline = false,
+  ref,
 }: IngredientPickerProps) {
   const listId = useId();
   // null while closed: the field then shows the picked ingredient's name.
@@ -77,6 +82,7 @@ export function IngredientPicker({
 
   return (
     <div
+      ref={ref}
       className="relative"
       // Close when focus leaves the field and its choices, not when it moves between them.
       onBlur={(e) => {
@@ -125,7 +131,10 @@ export function IngredientPicker({
         <ul
           id={listId}
           aria-label="Matching ingredients"
-          className="absolute inset-x-0 top-full z-20 mt-1 max-h-64 overflow-auto rounded-md border bg-popover py-1 text-popover-foreground shadow-md"
+          className={cn(
+            "mt-1 overflow-auto rounded-md border bg-popover py-1 text-popover-foreground",
+            inline ? "max-h-56" : "absolute inset-x-0 top-full z-20 max-h-64 shadow-md",
+          )}
         >
           {matches.map((o, index) => (
             <li key={o._id}>
