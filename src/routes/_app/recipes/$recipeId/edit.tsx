@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
-import { PageSkeleton } from "#/components/page-skeleton";
+import { FormSkeleton } from "#/components/page-skeleton";
 import { draftFromRecipe } from "#/components/recipes/recipe-draft";
 import { RecipeEditor } from "#/components/recipes/recipe-editor";
 import { RecipeNotHere } from "#/components/recipes/recipe-not-here";
@@ -14,7 +14,7 @@ function EditRecipe() {
   const { recipeId } = Route.useParams();
   const recipe = useQuery(api.recipes.get, { id: recipeId });
 
-  if (recipe === undefined) return <PageSkeleton />;
+  if (recipe === undefined) return <FormSkeleton fields={5} />;
   if (recipe === null) return <RecipeNotHere />;
 
   return (

@@ -5,7 +5,9 @@ import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { api } from "../../../convex/_generated/api";
 import { ConfirmDialog } from "#/components/confirm-dialog";
-import { PageSkeleton } from "#/components/page-skeleton";
+import { FormSkeleton } from "#/components/page-skeleton";
+import { InstallHint } from "#/components/settings/install-hint";
+import { ThemeSetting } from "#/components/settings/theme-setting";
 import { Button } from "#/components/ui/button";
 import { Input } from "#/components/ui/input";
 import { Label } from "#/components/ui/label";
@@ -23,7 +25,7 @@ export const Route = createFileRoute("/_app/settings")({
 function Settings() {
   const data = useHousehold();
   // The layout only renders this once the household exists; this covers the gap after leaving.
-  if (!data) return <PageSkeleton />;
+  if (!data) return <FormSkeleton fields={3} />;
 
   const { household, members } = data;
   const lastOneHere = members.length === 1;
@@ -58,6 +60,10 @@ function Settings() {
       <AgentAccess />
 
       <UndoDrawer />
+
+      <ThemeSetting />
+
+      <InstallHint />
 
       <Separator />
 
@@ -143,7 +149,7 @@ async function copy(text: string, done: string) {
     await navigator.clipboard.writeText(text);
     toast(done);
   } catch {
-    toast.error("Could not copy. Press on it and copy it by hand.");
+    toast.error("Could not copy. Press and hold the link to copy it.");
   }
 }
 

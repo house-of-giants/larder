@@ -5,7 +5,7 @@ import { type ReactNode, useState } from "react";
 import { toast } from "sonner";
 import { api } from "../../../../convex/_generated/api";
 import type { Id } from "../../../../convex/_generated/dataModel";
-import { PageSkeleton } from "#/components/page-skeleton";
+import { PlanSkeleton } from "#/components/page-skeleton";
 import type { IngredientOption } from "#/components/recipes/recipe-text";
 import { Button } from "#/components/ui/button";
 import { AdaptationSheet } from "#/components/week/adaptation-sheet";
@@ -30,7 +30,7 @@ function Plan() {
   const ingredients = useQuery(api.ingredients.list, isAuthenticated ? {} : "skip");
 
   if (week === undefined || recipes === undefined || ingredients === undefined) {
-    return <PageSkeleton />;
+    return <PlanSkeleton />;
   }
 
   if (week === null || (week.status !== "planning" && week.status !== "shopping")) {
@@ -96,7 +96,21 @@ function Plan() {
           />
         ))}
       </Group>
-      <Group title="All recipes" empty="Every recipe is in this week.">
+      <Group
+        title="All recipes"
+        empty={
+          recipes.length === 0 ? (
+            <>
+              No recipes yet.{" "}
+              <Link to="/recipes/new" className="text-primary underline-offset-4 hover:underline">
+                Add one
+              </Link>
+            </>
+          ) : (
+            "Every recipe is in this week."
+          )
+        }
+      >
         {others.map((r) => (
           <RecipeRow key={r._id} weekId={week._id} recipeId={r._id} name={r.name} />
         ))}
@@ -111,7 +125,7 @@ function Group({
   children,
 }: {
   title: string;
-  empty: string;
+  empty: ReactNode;
   children: ReactNode[];
 }) {
   const headingId = `plan-${title.toLowerCase().replace(/\s+/g, "-")}`;

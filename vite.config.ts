@@ -4,9 +4,7 @@ import viteReact from "@vitejs/plugin-react";
 import { nitro } from "nitro/vite";
 import { defineConfig } from "vite";
 import { VitePWA } from "vite-plugin-pwa";
-
-// Background token (oklch 0.97 0.008 85), the same color as the theme-color meta.
-const paper = "#f6f3ec";
+import { manifest } from "./src/lib/manifest.ts";
 
 export default defineConfig({
   resolve: { tsconfigPaths: true },
@@ -31,26 +29,7 @@ export default defineConfig({
           options.outDir = config.environments.client.build.outDir;
         },
       },
-      manifest: {
-        name: "Larder",
-        short_name: "Larder",
-        description: "The week's cooking, the pantry, and the list.",
-        start_url: "/",
-        scope: "/",
-        display: "standalone",
-        theme_color: paper,
-        background_color: paper,
-        icons: [
-          { src: "/icon-192.png", sizes: "192x192", type: "image/png" },
-          { src: "/icon-512.png", sizes: "512x512", type: "image/png" },
-          {
-            src: "/icon-maskable-512.png",
-            sizes: "512x512",
-            type: "image/png",
-            purpose: "maskable",
-          },
-        ],
-      },
+      manifest,
       workbox: {
         // The app shell: every built client asset, precached.
         globPatterns: ["**/*.{js,css,svg,png,webmanifest}"],

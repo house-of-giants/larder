@@ -54,7 +54,7 @@ export function ListRow({
               ? "border-primary bg-primary text-primary-foreground"
               : putBack
                 ? "border-dashed border-muted-foreground/50 text-muted-foreground"
-                : "border-muted-foreground/60",
+                : "border-muted-foreground",
           )}
         >
           {checked && <Check className="size-5" strokeWidth={3} />}

@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useConvexAuth, useQuery } from "convex/react";
 import { useMemo, useState } from "react";
 import { api } from "../../../convex/_generated/api";
-import { PageSkeleton } from "#/components/page-skeleton";
+import { PantrySkeleton } from "#/components/page-skeleton";
 import { AddToPantry } from "#/components/pantry/add-to-pantry";
 import { locationLabels } from "#/components/pantry/labels";
 import type { PantryRowData } from "#/components/pantry/pantry-data";
@@ -26,7 +26,7 @@ function Pantry() {
     [ingredients],
   );
 
-  if (rows === undefined || ingredients === undefined) return <PageSkeleton />;
+  if (rows === undefined || ingredients === undefined) return <PantrySkeleton />;
 
   const query = normalizeName(search);
   const matches = (row: PantryRowData) =>

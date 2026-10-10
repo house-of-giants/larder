@@ -2,8 +2,9 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
-/* Dark mode is class-based: `dark:` and the dark tokens apply under a `.dark` ancestor,
-   which Phase 6's toggle sets. Until then the app is light, native controls included. */
+/* Dark mode is class-based: `dark:` and the dark tokens apply under a `.dark` ancestor.
+   The head script in src/lib/theme.ts puts `.dark` on <html> before first paint, from
+   the choice in Settings or, on System, the phone's own setting. */
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme inline {
@@ -55,7 +56,7 @@
   --muted-foreground: oklch(0.45 0.02 280);
   --accent: oklch(0.9 0.05 150);
   --accent-foreground: oklch(0.3 0.08 150);
-  --destructive: oklch(0.577 0.2 25);
+  --destructive: oklch(0.55 0.2 25);
   --border: oklch(0.85 0.018 85);
   --input: oklch(0.88 0.015 85);
   --ring: oklch(0.47 0.1 150);
@@ -73,7 +74,7 @@
   --secondary: oklch(0.26 0.025 280);
   --secondary-foreground: oklch(0.92 0.01 85);
   --muted: oklch(0.24 0.02 280);
-  --muted-foreground: oklch(0.6 0.02 85);
+  --muted-foreground: oklch(0.68 0.02 85);
   --accent: oklch(0.32 0.06 150);
   --accent-foreground: oklch(0.9 0.06 150);
   --destructive: oklch(0.65 0.2 25);
@@ -107,7 +108,10 @@
     *::before,
     *::after {
       animation-duration: 0.01ms !important;
+      /* An infinite pulse at 0.01ms would flicker; run it once and hold still. */
+      animation-iteration-count: 1 !important;
       transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
     }
   }
 }

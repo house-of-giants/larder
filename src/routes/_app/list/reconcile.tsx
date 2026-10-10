@@ -1,9 +1,9 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { useState } from "react";
 import { api } from "../../../../convex/_generated/api";
 import type { Id } from "../../../../convex/_generated/dataModel";
-import { PageSkeleton } from "#/components/page-skeleton";
+import { ReconcileSkeleton } from "#/components/page-skeleton";
 import { categoryLabels } from "#/components/pantry/labels";
 import { ReconcileRow, type ReconcileItem } from "#/components/reconcile/reconcile-row";
 import { Button } from "#/components/ui/button";
@@ -21,7 +21,7 @@ function Reconcile() {
     isAuthenticated && week ? { weekId: week._id } : "skip",
   );
 
-  if (week === undefined || (week !== null && items === undefined)) return <PageSkeleton />;
+  if (week === undefined || (week !== null && items === undefined)) return <ReconcileSkeleton />;
 
   // Only what the pantry already holds needs a second look; the rest is bought in full.
   const onHand = (items ?? []).filter((i) => i.count !== undefined || i.level !== undefined);
@@ -35,7 +35,12 @@ function Reconcile() {
         </p>
       </div>
       {week === null ? (
-        <p className="text-muted-foreground">No week started.</p>
+        <div className="flex flex-col items-start gap-4">
+          <p className="text-muted-foreground">No week started.</p>
+          <Button asChild variant="outline">
+            <Link to="/week">This week</Link>
+          </Button>
+        </div>
       ) : (
         <ReconcileList weekId={week._id} items={onHand} />
       )}
