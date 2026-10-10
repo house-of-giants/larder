@@ -1,21 +1,26 @@
 import { useMutation } from "convex/react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { api } from "../../../convex/_generated/api";
 import { ConfirmDialog } from "#/components/confirm-dialog";
-import { Button } from "#/components/ui/button";
+import { Pill } from "#/components/kit/pill";
 import { amountWords } from "#/lib/amounts";
-import { madeAgo } from "#/lib/days-ago";
+import { madeAgoLine } from "#/lib/days-ago";
 import { errorMessage } from "#/lib/errors";
 import { AteSomeSheet } from "./ate-some-sheet";
-import { type Leftover, placeLabels } from "./types";
+import type { Leftover } from "./types";
 
-/** One thing in the fridge or freezer: how much is left, where, and since when. */
+/**
+ * One thing in the fridge or freezer, as a row: the name, when it was made and where, how
+ * much is left in tomato, then what to do with it. Ate one is the pale pill; the rest are
+ * text actions.
+ */
 export function LeftoverCard({ food, now }: { food: Leftover; now: number }) {
   const consume = useMutation(api.leftovers.consume);
   const discard = useMutation(api.leftovers.discard);
   const move = useMutation(api.leftovers.move);
   const [ateSome, setAteSome] = useState(false);
+  const ateOpener = useRef<HTMLButtonElement>(null);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const other = food.location === "fridge" ? "freezer" : "fridge";
@@ -34,24 +39,23 @@ export function LeftoverCard({ food, now }: { food: Leftover; now: number }) {
   }
 
   return (
-    <li className="flex flex-col gap-3 rounded-lg border bg-card px-4 py-3">
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex min-w-0 flex-col gap-0.5">
-          <h2 className="font-medium">{food.name}</h2>
-          <p className="text-sm text-muted-foreground">{madeAgo(food.madeAt, now)}</p>
-        </div>
-        <span className="shrink-0 rounded-full bg-secondary px-2.5 py-0.5 text-xs text-secondary-foreground">
-          {placeLabels[food.location]}
-        </span>
-      </div>
-      <p className="text-2xl font-semibold tracking-tight">
-        <RemainingWords food={food} />
-        <span className="ml-1.5 text-base font-normal text-muted-foreground">left</span>
+    <li className="flex flex-col border-b border-border py-3 last:border-b-0">
+      <h2 className="text-body font-normal">{food.name}</h2>
+      <p className="mt-0.5 text-caption text-muted-foreground">
+        {madeAgoLine(food.madeAt, now, food.location)}
       </p>
-      <div className="flex flex-wrap gap-2" aria-describedby={error ? errorId : undefined}>
-        <Button
-          type="button"
-          className="h-11"
+      <p className="mt-1.5 text-body">
+        <span className="font-semibold text-primary">
+          <RemainingWords food={food} />
+        </span>{" "}
+        left
+      </p>
+      <div
+        className="mt-2 -mb-1 flex flex-wrap items-center gap-x-1 gap-y-1"
+        aria-describedby={error ? errorId : undefined}
+      >
+        <Pill
+          variant="pale"
           disabled={pending}
           onClick={() =>
             run(async () => {
@@ -61,20 +65,12 @@ export function LeftoverCard({ food, now }: { food: Leftover; now: number }) {
           }
         >
           Ate one
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          className="h-11"
-          disabled={pending}
-          onClick={() => setAteSome(true)}
-        >
-          Ate...
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          className="h-11"
+        </Pill>
+        <Pill ref={ateOpener} variant="text" disabled={pending} onClick={() => setAteSome(true)}>
+          Ate…
+        </Pill>
+        <Pill
+          variant="text"
           disabled={pending}
           onClick={() =>
             run(async () => {
@@ -84,17 +80,12 @@ export function LeftoverCard({ food, now }: { food: Leftover; now: number }) {
           }
         >
           To the {other}
-        </Button>
+        </Pill>
         <ConfirmDialog
           trigger={
-            <Button
-              type="button"
-              variant="ghost"
-              className="h-11 text-muted-foreground"
-              disabled={pending}
-            >
+            <Pill variant="text" className="text-destructive" disabled={pending}>
               Toss
-            </Button>
+            </Pill>
           }
           title={`Toss ${food.name}?`}
           description={`${amountWords(food.remaining.text, food.remaining.decimal, food.unit)} left. It comes off the leftovers.`}
@@ -107,11 +98,11 @@ export function LeftoverCard({ food, now }: { food: Leftover; now: number }) {
         />
       </div>
       {error && (
-        <p id={errorId} role="alert" className="text-sm text-destructive">
+        <p id={errorId} role="alert" className="mt-1 text-caption text-destructive">
           {error}
         </p>
       )}
-      <AteSomeSheet food={food} open={ateSome} onOpenChange={setAteSome} />
+      <AteSomeSheet food={food} open={ateSome} onOpenChange={setAteSome} opener={ateOpener} />
     </li>
   );
 }

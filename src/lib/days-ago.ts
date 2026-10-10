@@ -15,3 +15,9 @@ export function madeAgo(madeAt: number, now: number): string {
   if (days === 1) return "Made yesterday";
   return `Made ${days} days ago`;
 }
+
+/** A leftover's caption: when, then where, in one quiet line ("made 2 days ago · fridge"). */
+export function madeAgoLine(madeAt: number, now: number, location: string): string {
+  const when = madeAgo(madeAt, now);
+  return `${when.charAt(0).toLowerCase()}${when.slice(1)} · ${location}`;
+}

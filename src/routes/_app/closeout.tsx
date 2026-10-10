@@ -8,7 +8,7 @@ import { ConfirmDialog } from "#/components/confirm-dialog";
 import { CloseoutCard, type Outcome } from "#/components/leftovers/closeout-card";
 import type { Leftover } from "#/components/leftovers/types";
 import { CloseoutSkeleton } from "#/components/page-skeleton";
-import { Button } from "#/components/ui/button";
+import { Pill } from "#/components/kit/pill";
 import type { CurrentWeek } from "#/components/week/labels";
 import { errorMessage } from "#/lib/errors";
 import { localIsoDate, weekOfLabel } from "#/lib/week-dates";
@@ -25,16 +25,16 @@ function Closeout() {
   if (week === undefined || foods === undefined) return <CloseoutSkeleton />;
   if (week === null || week.status === "planning") {
     return (
-      <main className="mx-auto flex max-w-2xl flex-col gap-4 px-4 py-6">
-        <h1 className="text-2xl font-semibold tracking-tight">Close the week</h1>
-        <p className="text-muted-foreground">
+      <main className="mx-auto flex max-w-2xl flex-col items-start px-5 pt-3">
+        <h1 className="font-display text-display">Close the week</h1>
+        <p className="mt-1 text-body text-muted-foreground">
           {week === null
             ? "No week open."
             : "Nothing to close yet. This week is still being planned."}
         </p>
-        <Button asChild variant="outline" className="self-start">
+        <Pill variant="text" asChild className="-ml-5">
           <Link to="/week">Back to the week</Link>
-        </Button>
+        </Pill>
       </main>
     );
   }
@@ -85,18 +85,16 @@ function CloseoutForm({ week, foods }: { week: CurrentWeek; foods: Leftover[] })
         : `Count the leftovers as eaten and start the ${nextWeek}?`;
 
   return (
-    <main className="mx-auto flex max-w-2xl flex-col gap-6 px-4 py-6">
-      <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-semibold tracking-tight">Close the week</h1>
-        <p className="text-sm text-muted-foreground">
-          {weekOfLabel(week.weekOf)}.{" "}
-          {foods.length === 0
-            ? "Nothing left in the fridge to sort."
-            : "Everything counts as eaten unless you say otherwise."}
-        </p>
-      </div>
+    <main className="mx-auto flex min-h-[calc(100dvh-3rem-4rem-2px-env(safe-area-inset-top)-env(safe-area-inset-bottom))] max-w-2xl flex-col px-5 pt-3">
+      <h1 className="font-display text-display">Close the week</h1>
+      <p className="mt-1 text-caption text-muted-foreground">
+        {weekOfLabel(week.weekOf)}.{" "}
+        {foods.length === 0
+          ? "Nothing left in the fridge to sort."
+          : "Everything counts as eaten unless you say otherwise."}
+      </p>
       {foods.length > 0 && (
-        <ul className="flex flex-col gap-3">
+        <ul className="mt-1 flex flex-col">
           {foods.map((food) => (
             <CloseoutCard
               key={food._id}
@@ -109,17 +107,20 @@ function CloseoutForm({ week, foods }: { week: CurrentWeek; foods: Leftover[] })
           ))}
         </ul>
       )}
-      <ConfirmDialog
-        trigger={
-          <Button type="button" size="lg" className="h-12 text-base">
-            Close the week
-          </Button>
-        }
-        title="Close the week?"
-        description={question}
-        confirmLabel="Close the week"
-        onConfirm={close}
-      />
+      {/* The screen's one pill, pinned over the tab bar on a paper fade (the week's pattern). */}
+      <div className="sticky bottom-[calc(4rem+1px+env(safe-area-inset-bottom))] z-10 -mx-5 mt-auto flex flex-col items-center bg-linear-to-b from-transparent to-background to-40% px-5 pt-9 pb-3">
+        <ConfirmDialog
+          trigger={
+            <Pill type="button" className="min-w-50">
+              Close the week
+            </Pill>
+          }
+          title="Close the week?"
+          description={question}
+          confirmLabel="Close the week"
+          onConfirm={close}
+        />
+      </div>
     </main>
   );
 }

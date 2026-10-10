@@ -1,17 +1,11 @@
 import { useMutation } from "convex/react";
-import { useState, type FormEvent } from "react";
+import { type FormEvent, type RefObject, useState } from "react";
 import { toast } from "sonner";
 import { api } from "../../../convex/_generated/api";
 import { BatchPicker } from "#/components/cook/batch-picker";
+import { HalfSheet } from "#/components/kit/half-sheet";
+import { Pill } from "#/components/kit/pill";
 import { shownUnit } from "#/components/recipes/recipe-text";
-import { Button } from "#/components/ui/button";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "#/components/ui/sheet";
 import { amountWords } from "#/lib/amounts";
 import { errorMessage } from "#/lib/errors";
 import { parseQuantity } from "#/lib/quantities";
@@ -19,36 +13,63 @@ import { pluralUnit } from "#/lib/units";
 import { RemainingWords } from "./leftover-card";
 import type { Leftover } from "./types";
 
-/** "Ate..." for more than one at a time, or half of one. */
+/** "Ate…" for more than one at a time, or half of one, in a half sheet. */
 export function AteSomeSheet({
   food,
   open,
   onOpenChange,
+  opener,
 }: {
   food: Leftover;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  opener: RefObject<HTMLElement | null>;
 }) {
+  const formId = `ate-${food._id}-form`;
+  const [pending, setPending] = useState(false);
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" className="mx-auto w-full max-w-2xl rounded-t-xl">
-        <SheetHeader>
-          <SheetTitle>How many did you eat?</SheetTitle>
-          <SheetDescription>
-            {food.name}: <RemainingWords food={food} /> left
-          </SheetDescription>
-        </SheetHeader>
-        {open && <AteSomeForm food={food} close={() => onOpenChange(false)} />}
-      </SheetContent>
-    </Sheet>
+    <HalfSheet
+      open={open}
+      onOpenChange={onOpenChange}
+      opener={opener}
+      title="How many did you eat?"
+      note={
+        <>
+          {food.name}: <RemainingWords food={food} /> left
+        </>
+      }
+      footer={
+        <Pill sheet type="submit" form={formId} disabled={pending}>
+          Save
+        </Pill>
+      }
+    >
+      {open && (
+        <AteSomeForm
+          id={formId}
+          food={food}
+          onPendingChange={setPending}
+          close={() => onOpenChange(false)}
+        />
+      )}
+    </HalfSheet>
   );
 }
 
-function AteSomeForm({ food, close }: { food: Leftover; close: () => void }) {
+function AteSomeForm({
+  id: formId,
+  food,
+  onPendingChange,
+  close,
+}: {
+  id: string;
+  food: Leftover;
+  onPendingChange: (pending: boolean) => void;
+  close: () => void;
+}) {
   const consume = useMutation(api.leftovers.consume);
   const [quantityText, setQuantityText] = useState("1");
   const [error, setError] = useState<string | null>(null);
-  const [pending, setPending] = useState(false);
   const id = `ate-${food._id}`;
 
   async function submit(e: FormEvent<HTMLFormElement>) {
@@ -58,7 +79,7 @@ function AteSomeForm({ food, close }: { food: Leftover; close: () => void }) {
       setError("Use a number like 1 or 1/2.");
       return;
     }
-    setPending(true);
+    onPendingChange(true);
     setError(null);
     try {
       const { remaining } = await consume({ preparedFoodId: food._id, quantityText });
@@ -70,16 +91,13 @@ function AteSomeForm({ food, close }: { food: Leftover; close: () => void }) {
       close();
     } catch (err) {
       setError(errorMessage(err));
-      setPending(false);
+    } finally {
+      onPendingChange(false);
     }
   }
 
   return (
-    <form
-      onSubmit={submit}
-      noValidate
-      className="flex flex-col gap-4 px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]"
-    >
+    <form id={formId} onSubmit={submit} noValidate className="flex flex-col pb-2">
       <BatchPicker
         id={id}
         label="Ate"
@@ -91,9 +109,6 @@ function AteSomeForm({ food, close }: { food: Leftover; close: () => void }) {
         }}
         error={error}
       />
-      <Button type="submit" size="lg" className="h-12" disabled={pending}>
-        Save
-      </Button>
     </form>
   );
 }

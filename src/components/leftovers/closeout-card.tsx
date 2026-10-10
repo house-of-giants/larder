@@ -1,6 +1,6 @@
-import { RemainingWords } from "./leftover-card";
 import { cn } from "#/lib/utils";
-import { type Leftover, placeLabels } from "./types";
+import { RemainingWords } from "./leftover-card";
+import type { Leftover } from "./types";
 
 export type Outcome = "eaten" | "keep" | "tossed";
 
@@ -10,7 +10,11 @@ const outcomes: { value: Outcome; label: string }[] = [
   { value: "tossed", label: "Tossed" },
 ];
 
-/** One leftover at closeout, with its three-way say. All eaten unless someone says otherwise. */
+/**
+ * One leftover at closeout, as a row: the name, how much is left and where, then its
+ * three-way say as chips (radios underneath, so arrow keys move between them). All eaten
+ * unless someone says otherwise.
+ */
 export function CloseoutCard({
   food,
   outcome,
@@ -22,39 +26,47 @@ export function CloseoutCard({
 }) {
   const name = `closeout-${food._id}`;
   return (
-    <li className="flex flex-col gap-3 rounded-lg border bg-card px-4 py-3">
-      <div className="flex items-baseline justify-between gap-3">
-        <h2 className="min-w-0 font-medium">{food.name}</h2>
-        <span className="shrink-0 text-sm text-muted-foreground">
-          <RemainingWords food={food} />, {placeLabels[food.location].toLowerCase()}
-        </span>
-      </div>
-      <fieldset className="grid grid-cols-3 gap-1 rounded-lg bg-muted p-1">
+    <li className="flex flex-col border-b border-border py-3 last:border-b-0">
+      <h2 className="text-body font-normal">{food.name}</h2>
+      <p className="mt-0.5 text-caption text-muted-foreground">
+        <span className="font-semibold text-primary">
+          <RemainingWords food={food} />
+        </span>{" "}
+        left · {food.location}
+      </p>
+      <fieldset className="m-0 mt-1 flex min-w-0 gap-2 border-0 p-0">
         <legend className="sr-only">What happened to {food.name}</legend>
-        {outcomes.map((o) => (
-          <label
-            key={o.value}
-            className={cn(
-              "flex min-h-11 cursor-pointer items-center justify-center rounded-md px-2 text-center text-sm has-[:focus-visible]:ring-[3px] has-[:focus-visible]:ring-ring/50",
-              outcome === o.value
-                ? "bg-background font-medium text-foreground shadow-xs"
-                : "text-muted-foreground",
-            )}
-          >
-            <input
-              type="radio"
-              name={name}
-              value={o.value}
-              checked={outcome === o.value}
-              onChange={() => onChange(o.value)}
-              className="sr-only"
-            />
-            {o.label}
-          </label>
-        ))}
+        {outcomes.map((o) => {
+          const on = outcome === o.value;
+          return (
+            <label key={o.value} className="group flex min-h-11 cursor-pointer items-center">
+              <input
+                type="radio"
+                name={name}
+                value={o.value}
+                checked={on}
+                onChange={() => onChange(o.value)}
+                className="peer sr-only"
+              />
+              <span
+                className={cn(
+                  "rounded-sm border px-2.5 py-1.5 text-caption whitespace-nowrap",
+                  "peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-ring peer-focus-visible:outline-solid",
+                  on
+                    ? "border-transparent bg-accent font-semibold text-accent-foreground"
+                    : "border-border bg-card text-muted-foreground group-hover:text-foreground",
+                )}
+              >
+                {o.label}
+              </span>
+            </label>
+          );
+        })}
       </fieldset>
       {outcome === "keep" && (
-        <p className="text-sm text-muted-foreground">Stays in the {food.location} for next week.</p>
+        <p className="text-caption text-muted-foreground">
+          Stays in the {food.location} for next week.
+        </p>
       )}
     </li>
   );
