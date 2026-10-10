@@ -142,6 +142,9 @@ const clerkAppearance = {
     colorBorder: "var(--border)",
     colorRing: "var(--ring)",
     colorDanger: "var(--destructive)",
+    // One accent: Clerk's own green and orange would be a second and third.
+    colorSuccess: "var(--primary)",
+    colorWarning: "var(--accent-foreground)",
     fontFamily: "var(--font-sans)",
     borderRadius: "0.625rem",
   },
