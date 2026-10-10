@@ -46,7 +46,7 @@ function RecipeView({ recipe }: { recipe: Recipe }) {
   return (
     <main className="mx-auto flex max-w-2xl flex-col px-5 pt-3 pb-24">
       <header className="flex flex-col">
-        <h1 className="font-display text-display text-balance">{recipe.name}</h1>
+        <h1 className="font-display text-display">{recipe.name}</h1>
         {recipe.yield && (
           <p className="mt-1.5 text-subhead">
             Makes <Amount quantityText={recipe.yield.quantityText} unit={recipe.yield.unit} />

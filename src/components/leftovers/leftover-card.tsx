@@ -51,11 +51,12 @@ export function LeftoverCard({ food, now }: { food: Leftover; now: number }) {
         left
       </p>
       <div
-        className="mt-2 -mb-1 flex flex-wrap items-center gap-x-1 gap-y-1"
+        className="mt-2 -mb-1 flex flex-wrap items-center gap-y-1"
         aria-describedby={error ? errorId : undefined}
       >
         <Pill
           variant="pale"
+          className="mr-1"
           disabled={pending}
           onClick={() =>
             run(async () => {
@@ -71,6 +72,7 @@ export function LeftoverCard({ food, now }: { food: Leftover; now: number }) {
         </Pill>
         <Pill
           variant="text"
+          className="px-2.5"
           disabled={pending}
           onClick={() =>
             run(async () => {
@@ -83,7 +85,7 @@ export function LeftoverCard({ food, now }: { food: Leftover; now: number }) {
         </Pill>
         <ConfirmDialog
           trigger={
-            <Pill variant="text" className="text-destructive" disabled={pending}>
+            <Pill variant="text" className="px-2.5 text-destructive" disabled={pending}>
               Toss
             </Pill>
           }

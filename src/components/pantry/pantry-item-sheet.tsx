@@ -113,7 +113,7 @@ export function PantryItemSheet({
               disabled={pending || isOut(row)}
               onClick={() => run(() => markOut({ ingredientId: row.ingredientId }))}
             >
-              Out
+              {isOut(row) ? "Out" : "Mark it out"}
             </Pill>
           )}
           <StockForm
