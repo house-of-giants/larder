@@ -376,6 +376,26 @@ describe("households.refreshName", () => {
     );
   });
 
+  it("never puts an email in place of a saved name", async () => {
+    const t = newTest();
+    const named = t.withIdentity({ ...bare("Alice"), name: "Alice Moreau" });
+    await named.mutation(api.households.create, { name: "Elm Street" });
+    await t
+      .withIdentity({ ...bare("Alice"), email: "alice@example.test" })
+      .mutation(api.households.refreshName, {});
+    expect((await named.query(api.households.current, {}))?.members[0].name).toBe("Alice Moreau");
+  });
+
+  it.each(["", "   "])("keeps the saved name when the claim is blank (%j)", async (blank) => {
+    const t = newTest();
+    const named = t.withIdentity({ ...bare("Alice"), name: "Alice Moreau" });
+    await named.mutation(api.households.create, { name: "Elm Street" });
+    await t
+      .withIdentity({ ...bare("Alice"), name: blank })
+      .mutation(api.households.refreshName, {});
+    expect((await named.query(api.households.current, {}))?.members[0].name).toBe("Alice Moreau");
+  });
+
   it("asks a caller with no household to join one first", async () => {
     const t = newTest();
     await expect(

@@ -116,15 +116,16 @@ export const join = mutation({
 /**
  * Brings the caller's member name up to date with the sign-in: a member who joined before
  * the Clerk token carried a name claim gets it on their next visit. Only the caller's own
- * row; a sign-in with no name leaves the one there.
+ * row, and only a non-blank name claim; an email-only or blank claim leaves the one there.
  */
 export const refreshName = mutation({
   args: {},
   returns: v.null(),
   handler: async (ctx) => {
     const { identity, member } = await requireMember(ctx);
-    const name = identity.name ?? identity.email;
-    if (name !== undefined && name !== member.name) {
+    // A real name only: an email or a blank claim never replaces the one saved.
+    const name = identity.name?.trim();
+    if (name && name !== member.name) {
       await ctx.db.patch(member._id, { name });
     }
     return null;
