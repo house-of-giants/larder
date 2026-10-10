@@ -43,13 +43,10 @@ async function open(page: Page, screen: Screen, stored: string | null) {
   );
   await page.goto(screen.path);
   await screen.ready(page);
-  // Loaded and hydrated (React has claimed <body>), so any tag React would add to <head> is
-  // in by now. Not networkidle: Clerk's development scripts keep the network busy.
-  await page.waitForFunction(
-    () =>
-      document.readyState === "complete" &&
-      Object.keys(document.body).some((key) => key.startsWith("__reactFiber$")),
-  );
+  // Loaded, hydrated, and following the phone: useThemeSync marks <html> once it listens,
+  // so any tag React would add to <head> is in by now.
+  await page.waitForFunction(() => document.readyState === "complete");
+  await expect(page.locator('html[data-theme-ready="1"]')).toBeAttached();
 }
 
 async function themeState(page: Page) {

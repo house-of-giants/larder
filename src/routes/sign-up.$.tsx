@@ -1,5 +1,6 @@
 import { SignUp } from "@clerk/tanstack-react-start";
 import { createFileRoute } from "@tanstack/react-router";
+import { useCleanAuthUrl } from "#/hooks/use-clean-auth-url";
 import { authUrl, localPath, redirectParam } from "#/lib/redirect";
 
 type AuthSearch = { redirect_url?: string };
@@ -20,14 +21,19 @@ function SignUpRoute() {
   // in the browser, where a URL on this origin counts too.
   const origin = typeof window === "undefined" ? undefined : window.location.origin;
   const returnTo = localPath(Route.useSearch().redirect_url, origin);
+  // Clerk reads redirect parameters from the address bar itself; the card waits until
+  // only the ones the app honors are left.
+  const clean = useCleanAuthUrl();
   return (
     <main data-screen="sign-up" className="flex min-h-dvh items-center justify-center px-4 py-10">
-      <SignUp
-        signInUrl={authUrl("/sign-in", returnTo)}
-        forceRedirectUrl={returnTo}
-        signInForceRedirectUrl={returnTo}
-        fallbackRedirectUrl="/"
-      />
+      {clean && (
+        <SignUp
+          signInUrl={authUrl("/sign-in", returnTo)}
+          forceRedirectUrl={returnTo}
+          signInForceRedirectUrl={returnTo}
+          fallbackRedirectUrl="/"
+        />
+      )}
     </main>
   );
 }

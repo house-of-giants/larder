@@ -8,10 +8,26 @@ import { expect, type BrowserContext, type Page } from "@playwright/test";
 
 export const TEST_CODE = "424242";
 
+/**
+ * Throws unless both Clerk keys are a development instance's (`pk_test_`, `sk_test_`). These
+ * helpers mint Testing Tokens and sign up users; neither may ever touch production.
+ */
+export function requireDevelopmentKeys(): void {
+  const publishable = process.env.VITE_CLERK_PUBLISHABLE_KEY ?? "";
+  const secret = process.env.CLERK_SECRET_KEY ?? "";
+  if (!publishable.startsWith("pk_test_") || !secret.startsWith("sk_test_")) {
+    throw new Error(
+      "Refusing to run: the Clerk keys are not a development instance's. " +
+        "VITE_CLERK_PUBLISHABLE_KEY must start with pk_test_ and CLERK_SECRET_KEY with sk_test_; " +
+        "this suite mints Testing Tokens and signs up users.",
+    );
+  }
+}
+
 /** A short-lived Testing Token for this instance, from the Backend API. */
 export async function createTestingToken(): Promise<string> {
-  const secret = process.env.CLERK_SECRET_KEY;
-  if (!secret) throw new Error("CLERK_SECRET_KEY is not set.");
+  requireDevelopmentKeys();
+  const secret = process.env.CLERK_SECRET_KEY!;
   const response = await fetch("https://api.clerk.com/v1/testing_tokens", {
     method: "POST",
     headers: { Authorization: `Bearer ${secret}` },
@@ -48,6 +64,7 @@ async function leftAuth(page: Page) {
  * new to the instance; a taken one fails here rather than quietly signing in.
  */
 export async function signUp(page: Page, email: string) {
+  requireDevelopmentKeys();
   await expect(page.locator('[data-screen="sign-in"]')).toBeVisible();
   await page.getByRole("link", { name: "Sign up" }).click();
   await expect(page.locator('[data-screen="sign-up"]')).toBeVisible();

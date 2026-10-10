@@ -1,6 +1,12 @@
 import { readFileSync } from "node:fs";
 import { devices, expect, test, type BrowserContext, type Page } from "@playwright/test";
-import { createTestingToken, signIn, signUp, applyTestingToken } from "./helpers/clerk";
+import {
+  applyTestingToken,
+  createTestingToken,
+  requireDevelopmentKeys,
+  signIn,
+  signUp,
+} from "./helpers/clerk";
 import { convexRun, householdIdByInviteCode } from "./helpers/convex";
 
 // One household's week, end to end, with real Clerk sessions on the dev instance and the
@@ -88,6 +94,8 @@ test.describe("a week in one household, signed in with Clerk", () => {
     browser,
   }, testInfo) => {
     test.setTimeout(600_000);
+    // Before anything reaches Clerk: only a development instance may get test users.
+    requireDevelopmentKeys();
     const token = await createTestingToken();
     const contexts: BrowserContext[] = [];
     const householdIds: string[] = [];
