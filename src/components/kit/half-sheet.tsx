@@ -1,5 +1,5 @@
 import { XIcon } from "lucide-react";
-import type { ReactNode } from "react";
+import type { ReactNode, RefObject } from "react";
 import {
   Sheet,
   SheetClose,
@@ -13,10 +13,16 @@ import { cn } from "#/lib/utils";
  * The half sheet (DESIGN.md): rises from the bottom over the scrim, Paper Sheet fill, 18px
  * top corners, a serif title with a quiet note under it, and a footer in thumb reach for
  * the one full-width primary pill (`<Pill sheet>`). The X or the scrim cancels.
+ *
+ * The sheet is controlled, so Radix has no trigger to hand focus back to. Pass `opener`,
+ * a ref to whatever opened it (a Pill, the Fab, a row), and closing returns focus there.
+ * With more than one opener, set the ref in each one's click handler:
+ * `onClick={(e) => { opener.current = e.currentTarget; setOpen(true); }}`.
  */
 export function HalfSheet({
   open,
   onOpenChange,
+  opener,
   title,
   note,
   footer,
@@ -25,6 +31,7 @@ export function HalfSheet({
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  opener?: RefObject<HTMLElement | null>;
   title: string;
   note?: ReactNode;
   footer?: ReactNode;
@@ -36,6 +43,11 @@ export function HalfSheet({
       <SheetContent
         side="bottom"
         showCloseButton={false}
+        onCloseAutoFocus={(event) => {
+          if (!opener?.current) return;
+          event.preventDefault();
+          opener.current.focus();
+        }}
         // With no note there is nothing to describe the sheet; say so rather than repeat the title.
         {...(note ? {} : { "aria-describedby": undefined })}
         className={cn(

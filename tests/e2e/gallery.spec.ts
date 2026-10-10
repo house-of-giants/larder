@@ -69,6 +69,21 @@ test.describe("gallery, built in", () => {
     await expect(carrots).toHaveAttribute("aria-checked", "true");
     await expect(column.getByText("2 to get", { exact: true })).toBeVisible();
   });
+
+  test("closing the sheet puts focus back on what opened it, the add button too", async ({
+    page,
+  }) => {
+    const column = page.getByRole("region", { name: "This theme" });
+    for (const name of ["Open the sheet", "Add something"]) {
+      const opener = column.getByRole("button", { name, exact: true });
+      await opener.focus();
+      await page.keyboard.press("Enter");
+      await expect(page.getByRole("dialog")).toBeVisible();
+      await page.keyboard.press("Escape");
+      await expect(page.getByRole("dialog")).toBeHidden();
+      await expect(opener).toBeFocused();
+    }
+  });
 });
 
 test.describe("gallery, not built in", () => {
