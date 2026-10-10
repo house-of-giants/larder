@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { api } from "../../../../../convex/_generated/api";
 import { ConfirmDialog } from "#/components/confirm-dialog";
 import { MadeItButton } from "#/components/cook/made-it-button";
-import { PageSkeleton } from "#/components/page-skeleton";
+import { RecipeSkeleton } from "#/components/page-skeleton";
 import { CheckMarker } from "#/components/recipes/check-marker";
 import { RecipeNotHere } from "#/components/recipes/recipe-not-here";
 import {
@@ -25,7 +25,7 @@ function RecipePage() {
   const { recipeId } = Route.useParams();
   const recipe = useQuery(api.recipes.get, { id: recipeId });
 
-  if (recipe === undefined) return <PageSkeleton />;
+  if (recipe === undefined) return <RecipeSkeleton />;
   if (recipe === null) return <RecipeNotHere />;
   return <RecipeView recipe={recipe} />;
 }

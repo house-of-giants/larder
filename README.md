@@ -90,22 +90,57 @@ bun run test:e2e       # playwright against the built server (run `bun run build
 
 ## Deploy
 
-Vercel builds every PR as a preview with the dev deployment's `VITE_CONVEX_URL`. The
-production build (`vercel.json`) runs `convex deploy`, which needs these on Vercel's
-production environment:
+Vercel builds every PR as a preview against the dev Convex deployment. Production builds
+(`vercel.json`) run `convex deploy --cmd 'bun run build'`: it runs the app build first,
+with the production `VITE_CONVEX_URL` injected, and pushes `convex/` to the production
+deployment only once that build succeeds.
 
-- `CONVEX_DEPLOY_KEY`: a production deploy key from the Convex dashboard. It sets
-  `VITE_CONVEX_URL` for the build on its own.
-- `VITE_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`: from the Clerk production instance.
-- `CLERK_SIGN_IN_URL=/sign-in`, `CLERK_SIGN_UP_URL=/sign-up`.
-- `AGENT_SECRET`: a fresh random value for production, for the MCP door.
+### First production deploy
 
-And on the production Convex deployment, the same `AGENT_SECRET`:
+In this order; each step needs the one before it.
 
-```sh
-bunx convex env set --prod CLERK_JWT_ISSUER_DOMAIN https://clerk.<your-domain>
-bunx convex env set --prod AGENT_SECRET <value>
-```
+1. **Clerk.** Create the production instance for the app's domain and finish its DNS
+   records. Add a JWT template named `convex` (Clerk's Convex preset). Note the
+   instance's Frontend API URL (`https://clerk.<your-domain>`), the publishable key, and
+   the secret key.
+2. **Convex.** Create the production deployment in the Convex dashboard, make a
+   production deploy key there, and set the production deployment's environment:
+
+   ```sh
+   bunx convex env set --prod CLERK_JWT_ISSUER_DOMAIN https://clerk.<your-domain>
+   bunx convex env set --prod AGENT_SECRET <long random string>
+   ```
+
+   Never set `SEED_ALLOWED` on production.
+
+3. **Vercel, Production environment.** Add each with `vercel env add <NAME> production`:
+
+   | Name                         | Value                                                          |
+   | ---------------------------- | -------------------------------------------------------------- |
+   | `CONVEX_DEPLOY_KEY`          | the production deploy key (Vercel only; never in `.env.local`) |
+   | `VITE_CLERK_PUBLISHABLE_KEY` | Clerk production publishable key (`pk_live_...`)               |
+   | `CLERK_SECRET_KEY`           | Clerk production secret key (`sk_live_...`)                    |
+   | `CLERK_SIGN_IN_URL`          | `/sign-in`                                                     |
+   | `CLERK_SIGN_UP_URL`          | `/sign-up`                                                     |
+   | `AGENT_SECRET`               | the same value as on the Convex production deployment          |
+
+   Do not set `VITE_CONVEX_URL` for Production; `convex deploy` provides it.
+
+4. **Ship.** Merge to `main`, or run `vercel --prod` from a clean checkout of `main`.
+5. **Check.** Open the production URL: it should send you to sign-in, then to Start a
+   household. `/manifest.webmanifest` and `/sw.js` should load.
+
+### A branch build on a phone
+
+Preview URLs sit behind Vercel Authentication. On the phone, sign in to Vercel in the
+same browser first, then open the preview URL and add it to the home screen (Settings in
+the app shows the taps). A home-screen app keeps its own cookies on iOS, so if it lands
+on Vercel's login, sign in there once. For a device or tool that cannot sign in to
+Vercel, use Protection Bypass for Automation (Project Settings, Deployment Protection)
+and open the URL with `?x-vercel-protection-bypass=<secret>&x-vercel-set-bypass-cookie=true`
+once; the cookie carries later visits. Do not share that secret beyond the household.
+
+Analytics (PostHog) is not wired in v1.
 
 ## Layout
 

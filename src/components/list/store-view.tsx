@@ -163,21 +163,19 @@ function Shell({
 
 /** Says when taps are waiting for a signal. Absent when everything has gone through. */
 function SyncPill({ online, pending }: { online: boolean; pending: number }) {
-  const text = online
-    ? pending > 0
-      ? `${pending} queued`
-      : null
-    : pending > 0
-      ? `offline, ${pending} queued`
-      : "offline";
+  const queued = pending > 0 && (
+    <>
+      <span className="num">{pending}</span> queued
+    </>
+  );
   return (
     <output className="contents">
-      {text && (
+      {(!online || queued) && (
         <span
           data-testid="sync-pill"
-          className="rounded-full border bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground tabular-nums"
+          className="rounded-full border bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground"
         >
-          {text}
+          {online ? queued : queued ? <>offline, {queued}</> : "offline"}
         </span>
       )}
     </output>
@@ -248,7 +246,9 @@ function Group({
         >
           ›
         </span>
-        <span className="tabular-nums">{`${label} (${items.length})`}</span>
+        <span>
+          {label} (<span className="num">{items.length}</span>)
+        </span>
       </summary>
       <ul className="flex flex-col divide-y rounded-lg border bg-card">
         {items.map((item) => (

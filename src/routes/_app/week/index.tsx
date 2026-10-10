@@ -3,7 +3,7 @@ import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { useState } from "react";
 import { api } from "../../../../convex/_generated/api";
 import { MadeItButton } from "#/components/cook/made-it-button";
-import { PageSkeleton } from "#/components/page-skeleton";
+import { WeekSkeleton } from "#/components/page-skeleton";
 import { Button } from "#/components/ui/button";
 import { type CurrentWeek } from "#/components/week/labels";
 import { StatusPill } from "#/components/week/status-pill";
@@ -18,7 +18,7 @@ function Week() {
   const { isAuthenticated } = useConvexAuth();
   const week = useQuery(api.weeks.current, isAuthenticated ? {} : "skip");
 
-  if (week === undefined) return <PageSkeleton />;
+  if (week === undefined) return <WeekSkeleton />;
   if (week === null) return <NoWeek />;
   return <ThisWeek week={week} />;
 }
@@ -70,10 +70,15 @@ function ThisWeek({ week }: { week: CurrentWeek }) {
           <h1 className="text-2xl font-semibold tracking-tight">{weekOfLabel(week.weekOf)}</h1>
           <StatusPill status={week.status} />
         </div>
-        <p className="num text-sm text-muted-foreground">
-          {selected.length === 0
-            ? "No recipes picked yet."
-            : `${selected.length} ${selected.length === 1 ? "recipe" : "recipes"}`}
+        <p className="text-sm text-muted-foreground">
+          {selected.length === 0 ? (
+            "No recipes picked yet."
+          ) : (
+            <>
+              <span className="num">{selected.length}</span>{" "}
+              {selected.length === 1 ? "recipe" : "recipes"}
+            </>
+          )}
         </p>
       </div>
 
@@ -91,8 +96,8 @@ function ThisWeek({ week }: { week: CurrentWeek }) {
                 <div className="flex min-w-0 flex-col gap-0.5">
                   <span className="font-medium">{r.name}</span>
                   {r.multiplier.text !== "1" && (
-                    <span className="num text-sm text-muted-foreground">
-                      {r.multiplier.text} batches
+                    <span className="text-sm text-muted-foreground">
+                      <span className="num">{r.multiplier.text}</span> batches
                     </span>
                   )}
                   {made && (

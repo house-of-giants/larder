@@ -6,7 +6,7 @@ import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { CloseoutCard, type Outcome } from "#/components/leftovers/closeout-card";
 import type { Leftover } from "#/components/leftovers/types";
-import { PageSkeleton } from "#/components/page-skeleton";
+import { CloseoutSkeleton } from "#/components/page-skeleton";
 import { Button } from "#/components/ui/button";
 import type { CurrentWeek } from "#/components/week/labels";
 import { errorMessage } from "#/lib/errors";
@@ -21,7 +21,7 @@ function Closeout() {
   const week = useQuery(api.weeks.current, isAuthenticated ? {} : "skip");
   const foods = useQuery(api.leftovers.list, isAuthenticated ? {} : "skip");
 
-  if (week === undefined || foods === undefined) return <PageSkeleton />;
+  if (week === undefined || foods === undefined) return <CloseoutSkeleton />;
   if (week === null || week.status === "planning") {
     return (
       <main className="mx-auto flex max-w-2xl flex-col gap-4 px-4 py-6">

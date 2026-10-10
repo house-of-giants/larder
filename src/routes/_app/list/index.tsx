@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useConvexAuth, useQuery } from "convex/react";
-import { PageSkeleton } from "#/components/page-skeleton";
+import { StoreSkeleton } from "#/components/page-skeleton";
 import { currentList } from "#/components/list/list-data";
 import { NoList, NoSignal, StoreView } from "#/components/list/store-view";
 import { useOfflineIdentity } from "#/offline/identity";
@@ -18,7 +18,7 @@ export const Route = createFileRoute("/_app/list/")({
  */
 function Store() {
   const { ready, verifiedUserId } = useOfflineIdentity();
-  if (!ready) return <PageSkeleton />;
+  if (!ready) return <StoreSkeleton />;
   return <StoreFor key={verifiedUserId ?? "nobody"} owner={verifiedUserId} />;
 }
 
@@ -32,7 +32,7 @@ function StoreFor({ owner }: { owner: string | null }) {
   const base = live !== undefined ? live : saved?.list;
 
   if (base === undefined) {
-    return saved === null && !ops.online ? <NoSignal pending={ops.pending} /> : <PageSkeleton />;
+    return saved === null && !ops.online ? <NoSignal pending={ops.pending} /> : <StoreSkeleton />;
   }
   if (base === null) {
     return <NoList online={ops.online} pending={ops.pending} />;

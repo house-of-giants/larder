@@ -2,11 +2,12 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useConvexAuth, useQuery } from "convex/react";
 import { useMemo, useState } from "react";
 import { api } from "../../../convex/_generated/api";
-import { PageSkeleton } from "#/components/page-skeleton";
+import { PantrySkeleton } from "#/components/page-skeleton";
 import { AddToPantry } from "#/components/pantry/add-to-pantry";
 import { locationLabels } from "#/components/pantry/labels";
 import type { PantryRowData } from "#/components/pantry/pantry-data";
 import { PantryRow } from "#/components/pantry/pantry-row";
+import { Button } from "#/components/ui/button";
 import { Input } from "#/components/ui/input";
 import { normalizeName } from "#/lib/aliases";
 import { LOCATIONS } from "#/lib/locations";
@@ -26,7 +27,7 @@ function Pantry() {
     [ingredients],
   );
 
-  if (rows === undefined || ingredients === undefined) return <PageSkeleton />;
+  if (rows === undefined || ingredients === undefined) return <PantrySkeleton />;
 
   const query = normalizeName(search);
   const matches = (row: PantryRowData) =>
@@ -60,7 +61,12 @@ function Pantry() {
             onChange={(e) => setSearch(e.target.value)}
           />
           {shown.length === 0 && (
-            <p className="text-muted-foreground">No “{search.trim()}” on the shelf.</p>
+            <div className="flex flex-col items-start gap-3">
+              <p className="text-muted-foreground">No “{search.trim()}” on the shelf.</p>
+              <Button type="button" variant="outline" onClick={() => setSearch("")}>
+                Clear search
+              </Button>
+            </div>
           )}
           {LOCATIONS.map((location) => {
             const here = shown.filter((row) => row.location === location);

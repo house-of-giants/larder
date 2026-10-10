@@ -1,11 +1,20 @@
 import { ClerkProvider, useAuth } from "@clerk/tanstack-react-start";
-import { HeadContent, Outlet, Scripts, createRootRoute } from "@tanstack/react-router";
+import {
+  HeadContent,
+  Scripts,
+  createRootRoute,
+  rootRouteId,
+  useMatch,
+} from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { ConvexProviderWithClerk } from "convex/react-clerk";
 import { useEffect, type ReactNode } from "react";
+import { ErrorScreen, NotFound } from "#/components/route-states";
+import { Toaster } from "#/components/ui/sonner";
 import { clerkConfigured } from "#/lib/clerk-config";
 import { convex } from "#/lib/convex";
-import { Toaster } from "#/components/ui/sonner";
+import { useThemeSync } from "#/hooks/use-theme";
+import { themeScript } from "#/lib/theme";
 import { OfflineIdentityProvider } from "#/offline/identity";
 import { registerServiceWorker } from "#/offline/register-sw";
 import appCss from "#/styles.css?url";
@@ -24,59 +33,96 @@ export const Route = createRootRoute({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
-      { name: "theme-color", content: "#f6f3ec" },
       // Installed from the home screen, the app opens without browser chrome.
       { name: "apple-mobile-web-app-capable", content: "yes" },
       { name: "mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-title", content: "Larder" },
+      // A solid bar with dark text above the app; content stays below it.
+      { name: "apple-mobile-web-app-status-bar-style", content: "default" },
       { title: "Larder" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
       { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
-      { rel: "apple-touch-icon", href: "/apple-touch-icon.png" },
+      { rel: "apple-touch-icon", sizes: "180x180", href: "/apple-touch-icon.png" },
       { rel: "manifest", href: "/manifest.webmanifest" },
     ],
+    // Applies the saved theme before the first paint, so dark mode never flashes light. It
+    // also writes the theme-color meta, which is deliberately not in the list above.
+    scripts: [{ children: themeScript }],
   }),
   shellComponent: RootDocument,
-  component: RootLayout,
+  // The shell wraps these too, so they render inside Clerk and Convex.
+  errorComponent: ErrorScreen,
+  notFoundComponent: NotFound,
 });
 
+/**
+ * The document, and the providers every screen needs. The shell wraps the root's
+ * component, error component, and not-found component alike, so all three get them.
+ */
 function RootDocument({ children }: { children: ReactNode }) {
   // Effects run only in the browser, so the server render never touches the worker.
   useEffect(registerServiceWorker, []);
+  // On System, follows the phone as it flips; picks up a choice made in another tab.
+  useThemeSync();
+  // Undefined only when the root loader itself failed; the error screen needs no providers.
+  const configured = useMatch({
+    from: rootRouteId,
+    select: (match) => match.loaderData?.clerkConfigured,
+  });
 
   return (
-    <html lang="en">
+    // The head script sets `dark` on <html> before React hydrates.
+    <html lang="en" suppressHydrationWarning>
       <head>
         <HeadContent />
       </head>
       <body>
-        {children}
+        {configured === false ? (
+          <SetupNeeded />
+        ) : configured ? (
+          <Providers>{children}</Providers>
+        ) : (
+          children
+        )}
         <Scripts />
       </body>
     </html>
   );
 }
 
-function RootLayout() {
-  const { clerkConfigured } = Route.useLoaderData();
-
-  if (!clerkConfigured) {
-    return <SetupNeeded />;
-  }
-
+function Providers({ children }: { children: ReactNode }) {
   return (
-    <ClerkProvider>
+    <ClerkProvider appearance={clerkAppearance}>
       <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
-        <OfflineIdentityProvider>
-          <Outlet />
-        </OfflineIdentityProvider>
+        <OfflineIdentityProvider>{children}</OfflineIdentityProvider>
         <Toaster position="top-center" />
       </ConvexProviderWithClerk>
     </ClerkProvider>
   );
 }
+
+// Clerk's sign-in and sign-up cards drawn from the app's own tokens, so they follow the
+// theme with it (no @clerk/themes needed).
+const clerkAppearance = {
+  variables: {
+    colorPrimary: "var(--primary)",
+    colorPrimaryForeground: "var(--primary-foreground)",
+    colorBackground: "var(--card)",
+    colorForeground: "var(--card-foreground)",
+    colorMuted: "var(--muted)",
+    colorMutedForeground: "var(--muted-foreground)",
+    colorNeutral: "var(--foreground)",
+    colorInput: "var(--background)",
+    colorInputForeground: "var(--foreground)",
+    colorBorder: "var(--border)",
+    colorRing: "var(--ring)",
+    colorDanger: "var(--destructive)",
+    fontFamily: "var(--font-sans)",
+    borderRadius: "var(--radius)",
+  },
+};
 
 function SetupNeeded() {
   return (

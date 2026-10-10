@@ -6,7 +6,7 @@ import { api } from "../../../../convex/_generated/api";
 import { CheckMarker } from "#/components/recipes/check-marker";
 import { amountText } from "#/components/recipes/recipe-text";
 import { Button } from "#/components/ui/button";
-import { Skeleton } from "#/components/ui/skeleton";
+import { RowsSkeleton } from "#/components/page-skeleton";
 import { cn } from "#/lib/utils";
 
 export const Route = createFileRoute("/_app/recipes/")({
@@ -21,12 +21,7 @@ function Recipes() {
     <main className="mx-auto flex max-w-2xl flex-col gap-4 px-4 py-6">
       <div className="flex items-center justify-between gap-4">
         <h1 className="text-2xl font-semibold tracking-tight">Recipes</h1>
-        <Button asChild>
-          <Link to="/recipes/new">
-            <Plus aria-hidden />
-            New recipe
-          </Link>
-        </Button>
+        {recipes?.length !== 0 && <NewRecipeButton />}
       </div>
 
       <label className="flex min-h-11 items-center gap-3 self-start text-sm text-muted-foreground">
@@ -40,15 +35,15 @@ function Recipes() {
       </label>
 
       {recipes === undefined ? (
-        <div aria-busy="true" className="flex flex-col gap-2">
+        <div aria-busy="true">
           <span className="sr-only">Loading</span>
-          <Skeleton className="h-16 w-full" />
-          <Skeleton className="h-16 w-full" />
+          <RowsSkeleton rows={4} rowClassName="h-10" />
         </div>
       ) : recipes.length === 0 ? (
-        <p className="text-muted-foreground">
-          No recipes yet. Add one, or have your agent import some.
-        </p>
+        <div className="flex flex-col items-start gap-4 rounded-lg border border-dashed px-4 py-8">
+          <p className="text-muted-foreground">No recipes yet.</p>
+          <NewRecipeButton />
+        </div>
       ) : (
         <ul className="flex flex-col divide-y rounded-lg border bg-card">
           {recipes.map((r) => {
@@ -94,5 +89,16 @@ function Recipes() {
         </ul>
       )}
     </main>
+  );
+}
+
+function NewRecipeButton() {
+  return (
+    <Button asChild>
+      <Link to="/recipes/new">
+        <Plus aria-hidden />
+        New recipe
+      </Link>
+    </Button>
   );
 }

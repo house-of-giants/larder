@@ -6,12 +6,14 @@ import {
   TriangleAlertIcon,
 } from "lucide-react";
 import { Toaster as Sonner, type ToasterProps } from "sonner";
+import { useTheme } from "#/hooks/use-theme";
 
 const Toaster = ({ ...props }: ToasterProps) => {
-  // Follows the OS like the rest of the app; next-themes is not used here.
+  // Follows the app's theme (Settings), not next-themes.
+  const theme = useTheme();
   return (
     <Sonner
-      theme="system"
+      theme={theme}
       className="toaster group"
       icons={{
         success: <CircleCheckIcon className="size-4" />,
