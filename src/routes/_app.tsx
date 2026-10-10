@@ -37,8 +37,9 @@ function AppShell() {
   const loading = household === undefined && online;
 
   return (
-    <div className="min-h-dvh pb-[calc(3.5rem+env(safe-area-inset-bottom))]">
-      <header className="sticky top-0 z-10 border-b bg-background/95 pt-[env(safe-area-inset-top)] backdrop-blur">
+    // Clears the tab bar: its 64px, its hairline, and the bottom inset.
+    <div className="min-h-dvh pb-[calc(4rem+1px+env(safe-area-inset-bottom))]">
+      <header className="sticky top-0 z-30 border-b bg-background/95 pt-[env(safe-area-inset-top)] backdrop-blur">
         <div className="mx-auto flex h-12 max-w-2xl items-center justify-between gap-4 px-4">
           {loading ? (
             <Skeleton className="h-5 w-32" />
