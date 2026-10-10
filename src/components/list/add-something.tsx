@@ -1,5 +1,5 @@
 import { useMutation } from "convex/react";
-import { useState, type FormEvent, type RefObject } from "react";
+import { useEffect, useRef, useState, type FormEvent, type RefObject } from "react";
 import { toast } from "sonner";
 import { HalfSheet } from "#/components/kit/half-sheet";
 import { Pill } from "#/components/kit/pill";
@@ -42,10 +42,17 @@ export function AddSomething({
   const [error, setError] = useState<string | null>(null);
 
   const displayName = name.trim().replace(/\s+/g, " ");
+  // Each opening of the sheet is a session. An add that lands after the sheet was closed
+  // (and maybe opened again for something new) must not clear or close that newer draft.
+  const session = useRef(0);
+  useEffect(() => {
+    session.current += 1;
+  }, [open]);
 
   async function submit(event: FormEvent) {
     event.preventDefault();
     if (displayName === "" || !canSend) return;
+    const mine = session.current;
     setPending(true);
     setError(null);
     try {
@@ -56,13 +63,15 @@ export function AddSomething({
         category,
       });
       toast(`${displayName}: on the list.`);
+      if (mine !== session.current) return;
       setName("");
       setQuantity("");
       setUnit("");
       setCategory("other");
       onOpenChange(false);
     } catch (e) {
-      setError(errorMessage(e));
+      if (mine === session.current) setError(errorMessage(e));
+      else toast(`${displayName} was not added: ${errorMessage(e)}`);
     } finally {
       setPending(false);
     }

@@ -1,17 +1,22 @@
+import { parseQuantity } from "#/lib/quantities";
+
 // How reconcile's autosaving fields and "Looks right" take turns.
 
 /**
- * After a count save lands: if the field still holds what was sent, the draft is done;
- * a newer value typed while the save was in flight stays, and is sent next when someone
- * already asked to commit (left the field, pressed Enter, or tapped Looks right).
+ * After a count save lands: if the field still holds what was sent, the draft is done. A
+ * newer value typed while the save was in flight stays, and when someone already asked to
+ * commit (left the field, pressed Enter, tapped Looks right) it is the next value to send:
+ * compared with what was just persisted (`sent`), never the count the field started from,
+ * so going 5 -> 6 -> 5 ends at 5. A newer value that is not a number is kept, not sent.
  */
 export function afterSave(
   sent: string,
   draft: string | null,
   requested: boolean,
-): { draft: string | null; commitAgain: boolean } {
-  if (draft === null || draft.trim() === sent.trim()) return { draft: null, commitAgain: false };
-  return { draft, commitAgain: requested };
+): { draft: string | null; send: string | null } {
+  if (draft === null || draft.trim() === sent.trim()) return { draft: null, send: null };
+  const send = requested && parseQuantity(draft) !== null ? draft : null;
+  return { draft, send };
 }
 
 export type LeaveStep = "stay" | "regenerate" | "leave";

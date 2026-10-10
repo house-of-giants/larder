@@ -123,16 +123,23 @@ function CountEditor({
       requested.current = true;
       return inflight.current;
     }
-    const sent = draftRef.current;
-    if (sent === null || sent.trim() === saved) {
+    const text = draftRef.current;
+    if (text === null || text.trim() === saved) {
       onError(null);
       return null;
     }
-    if (parseQuantity(sent) === null) {
+    if (parseQuantity(text) === null) {
       onError("Use a number or a fraction.");
       return null;
     }
     onError(null);
+    const run = send(text);
+    tracker.track(run);
+    return run;
+  }
+
+  /** Saves `sent`, then the newer draft typed meanwhile when a commit was asked for. */
+  function send(sent: string): Promise<boolean> {
     const run = (async () => {
       try {
         await setCount({ ingredientId: item.ingredientId, quantityText: sent, unit });
@@ -142,16 +149,17 @@ function CountEditor({
         onError(errorMessage(err));
         return false;
       }
-      const next = afterSave(sent, draftRef.current, requested.current);
+      const asked = requested.current;
+      const next = afterSave(sent, draftRef.current, asked);
       inflight.current = null;
       requested.current = false;
       setDraft(next.draft);
       onSaved();
-      if (!next.commitAgain) return true;
-      return (await commit()) ?? true;
+      if (next.send !== null) return await send(next.send);
+      if (next.draft !== null && asked) onError("Use a number or a fraction.");
+      return true;
     })();
     inflight.current = run;
-    tracker.track(run);
     return run;
   }
 

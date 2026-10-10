@@ -131,8 +131,10 @@ test.describe("gallery, built in", () => {
     for (const [kind, target] of Object.entries(targets)) {
       await page.keyboard.press("Shift"); // a keyboard interaction, so focus is :focus-visible
       await target.focus();
-      const ring = await target.evaluate((el) => {
-        const style = getComputedStyle(el);
+      // A chip's 44px button is the tap target; the ring is drawn on the visible chip inside it.
+      const ring = await target.evaluate((el, kind) => {
+        const carrier = kind === "chip" ? el.firstElementChild! : el;
+        const style = getComputedStyle(carrier);
         return {
           visible: el.matches(":focus-visible"),
           style: style.outlineStyle,
@@ -142,7 +144,7 @@ test.describe("gallery, built in", () => {
           // reads back as 1px or 2px); a gap of at least one pixel is the contract here.
           gap: Number.parseFloat(style.outlineOffset) >= 1,
         };
-      });
+      }, kind);
       expect({ kind, ...ring }).toEqual({
         kind,
         visible: true,
