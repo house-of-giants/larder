@@ -2,7 +2,7 @@ import { ConvexError, type ObjectType, v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
 import { mutation, query, type MutationCtx, type QueryCtx } from "./_generated/server";
 import { type Caller, requireCaller, requireMember } from "./lib/auth";
-import { requireIngredient } from "./lib/pantry";
+import { findPantryRow, requireIngredient } from "./lib/pantry";
 import { parseQuantity } from "./lib/quantities";
 import { findOpenWeek, requirePlannable, requireWeek, weekNotHere, weekRows } from "./lib/weeks";
 import schema from "./schema";
@@ -42,6 +42,9 @@ export const currentWeek = v.union(
         status: weekRecipeFields.status,
         multiplier: weekRecipeFields.multiplier,
         yield: schema.tables.recipes.validator.fields.yield,
+        /** The recipe's distinct ingredients, and how many of them the pantry holds. */
+        ingredientCount: v.number(),
+        onHandCount: v.number(),
       }),
     ),
     adaptations: v.array(
@@ -68,14 +71,42 @@ export const current = query({
   handler: async (ctx) => getCurrentWeek(ctx, await requireCaller(ctx)),
 });
 
+/** On hand: this household's pantry row exists, and is not out (a level) or at zero (a count). */
+function isOnHand(row: Doc<"pantryItems"> | null, householdId: Id<"households">): boolean {
+  if (row === null || row.householdId !== householdId) return false;
+  return row.kind === "count" ? row.count.quantityDecimal > 0 : row.level !== "out";
+}
+
 export async function getCurrentWeek(ctx: QueryCtx, { householdId }: Caller) {
   const week = await findOpenWeek(ctx, householdId);
   if (week === null) return null;
+
+  // One pantry lookup per ingredient, shared by every recipe that uses it.
+  const held = new Map<Id<"ingredients">, boolean>();
+  const onHand = async (ingredientId: Id<"ingredients">) => {
+    let known = held.get(ingredientId);
+    if (known === undefined) {
+      known = isOnHand(await findPantryRow(ctx, householdId, ingredientId), householdId);
+      held.set(ingredientId, known);
+    }
+    return known;
+  };
 
   const recipes = [];
   for (const wr of await weekRows(ctx, "weekRecipes", householdId, week._id)) {
     const recipe = await ctx.db.get("recipes", wr.recipeId);
     if (recipe === null || recipe.householdId !== householdId) continue;
+    const rows = await ctx.db
+      .query("recipeIngredients")
+      .withIndex("by_householdId_recipeId", (q) =>
+        q.eq("householdId", householdId).eq("recipeId", recipe._id),
+      )
+      .collect();
+    const ingredientIds = new Set(
+      rows.filter((row) => row.householdId === householdId).map((row) => row.ingredientId),
+    );
+    let onHandCount = 0;
+    for (const id of ingredientIds) if (await onHand(id)) onHandCount += 1;
     recipes.push({
       weekRecipeId: wr._id,
       recipeId: wr.recipeId,
@@ -83,6 +114,8 @@ export async function getCurrentWeek(ctx: QueryCtx, { householdId }: Caller) {
       status: wr.status,
       multiplier: wr.multiplier,
       yield: recipe.yield,
+      ingredientCount: ingredientIds.size,
+      onHandCount,
     });
   }
 

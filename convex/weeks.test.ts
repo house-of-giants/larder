@@ -99,6 +99,67 @@ describe("weeks.create and weeks.current", () => {
       newName: "elk Italian sausage",
     });
   });
+
+  // The biscuits use ten ingredients; the seeded pantry holds seven of them (bacon, eggs,
+  // butter, flour, baking powder, salt, pepper) and none of buttermilk, pepper jack cheese
+  // or nonstick spray. Counted by hand from convex/seed/*.json.
+  const BISCUITS = "Bacon, Egg and Pepper Jack Breakfast Biscuits";
+
+  it("says how many of each recipe's ingredients are on hand", async () => {
+    const t = newTest();
+    const { as, householdId } = await createHousehold(t, { who: "Alice", name: "Elm" });
+    await t.mutation(internal.seed.load, { householdId });
+    const biscuits = (await as.query(api.weeks.current, {}))?.recipes.find(
+      (r) => r.name === BISCUITS,
+    );
+    expect(biscuits).toMatchObject({ ingredientCount: 10, onHandCount: 7 });
+
+    // Out of flour (a level) and of eggs (a count at 0): neither is on hand any more.
+    await t.run(async (ctx) => {
+      const rowOf = async (name: string) => {
+        const ingredient = (await ctx.db.query("ingredients").collect()).find(
+          (i) => i.householdId === householdId && i.name === name,
+        )!;
+        return (await ctx.db
+          .query("pantryItems")
+          .withIndex("by_householdId_ingredientId", (q) =>
+            q.eq("householdId", householdId).eq("ingredientId", ingredient._id),
+          )
+          .first())!;
+      };
+      await ctx.db.patch((await rowOf("all-purpose flour"))._id, { level: "out" });
+      await ctx.db.patch((await rowOf("large eggs"))._id, {
+        count: { quantityText: "0", quantityDecimal: 0, unit: "each" },
+      });
+    });
+    const after = (await as.query(api.weeks.current, {}))?.recipes.find((r) => r.name === BISCUITS);
+    expect(after).toMatchObject({ ingredientCount: 10, onHandCount: 5 });
+  });
+
+  it("never counts another household's pantry row as on hand", async () => {
+    const t = newTest();
+    const { as, householdId } = await createHousehold(t, { who: "Alice", name: "Elm" });
+    const bob = await createHousehold(t, { who: "Bob", name: "Oak" });
+    await t.mutation(internal.seed.load, { householdId });
+    // Bob's pantry row points at Alice's buttermilk, which Alice does not have.
+    await t.run(async (ctx) => {
+      const buttermilk = (await ctx.db.query("ingredients").collect()).find(
+        (i) => i.householdId === householdId && i.name === "buttermilk",
+      )!;
+      await ctx.db.insert("pantryItems", {
+        householdId: bob.householdId,
+        ingredientId: buttermilk._id,
+        kind: "count",
+        count: { quantityText: "2", quantityDecimal: 2, unit: "cup" },
+        location: "fridge",
+        updatedAt: 0,
+      });
+    });
+    const biscuits = (await as.query(api.weeks.current, {}))?.recipes.find(
+      (r) => r.name === BISCUITS,
+    );
+    expect(biscuits).toMatchObject({ ingredientCount: 10, onHandCount: 7 });
+  });
 });
 
 describe("weeks.setRecipe", () => {
