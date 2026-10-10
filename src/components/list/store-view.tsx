@@ -191,7 +191,7 @@ function Shell({
   return (
     <main className="mx-auto flex max-w-2xl flex-col px-5 pt-3 pb-24">
       <h1 className="font-display text-display">Store</h1>
-      <div className={`sticky z-10 -mx-5 bg-background px-5 ${PINNED_TOP}`}>
+      <div className={`sticky z-[15] -mx-5 bg-background px-5 ${PINNED_TOP}`}>
         <p className="truncate py-1.5 text-caption leading-[18px] text-muted-foreground">
           {progress}
         </p>
