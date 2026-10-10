@@ -8,6 +8,7 @@
  * @module
  */
 
+import type * as agent from "../agent.js";
 import type * as closeout from "../closeout.js";
 import type * as cooking from "../cooking.js";
 import type * as events from "../events.js";
@@ -15,6 +16,7 @@ import type * as health from "../health.js";
 import type * as households from "../households.js";
 import type * as ingredients from "../ingredients.js";
 import type * as leftovers from "../leftovers.js";
+import type * as lib_agent from "../lib/agent.js";
 import type * as lib_amounts from "../lib/amounts.js";
 import type * as lib_auth from "../lib/auth.js";
 import type * as lib_deductions from "../lib/deductions.js";
@@ -33,6 +35,7 @@ import type * as recipes from "../recipes.js";
 import type * as seed from "../seed.js";
 import type * as test_helpers from "../test_helpers.js";
 import type * as testing from "../testing.js";
+import type * as tokens from "../tokens.js";
 import type * as undo from "../undo.js";
 import type * as weeks from "../weeks.js";
 
@@ -43,6 +46,7 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  agent: typeof agent;
   closeout: typeof closeout;
   cooking: typeof cooking;
   events: typeof events;
@@ -50,6 +54,7 @@ declare const fullApi: ApiFromModules<{
   households: typeof households;
   ingredients: typeof ingredients;
   leftovers: typeof leftovers;
+  "lib/agent": typeof lib_agent;
   "lib/amounts": typeof lib_amounts;
   "lib/auth": typeof lib_auth;
   "lib/deductions": typeof lib_deductions;
@@ -68,6 +73,7 @@ declare const fullApi: ApiFromModules<{
   seed: typeof seed;
   test_helpers: typeof test_helpers;
   testing: typeof testing;
+  tokens: typeof tokens;
   undo: typeof undo;
   weeks: typeof weeks;
 }>;

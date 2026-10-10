@@ -1,10 +1,18 @@
 import type { UserIdentity } from "convex/server";
-import { ConvexError } from "convex/values";
+import { ConvexError, type Infer } from "convex/values";
 import type { Doc, Id } from "../_generated/dataModel";
 import type { QueryCtx } from "../_generated/server";
+import type { inventoryActor } from "../schema";
 
-// Every household-scoped function starts with `requireMember`. The household comes from
-// the signed-in member's row, never from an argument the client sends.
+// Every household-scoped function starts with `requireMember` (people) or `requireAgent`
+// (convex/lib/agent.ts, the MCP door). The household comes from the signed-in member's
+// row or from the agent token the server resolved, never from an argument a client sends.
+
+/** Who is acting, as the ledger records it. */
+export type Actor = Infer<typeof inventoryActor>;
+
+/** The household a function acts on and who is acting; shared logic takes this. */
+export type Caller = { householdId: Id<"households">; actor: Actor };
 
 export async function requireIdentity(ctx: QueryCtx): Promise<UserIdentity> {
   const identity = await ctx.auth.getUserIdentity();
@@ -33,4 +41,10 @@ export async function requireMember(ctx: QueryCtx): Promise<{
     throw new ConvexError("Join a household first.");
   }
   return { identity, member, householdId: member.householdId };
+}
+
+/** The signed-in member as a Caller, for functions whose logic agents share. */
+export async function requireCaller(ctx: QueryCtx): Promise<Caller> {
+  const { householdId, member } = await requireMember(ctx);
+  return { householdId, actor: { kind: "member", memberId: member._id } };
 }

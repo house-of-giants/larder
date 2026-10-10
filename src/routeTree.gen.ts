@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as JoinRouteImport } from './routes/join'
+import { Route as McpRouteImport } from './routes/mcp'
 import { Route as AppCloseoutRouteImport } from './routes/_app/closeout'
 import { Route as AppLeftoversRouteImport } from './routes/_app/leftovers'
 import { Route as AppPantryRouteImport } from './routes/_app/pantry'
@@ -39,6 +40,11 @@ const AppRoute = AppRouteImport.update({
 const JoinRoute = JoinRouteImport.update({
   id: '/join',
   path: '/join',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const McpRoute = McpRouteImport.update({
+  id: '/mcp',
+  path: '/mcp',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppCloseoutRoute = AppCloseoutRouteImport.update({
@@ -115,6 +121,7 @@ const AppRecipesRecipeIdEditRoute = AppRecipesRecipeIdEditRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/join': typeof JoinRoute
+  '/mcp': typeof McpRoute
   '/closeout': typeof AppCloseoutRoute
   '/leftovers': typeof AppLeftoversRoute
   '/pantry': typeof AppPantryRoute
@@ -133,6 +140,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/join': typeof JoinRoute
+  '/mcp': typeof McpRoute
   '/closeout': typeof AppCloseoutRoute
   '/leftovers': typeof AppLeftoversRoute
   '/pantry': typeof AppPantryRoute
@@ -153,6 +161,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_app': typeof AppRouteWithChildren
   '/join': typeof JoinRoute
+  '/mcp': typeof McpRoute
   '/_app/closeout': typeof AppCloseoutRoute
   '/_app/leftovers': typeof AppLeftoversRoute
   '/_app/pantry': typeof AppPantryRoute
@@ -173,6 +182,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/join'
+    | '/mcp'
     | '/closeout'
     | '/leftovers'
     | '/pantry'
@@ -191,6 +201,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/join'
+    | '/mcp'
     | '/closeout'
     | '/leftovers'
     | '/pantry'
@@ -210,6 +221,7 @@ export interface FileRouteTypes {
     | '/'
     | '/_app'
     | '/join'
+    | '/mcp'
     | '/_app/closeout'
     | '/_app/leftovers'
     | '/_app/pantry'
@@ -230,6 +242,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AppRoute: typeof AppRouteWithChildren
   JoinRoute: typeof JoinRoute
+  McpRoute: typeof McpRoute
   SignInSplatRoute: typeof SignInSplatRoute
   SignUpSplatRoute: typeof SignUpSplatRoute
 }
@@ -255,6 +268,13 @@ declare module '@tanstack/react-router' {
       path: '/join'
       fullPath: '/join'
       preLoaderRoute: typeof JoinRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mcp': {
+      id: '/mcp'
+      path: '/mcp'
+      fullPath: '/mcp'
+      preLoaderRoute: typeof McpRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_app/closeout': {
@@ -394,6 +414,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AppRoute: AppRouteWithChildren,
   JoinRoute: JoinRoute,
+  McpRoute: McpRoute,
   SignInSplatRoute: SignInSplatRoute,
   SignUpSplatRoute: SignUpSplatRoute,
 }

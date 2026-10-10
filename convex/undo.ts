@@ -254,7 +254,11 @@ export const event = mutation({
       const ingredient =
         item.ingredientId === undefined ? null : await ctx.db.get("ingredients", item.ingredientId);
       if (ingredient !== null && ingredient.householdId === householdId) {
-        await reversePurchase(ctx, { householdId, memberId: member._id, item, ingredient }, target);
+        await reversePurchase(
+          ctx,
+          { householdId, actor: { kind: "member", memberId: member._id }, item, ingredient },
+          target,
+        );
       }
       await ctx.db.patch("listItems", item._id, { status: "needed", checkedAt: undefined });
       return null;

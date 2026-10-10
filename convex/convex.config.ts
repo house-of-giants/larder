@@ -10,6 +10,9 @@ const app = defineApp({
     // "true" on the dev deployment only. seed.load and the testing helpers refuse to run
     // anywhere else, so a stray `--prod` cannot wipe a household's kitchen.
     SEED_ALLOWED: v.optional(v.string()),
+    // Shared with the server route (src/routes/mcp.ts); the MCP door's agent functions refuse
+    // every call while it is unset (convex/lib/agent.ts).
+    AGENT_SECRET: v.optional(v.string()),
   },
 });
 

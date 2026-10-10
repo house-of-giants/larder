@@ -1,8 +1,9 @@
-import { ConvexError, v, type Infer } from "convex/values";
+import { ConvexError, v, type Infer, type ObjectType } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
 import { mutation, query, type MutationCtx, type QueryCtx } from "./_generated/server";
-import { requireMember } from "./lib/auth";
+import { type Caller, requireCaller, requireMember } from "./lib/auth";
 import { normalizeName, resolveIngredient } from "../src/lib/aliases";
+import { listIngredients, resolveByName } from "./ingredients";
 import { parseQuantity } from "./lib/quantities";
 import schema from "./schema";
 
@@ -28,7 +29,7 @@ const ingredientInput = v.object({
   needsReview: v.optional(v.boolean()),
 });
 
-const upsertArgs = {
+export const upsertArgs = {
   id: v.optional(v.id("recipes")),
   name: v.string(),
   source: recipeFields.source,
@@ -127,83 +128,86 @@ async function rowsOf(ctx: QueryCtx, householdId: Id<"households">, recipeId: Id
 
 const unknownIngredient = "unknown ingredient";
 
+export const recipeSummary = v.object({
+  _id: v.id("recipes"),
+  name: v.string(),
+  ingredientCount: v.number(),
+  yield: recipeFields.yield,
+  tags: recipeFields.tags,
+  needsReview: recipeFields.needsReview,
+  archivedAt: recipeFields.archivedAt,
+});
+
 export const list = query({
   args: { includeArchived: v.optional(v.boolean()) },
-  returns: v.array(
-    v.object({
-      _id: v.id("recipes"),
-      name: v.string(),
-      ingredientCount: v.number(),
-      yield: recipeFields.yield,
-      tags: recipeFields.tags,
-      needsReview: recipeFields.needsReview,
-      archivedAt: recipeFields.archivedAt,
-    }),
-  ),
-  handler: async (ctx, args) => {
-    const { householdId } = await requireMember(ctx);
-    const recipes = await ctx.db
-      .query("recipes")
-      .withIndex("by_householdId", (q) => q.eq("householdId", householdId))
-      .collect();
-    const shown = args.includeArchived
-      ? recipes
-      : recipes.filter((r) => r.archivedAt === undefined);
-    shown.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
-    return await Promise.all(
-      shown.map(async (r) => ({
-        _id: r._id,
-        name: r.name,
-        ingredientCount: (await rowsOf(ctx, householdId, r._id)).length,
-        yield: r.yield,
-        tags: r.tags,
-        needsReview: r.needsReview,
-        archivedAt: r.archivedAt,
-      })),
-    );
-  },
+  returns: v.array(recipeSummary),
+  handler: async (ctx, args) => listRecipes(ctx, await requireCaller(ctx), args),
+});
+
+export async function listRecipes(
+  ctx: QueryCtx,
+  { householdId }: Caller,
+  args: { includeArchived?: boolean },
+) {
+  const recipes = await ctx.db
+    .query("recipes")
+    .withIndex("by_householdId", (q) => q.eq("householdId", householdId))
+    .collect();
+  const shown = args.includeArchived ? recipes : recipes.filter((r) => r.archivedAt === undefined);
+  shown.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
+  return await Promise.all(
+    shown.map(async (r) => ({
+      _id: r._id,
+      name: r.name,
+      ingredientCount: (await rowsOf(ctx, householdId, r._id)).length,
+      yield: r.yield,
+      tags: r.tags,
+      needsReview: r.needsReview,
+      archivedAt: r.archivedAt,
+    })),
+  );
+}
+
+export const recipeDetail = v.object({
+  _id: v.id("recipes"),
+  _creationTime: v.number(),
+  ...recipeFields,
+  ingredients: v.array(recipeIngredientRow),
 });
 
 export const get = query({
   // A string, not v.id: the id comes from the URL, and a mangled one is "not here", not an error.
   args: { id: v.string() },
-  returns: v.union(
-    v.null(),
-    v.object({
-      _id: v.id("recipes"),
-      _creationTime: v.number(),
-      ...recipeFields,
-      ingredients: v.array(recipeIngredientRow),
-    }),
-  ),
-  handler: async (ctx, args) => {
-    const { householdId } = await requireMember(ctx);
-    const id = ctx.db.normalizeId("recipes", args.id);
-    if (id === null) return null;
-    const recipe = await ownRecipe(ctx, householdId, id);
-    if (recipe === null) return null;
-
-    const rows = await rowsOf(ctx, householdId, id);
-    rows.sort((a, b) => a.order - b.order);
-    const ingredients = await Promise.all(
-      rows.map(async ({ householdId: _h, recipeId: _r, _creationTime: _c, ...row }) => {
-        const ingredient = await ctx.db.get("ingredients", row.ingredientId);
-        // A missing or foreign ingredient shows as unknown and asks for review; its name
-        // and kind never leave the other household.
-        if (ingredient === null || ingredient.householdId !== householdId) {
-          return {
-            ...row,
-            ingredientName: unknownIngredient,
-            ingredientKind: "count" as const,
-            needsReview: true,
-          };
-        }
-        return { ...row, ingredientName: ingredient.name, ingredientKind: ingredient.kind };
-      }),
-    );
-    return { ...recipe, ingredients };
-  },
+  returns: v.union(v.null(), recipeDetail),
+  handler: async (ctx, args) => getRecipe(ctx, await requireCaller(ctx), args),
 });
+
+export async function getRecipe(ctx: QueryCtx, { householdId }: Caller, args: { id: string }) {
+  const id = ctx.db.normalizeId("recipes", args.id);
+  if (id === null) return null;
+  const recipe = await ownRecipe(ctx, householdId, id);
+  if (recipe === null) return null;
+
+  const rows = await rowsOf(ctx, householdId, id);
+  rows.sort((a, b) => a.order - b.order);
+  const ingredients = await Promise.all(
+    rows.map(async ({ householdId: _h, recipeId: _r, _creationTime: _c, ...row }) => {
+      const ingredient = await ctx.db.get("ingredients", row.ingredientId);
+      // A missing or foreign ingredient shows as unknown and asks for review; its name
+      // and kind never leave the other household.
+      if (ingredient === null || ingredient.householdId !== householdId) {
+        return {
+          ...row,
+          ingredientName: unknownIngredient,
+          ingredientKind: "count" as const,
+          needsReview: true,
+        };
+      }
+      return { ...row, ingredientName: ingredient.name, ingredientKind: ingredient.kind };
+    }),
+  );
+  return { ...recipe, ingredients };
+}
 
 export const ingredientOptions = query({
   args: {},
@@ -230,59 +234,62 @@ export const ingredientOptions = query({
 export const upsert = mutation({
   args: upsertArgs,
   returns: v.id("recipes"),
-  handler: async (ctx, args) => {
-    const { householdId } = await requireMember(ctx);
-
-    const name = text(args.name);
-    if (name === undefined) throw new ConvexError("Give the recipe a name.");
-
-    for (const row of args.ingredients) {
-      await requireOwnIngredient(ctx, householdId, row.ingredientId);
-      if (row.deductionIngredientId !== undefined) {
-        await requireOwnIngredient(ctx, householdId, row.deductionIngredientId);
-      }
-    }
-
-    const existing =
-      args.id === undefined ? null : await requireOwnRecipe(ctx, householdId, args.id);
-
-    const yieldText = args.yield === undefined ? undefined : text(args.yield.quantityText);
-    const fields = {
-      name,
-      source: cleanSource(args.source),
-      yield:
-        args.yield === undefined || yieldText === undefined
-          ? undefined
-          : {
-              quantityText: yieldText,
-              quantityDecimal: parseQuantity(yieldText) ?? undefined,
-              unit: args.yield.unit.trim(),
-            },
-      freezerFriendly: args.freezerFriendly,
-      storageNotes: text(args.storageNotes),
-      reheatingNotes: text(args.reheatingNotes),
-      instructions: args.instructions.map((s) => s.trim()).filter((s) => s !== ""),
-      tags: cleanList(args.tags),
-      needsReview: args.needsReview ?? existing?.needsReview ?? false,
-      updatedAt: Date.now(),
-    } satisfies Partial<Doc<"recipes">>;
-
-    let recipeId: Id<"recipes">;
-    if (existing === null) {
-      recipeId = await ctx.db.insert("recipes", { householdId, ...fields });
-    } else {
-      recipeId = existing._id;
-      // Patch, not replace, so fields this editor does not own (sourceText) survive.
-      await ctx.db.patch("recipes", recipeId, fields);
-      for (const row of await rowsOf(ctx, householdId, recipeId)) {
-        await ctx.db.delete("recipeIngredients", row._id);
-      }
-    }
-
-    await insertRows(ctx, householdId, recipeId, args.ingredients);
-    return recipeId;
-  },
+  handler: async (ctx, args) => upsertRecipe(ctx, await requireCaller(ctx), args),
 });
+
+export async function upsertRecipe(
+  ctx: MutationCtx,
+  { householdId }: Caller,
+  args: ObjectType<typeof upsertArgs>,
+) {
+  const name = text(args.name);
+  if (name === undefined) throw new ConvexError("Give the recipe a name.");
+
+  for (const row of args.ingredients) {
+    await requireOwnIngredient(ctx, householdId, row.ingredientId);
+    if (row.deductionIngredientId !== undefined) {
+      await requireOwnIngredient(ctx, householdId, row.deductionIngredientId);
+    }
+  }
+
+  const existing = args.id === undefined ? null : await requireOwnRecipe(ctx, householdId, args.id);
+
+  const yieldText = args.yield === undefined ? undefined : text(args.yield.quantityText);
+  const fields = {
+    name,
+    source: cleanSource(args.source),
+    yield:
+      args.yield === undefined || yieldText === undefined
+        ? undefined
+        : {
+            quantityText: yieldText,
+            quantityDecimal: parseQuantity(yieldText) ?? undefined,
+            unit: args.yield.unit.trim(),
+          },
+    freezerFriendly: args.freezerFriendly,
+    storageNotes: text(args.storageNotes),
+    reheatingNotes: text(args.reheatingNotes),
+    instructions: args.instructions.map((s) => s.trim()).filter((s) => s !== ""),
+    tags: cleanList(args.tags),
+    needsReview: args.needsReview ?? existing?.needsReview ?? false,
+    updatedAt: Date.now(),
+  } satisfies Partial<Doc<"recipes">>;
+
+  let recipeId: Id<"recipes">;
+  if (existing === null) {
+    recipeId = await ctx.db.insert("recipes", { householdId, ...fields });
+  } else {
+    recipeId = existing._id;
+    // Patch, not replace, so fields this editor does not own (sourceText) survive.
+    await ctx.db.patch("recipes", recipeId, fields);
+    for (const row of await rowsOf(ctx, householdId, recipeId)) {
+      await ctx.db.delete("recipeIngredients", row._id);
+    }
+  }
+
+  await insertRows(ctx, householdId, recipeId, args.ingredients);
+  return recipeId;
+}
 
 async function insertRows(
   ctx: MutationCtx,
@@ -344,14 +351,21 @@ export const archive = mutation({
   args: { id: v.id("recipes") },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const { householdId } = await requireMember(ctx);
-    const recipe = await requireOwnRecipe(ctx, householdId, args.id);
-    if (recipe.archivedAt === undefined) {
-      await ctx.db.patch("recipes", recipe._id, { archivedAt: Date.now() });
-    }
+    await archiveRecipe(ctx, await requireCaller(ctx), args);
     return null;
   },
 });
+
+export async function archiveRecipe(
+  ctx: MutationCtx,
+  { householdId }: Caller,
+  args: { id: Id<"recipes"> },
+) {
+  const recipe = await requireOwnRecipe(ctx, householdId, args.id);
+  if (recipe.archivedAt === undefined) {
+    await ctx.db.patch("recipes", recipe._id, { archivedAt: Date.now() });
+  }
+}
 
 export const restore = mutation({
   args: { id: v.id("recipes") },
@@ -363,3 +377,80 @@ export const restore = mutation({
     return null;
   },
 });
+
+// Agents send ingredient names, not ids. Each name goes through the alias resolver; a name
+// it cannot place gets a new ingredient marked for review, and when the resolver had
+// candidates ("mustard" near "Dijon mustard") they come back so the agent can fix it with
+// ingredients_upsert instead of the server guessing.
+
+const namedIngredientInput = v.object({
+  name: v.string(),
+  displayName: v.optional(v.string()),
+  quantityText: v.string(),
+  unit: v.string(),
+  optional: v.optional(v.boolean()),
+  preparation: v.optional(v.string()),
+  deductionNote: v.optional(v.string()),
+});
+
+const { ingredients: _byId, ...recipeFieldArgs } = upsertArgs;
+
+export const upsertByNamesArgs = {
+  ...recipeFieldArgs,
+  ingredients: v.array(namedIngredientInput),
+};
+
+export const upsertByNamesResult = v.object({
+  recipeId: v.id("recipes"),
+  createdIngredients: v.array(
+    v.object({
+      ingredientId: v.id("ingredients"),
+      name: v.string(),
+      /** What the resolver found close to the name; empty when nothing was. */
+      candidates: v.array(v.object({ ingredientId: v.id("ingredients"), name: v.string() })),
+    }),
+  ),
+});
+
+export async function upsertRecipeByNames(
+  ctx: MutationCtx,
+  caller: Caller,
+  args: ObjectType<typeof upsertByNamesArgs>,
+): Promise<Infer<typeof upsertByNamesResult>> {
+  const known = await listIngredients(ctx, caller);
+  const created: Infer<typeof upsertByNamesResult>["createdIngredients"] = [];
+  const rows = [];
+  for (const row of args.ingredients) {
+    const name = text(row.name)?.replace(/\s+/g, " ");
+    if (name === undefined) throw new ConvexError("Every ingredient needs a name.");
+    const resolved = resolveByName(known, name);
+    let ingredientId: Id<"ingredients">;
+    let isNew = false;
+    if (resolved.kind === "match") {
+      ingredientId = resolved.ingredientId;
+      isNew = created.some((c) => c.ingredientId === ingredientId);
+    } else {
+      ingredientId = await ctx.db.insert("ingredients", {
+        householdId: caller.householdId,
+        name,
+        nameKey: normalizeName(name),
+        kind: "count",
+        category: "other",
+        aliases: [],
+        tracked: true,
+        needsReview: true,
+      });
+      known.push((await ctx.db.get("ingredients", ingredientId))!);
+      created.push({ ingredientId, name, candidates: resolved.candidates });
+      isNew = true;
+    }
+    const { name: _name, ...rest } = row;
+    rows.push({ ...rest, ingredientId, optional: row.optional ?? false, needsReview: isNew });
+  }
+  const recipeId = await upsertRecipe(ctx, caller, {
+    ...args,
+    needsReview: args.needsReview ?? (created.length > 0 ? true : undefined),
+    ingredients: rows,
+  });
+  return { recipeId, createdIngredients: created };
+}

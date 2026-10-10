@@ -1,7 +1,8 @@
 import { v } from "convex/values";
 import { internalMutation, internalQuery } from "./_generated/server";
+import { mintToken as mint } from "./lib/agent";
 import { requireSeedAllowed } from "./lib/dev_only";
-import { uniqueInviteCode } from "./lib/household";
+import { deleteHousehold, uniqueInviteCode } from "./lib/household";
 
 // Dev-only helpers, callable with `bunx convex run testing:<name>` on the dev deployment.
 // They are internal functions, so no client can reach them, and they refuse to run unless
@@ -64,5 +65,37 @@ export const summary = internalQuery({
       weeks: await count("weeks"),
       inventoryEvents: await count("inventoryEvents"),
     };
+  },
+});
+
+// For the MCP integration test (tests/mcp/week.test.ts), which runs these with
+// `bunx convex run`: an agent token minted the way tokens.create mints one, its
+// revocation, and the removal of the throwaway household afterwards.
+export const mintToken = internalMutation({
+  args: { householdId: v.id("households"), label: v.string() },
+  returns: v.object({ tokenId: v.id("householdTokens"), token: v.string() }),
+  handler: async (ctx, args) => {
+    requireSeedAllowed();
+    return await mint(ctx, args.householdId, args.label);
+  },
+});
+
+export const revokeToken = internalMutation({
+  args: { tokenId: v.id("householdTokens") },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    requireSeedAllowed();
+    await ctx.db.patch("householdTokens", args.tokenId, { revokedAt: Date.now() });
+    return null;
+  },
+});
+
+export const deleteDevHousehold = internalMutation({
+  args: { householdId: v.id("households") },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    requireSeedAllowed();
+    await deleteHousehold(ctx, args.householdId);
+    return null;
   },
 });

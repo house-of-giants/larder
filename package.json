@@ -17,6 +17,7 @@
     "typecheck": "tsc --noEmit && convex typecheck",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:mcp": "vitest run --config vitest.mcp.config.ts",
     "test:e2e": "playwright test",
     "check": "bun run typecheck && bun run lint && bun run format:check && bun run test && bun run build"
   },
