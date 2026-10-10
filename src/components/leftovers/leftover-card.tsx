@@ -67,7 +67,13 @@ export function LeftoverCard({ food, now }: { food: Leftover; now: number }) {
         >
           Ate one
         </Pill>
-        <Pill ref={ateOpener} variant="text" disabled={pending} onClick={() => setAteSome(true)}>
+        <Pill
+          ref={ateOpener}
+          variant="text"
+          className="px-2.5"
+          disabled={pending}
+          onClick={() => setAteSome(true)}
+        >
           Ate…
         </Pill>
         <Pill
