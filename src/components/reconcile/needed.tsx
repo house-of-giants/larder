@@ -1,4 +1,5 @@
-import { amountText } from "#/components/recipes/recipe-text";
+import { Fragment } from "react";
+import { Amount } from "#/components/kit/amount";
 
 export type NeededAmount = { quantityText: string; unit: string };
 export type NeededPart = { text: string } | { amount: NeededAmount };
@@ -14,11 +15,19 @@ export function neededParts(required: readonly NeededAmount[]): NeededPart[] {
   );
 }
 
-/** The same sentence as plain text, as it reads on screen. */
-export function amountNeededText(required: readonly NeededAmount[]): string {
-  return neededParts(required)
-    .map((part) =>
-      "text" in part ? part.text : amountText(part.amount.quantityText, part.amount.unit),
-    )
-    .join("");
+/** The sentence as the reconcile row shows it, each amount set through `Amount`. */
+export function NeededText({ required }: { required: readonly NeededAmount[] }) {
+  return (
+    <>
+      {neededParts(required).map((part, index) => (
+        <Fragment key={index}>
+          {"text" in part ? (
+            part.text
+          ) : (
+            <Amount quantityText={part.amount.quantityText} unit={part.amount.unit} />
+          )}
+        </Fragment>
+      ))}
+    </>
+  );
 }

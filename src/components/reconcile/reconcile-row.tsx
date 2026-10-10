@@ -1,37 +1,19 @@
 import { useMutation } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
-import { Fragment, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api } from "../../../convex/_generated/api";
-import { Amount } from "#/components/kit/amount";
 import { LevelChips } from "#/components/pantry/level-chips";
 import { shownUnit } from "#/components/recipes/recipe-text";
 import { Input } from "#/components/ui/input";
 import { errorMessage } from "#/lib/errors";
 import type { Level } from "#/lib/levels";
 import { parseQuantity } from "#/lib/quantities";
-import { neededParts } from "./needed";
+import { NeededText } from "./needed";
 
 export type ReconcileItem = FunctionReturnType<typeof api.lists.reconcileItems>[number];
 
 /** How long "Saved" stays after a change goes through. */
 const SAVED_MS = 1500;
-
-/** "The week needs 22 tbsp", the amounts in tomato; split units read "1 tbsp and 2 tsp". */
-function NeededText({ item }: { item: ReconcileItem }) {
-  return (
-    <>
-      {neededParts(item.required).map((part, index) => (
-        <Fragment key={index}>
-          {"text" in part ? (
-            part.text
-          ) : (
-            <Amount quantityText={part.amount.quantityText} unit={part.amount.unit} />
-          )}
-        </Fragment>
-      ))}
-    </>
-  );
-}
 
 /**
  * One ingredient the list depends on, in the list row's shape without the circle: the
@@ -61,7 +43,7 @@ export function ReconcileRow({ item, onSaved }: { item: ReconcileItem; onSaved: 
         <div className="flex min-w-0 flex-1 flex-col">
           <span className="truncate text-body">{item.name}</span>
           <span className="mt-0.5 text-caption text-muted-foreground">
-            <NeededText item={item} />
+            <NeededText required={item.required} />
             <span aria-live="polite">{savedAt !== null && " · Saved"}</span>
           </span>
         </div>
