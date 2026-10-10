@@ -23,6 +23,7 @@ export function AisleHeading({
   title: string;
   /** Left out, the heading carries the title alone. */
   count?: number;
+  /** The words after the count; empty for the number alone. */
   countLabel?: string;
   collapsed?: boolean;
   onToggle?: () => void;
@@ -41,7 +42,8 @@ export function AisleHeading({
       ) : (
         count !== undefined && (
           <span className="shrink-0 text-caption text-muted-foreground">
-            <span className="tabular">{count}</span> {countLabel}
+            <span className="tabular">{count}</span>
+            {countLabel && ` ${countLabel}`}
           </span>
         )
       )}

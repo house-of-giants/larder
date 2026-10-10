@@ -69,16 +69,21 @@ export function PageSkeleton() {
   );
 }
 
-/** This week: title and status, the action buttons, a card per recipe. */
+/** This week: the title and its line, the Tonight card, the week's rows. */
 export function WeekSkeleton() {
   return (
-    <Frame>
-      <Title line />
-      <div className="flex gap-2">
-        <Skeleton className="h-9 w-32" />
-        <Skeleton className="h-9 w-28" />
-      </div>
-      <Cards count={3} className="h-[4.25rem]" />
+    <Frame className="gap-0 px-5 pt-3">
+      <Skeleton className="h-9 w-48" />
+      <Skeleton className="mt-1.5 h-4 w-56" />
+      <Skeleton className="mt-4 h-5 w-28" />
+      <Skeleton className="mt-4 h-40 w-full rounded-lg" />
+      <Skeleton className="mt-6 h-6 w-32" />
+      {[0, 1, 2].map((i) => (
+        <div key={i} className="flex min-h-15 items-center gap-3 border-b border-border py-2.5">
+          <Skeleton className="h-8 w-14" />
+          <Skeleton className="h-5 flex-1" />
+        </div>
+      ))}
     </Frame>
   );
 }

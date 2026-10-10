@@ -1,12 +1,21 @@
 import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
-import { useState } from "react";
+import type { FunctionReturnType } from "convex/server";
+import { BookOpen, ChevronRight, CookingPot, Soup } from "lucide-react";
+import { type ReactNode, useState } from "react";
 import { api } from "../../../../convex/_generated/api";
-import { MadeItButton } from "#/components/cook/made-it-button";
+import { MadeItSheet } from "#/components/cook/made-it-sheet";
+import { AisleHeading } from "#/components/kit/aisle-heading";
+import { Pill } from "#/components/kit/pill";
 import { WeekSkeleton } from "#/components/page-skeleton";
-import { Button } from "#/components/ui/button";
-import { type CurrentWeek } from "#/components/week/labels";
-import { StatusPill } from "#/components/week/status-pill";
+import {
+  type CurrentWeek,
+  type WeekRecipe,
+  adaptationShort,
+  fridgeLine,
+  weekStatusLabels,
+} from "#/components/week/labels";
+import { madeLabel, madeWhen, onHandText, tonightOf, yieldOf } from "#/components/week/tonight";
 import { errorMessage } from "#/lib/errors";
 import { localIsoDate, weekOfLabel } from "#/lib/week-dates";
 
@@ -14,13 +23,20 @@ export const Route = createFileRoute("/_app/week/")({
   component: Week,
 });
 
+type Cook = FunctionReturnType<typeof api.cooking.forWeek>[number];
+
 function Week() {
   const { isAuthenticated } = useConvexAuth();
   const week = useQuery(api.weeks.current, isAuthenticated ? {} : "skip");
+  const fridge = useQuery(api.leftovers.list, isAuthenticated ? {} : "skip");
+  const cooks = useQuery(
+    api.cooking.forWeek,
+    isAuthenticated && week ? { weekId: week._id } : "skip",
+  );
 
-  if (week === undefined) return <WeekSkeleton />;
+  if (week === undefined || (week !== null && cooks === undefined)) return <WeekSkeleton />;
   if (week === null) return <NoWeek />;
-  return <ThisWeek week={week} />;
+  return <ThisWeek week={week} cooks={cooks ?? []} fridgeCount={fridge?.length} />;
 }
 
 function NoWeek() {
@@ -41,110 +57,48 @@ function NoWeek() {
   }
 
   return (
-    <main className="mx-auto flex max-w-2xl flex-col gap-4 px-4 py-6">
-      <h1 className="text-2xl font-semibold tracking-tight">This week</h1>
-      <div className="flex flex-col items-start gap-4 rounded-lg border border-dashed px-4 py-8">
-        <p className="text-muted-foreground">No week started.</p>
-        <Button onClick={start} disabled={pending}>
+    <main className="mx-auto flex max-w-2xl flex-col px-5 pt-3">
+      <h1 className="font-display text-display">This week</h1>
+      <p className="mt-1 text-caption text-muted-foreground">No week started.</p>
+      <BottomBar error={error}>
+        <Pill onClick={start} disabled={pending} className="min-w-50">
           Start a week
-        </Button>
-        {error && (
-          <p role="alert" className="text-sm text-destructive">
-            {error}
-          </p>
-        )}
-      </div>
+        </Pill>
+      </BottomBar>
     </main>
   );
 }
 
-function ThisWeek({ week }: { week: CurrentWeek }) {
-  const selected = week.recipes.filter((r) => r.status === "selected");
-  const cooked = useQuery(api.cooking.forWeek, { weekId: week._id });
-  const madeAt = new Map((cooked ?? []).map((c) => [c.recipeId, c]));
-
-  return (
-    <main className="mx-auto flex max-w-2xl flex-col gap-6 px-4 py-6">
-      <div className="flex flex-col gap-1">
-        <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-semibold tracking-tight">{weekOfLabel(week.weekOf)}</h1>
-          <StatusPill status={week.status} />
-        </div>
-        <p className="text-sm text-muted-foreground">
-          {selected.length === 0 ? (
-            "No recipes picked yet."
-          ) : (
-            <>
-              <span className="tabular">{selected.length}</span>{" "}
-              {selected.length === 1 ? "recipe" : "recipes"}
-            </>
-          )}
-        </p>
-      </div>
-
-      <WeekActions week={week} selectedCount={selected.length} />
-
-      {selected.length > 0 && (
-        <ul className="flex flex-col gap-3">
-          {selected.map((r) => {
-            const made = madeAt.get(r.recipeId);
-            return (
-              <li
-                key={r.weekRecipeId}
-                className="flex items-center justify-between gap-4 rounded-lg border bg-card px-4 py-3"
-              >
-                <div className="flex min-w-0 flex-col gap-0.5">
-                  <span className="font-medium">{r.name}</span>
-                  {r.multiplier.text !== "1" && (
-                    <span className="text-sm text-muted-foreground">
-                      <span className="tabular">{r.multiplier.text}</span> batches
-                    </span>
-                  )}
-                  {made && (
-                    <span className="tabular text-sm text-primary">
-                      {madeLabel(made.cookedAt, made.times)}
-                    </span>
-                  )}
-                </div>
-                <MadeItButton
-                  recipeId={r.recipeId}
-                  recipeName={r.name}
-                  weekId={week._id}
-                  defaultMultiplier={r.multiplier.text}
-                  made={made !== undefined}
-                  className="h-11 shrink-0"
-                />
-              </li>
-            );
-          })}
-        </ul>
-      )}
-
-      {week.status !== "planning" && (
-        <Button asChild variant="outline" className="self-start">
-          <Link to="/closeout">Close the week</Link>
-        </Button>
-      )}
-    </main>
-  );
-}
-
-/** "Made Sat 2:14 PM", or "Made twice, last Sat 2:14 PM". */
-function madeLabel(cookedAt: number, times: number): string {
-  const when = new Date(cookedAt).toLocaleString(undefined, {
-    weekday: "short",
-    hour: "numeric",
-    minute: "2-digit",
-  });
-  if (times === 1) return `Made ${when}`;
-  return `Made ${times === 2 ? "twice" : `${times} times`}, last ${when}`;
-}
-
-function WeekActions({ week, selectedCount }: { week: CurrentWeek; selectedCount: number }) {
+function ThisWeek({
+  week,
+  cooks,
+  fridgeCount,
+}: {
+  week: CurrentWeek;
+  cooks: Cook[];
+  /** Undefined while the leftovers load; the caption leaves the fridge out until then. */
+  fridgeCount: number | undefined;
+}) {
   const generate = useMutation(api.lists.generate);
   const navigate = useNavigate();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // One Made it sheet for the screen, so it stays open on its summary while the recipe it
+  // made moves from Tonight into the rows.
+  const [cooking, setCooking] = useState<WeekRecipe | null>(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const madeIt = (recipe: WeekRecipe) => {
+    setCooking(recipe);
+    setSheetOpen(true);
+  };
+
+  const selected = week.recipes.filter((r) => r.status === "selected");
+  const madeAt = new Map(cooks.map((c) => [c.recipeId, c]));
+  const tonight = tonightOf(week.recipes, cooks);
+  const rest = selected.filter((r) => r !== tonight);
+  const { status } = week;
+  const shopping = status === "shopping";
+  const lateWeek = status === "cooking" || status === "active";
 
   async function makeList() {
     setPending(true);
@@ -158,33 +112,263 @@ function WeekActions({ week, selectedCount }: { week: CurrentWeek; selectedCount
     }
   }
 
-  if (week.status !== "planning" && week.status !== "shopping") return null;
-  const shopping = week.status === "shopping";
+  // The screen's one tomato control (DESIGN.md, the One Tomato Rule): the next step.
+  let primary: ReactNode = null;
+  if (status === "planning" && selected.length > 0) {
+    primary = (
+      <Pill onClick={makeList} disabled={pending} className="min-w-50">
+        Make the list
+      </Pill>
+    );
+  } else if (shopping || (lateWeek && cooks.length === 0)) {
+    primary = (
+      <Pill asChild className="min-w-50">
+        <Link to="/list">Open the list</Link>
+      </Pill>
+    );
+  }
 
   return (
-    <div className="flex flex-col gap-2">
-      <div className="flex flex-wrap gap-2">
-        {shopping && (
-          <Button asChild>
-            <Link to="/list">Open the list</Link>
-          </Button>
+    <main className="mx-auto flex max-w-2xl flex-col px-5 pt-3">
+      <h1 className="font-display text-display">{weekOfLabel(week.weekOf)}</h1>
+      <p className="mt-1 text-caption text-muted-foreground">
+        <span>
+          <span className="tabular">{selected.length}</span>{" "}
+          {selected.length === 1 ? "recipe" : "recipes"}
+        </span>
+        {` · ${weekStatusLabels[status].toLowerCase()}`}
+        {fridgeCount !== undefined && (
+          <>
+            {" · "}
+            <Link
+              to="/leftovers"
+              className="relative rounded-sm underline decoration-ring-quiet underline-offset-[3px] outline-none hover:text-foreground focus-ring after:absolute after:-inset-x-1 after:-inset-y-3.5"
+            >
+              <span className="tabular">{fridgeLine(fridgeCount)}</span>
+            </Link>
+          </>
         )}
-        <Button asChild variant="outline">
-          <Link to="/week/plan">Plan the week</Link>
-        </Button>
-        <Button
-          variant={shopping ? "outline" : "default"}
-          onClick={makeList}
-          disabled={pending || selectedCount === 0}
-        >
-          {shopping ? "Make the list again" : "Make the list"}
-        </Button>
-      </div>
-      {selectedCount === 0 && (
-        <p className="text-sm text-muted-foreground">Pick a recipe to make the list.</p>
+      </p>
+
+      {/* Secondary actions: text in tomato ink, never a row of buttons. */}
+      {(status === "planning" || shopping) && (
+        <div className="-ml-3 flex">
+          <Pill variant="text" asChild className="px-3">
+            <Link to="/week/plan">Plan the week</Link>
+          </Pill>
+          {shopping && (
+            <Pill
+              variant="text"
+              className="px-3"
+              onClick={makeList}
+              disabled={pending || selected.length === 0}
+            >
+              Make the list again
+            </Pill>
+          )}
+        </div>
       )}
+
+      {selected.length === 0 ? (
+        <p className="pt-3 text-muted-foreground">No recipes picked yet.</p>
+      ) : tonight ? (
+        <TonightCard
+          recipe={tonight}
+          onMadeIt={() => madeIt(tonight)}
+          adaptations={week.adaptations.filter((a) => a.recipeId === tonight.recipeId)}
+        />
+      ) : (
+        <AllMade cooks={cooks} />
+      )}
+
+      {rest.length > 0 && (
+        <section aria-labelledby="this-week" className="mt-2 flex flex-col">
+          <AisleHeading
+            id="this-week"
+            title="This week"
+            count={rest.length}
+            countLabel={tonight ? "more" : rest.length === 1 ? "recipe" : "recipes"}
+          />
+          <ul className="flex flex-col">
+            {rest.map((r) => (
+              <WeekRow
+                key={r.weekRecipeId}
+                recipe={r}
+                made={madeAt.get(r.recipeId)}
+                onMadeIt={() => madeIt(r)}
+              />
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {status !== "planning" && (
+        <Pill variant="text" asChild className="mt-2 -ml-3 self-start px-3">
+          <Link to="/closeout">Close the week</Link>
+        </Pill>
+      )}
+
+      {(primary || error) && <BottomBar error={error}>{primary}</BottomBar>}
+
+      {cooking && (
+        <MadeItSheet
+          key={cooking.recipeId}
+          recipeId={cooking.recipeId}
+          recipeName={cooking.name}
+          weekId={week._id}
+          defaultMultiplier={cooking.multiplier.text}
+          open={sheetOpen}
+          onOpenChange={setSheetOpen}
+        />
+      )}
+    </main>
+  );
+}
+
+/**
+ * The one card on the screen (DESIGN.md, Cards): tonight's recipe in the serif, one meta
+ * line that opens with "Tonight" and the yield in tomato, the pale Made it, and a round
+ * button to the recipe.
+ */
+function TonightCard({
+  recipe,
+  adaptations,
+  onMadeIt,
+}: {
+  recipe: WeekRecipe;
+  adaptations: CurrentWeek["adaptations"];
+  onMadeIt: () => void;
+}) {
+  const made = yieldOf(recipe);
+  const onHand = onHandText(recipe);
+  const meta = [...adaptations.map(adaptationShort), ...(onHand ? [onHand] : [])];
+  return (
+    <section
+      aria-label="Tonight"
+      className="mt-2 rounded-lg border border-border bg-card px-4 pt-3.5 pb-4"
+    >
+      <h2 className="font-display text-title">{recipe.name}</h2>
+      <p className="mt-1.5 text-caption text-muted-foreground">
+        <Soup aria-hidden className="mr-1.5 inline size-4 -translate-y-px text-primary" />
+        Tonight
+        {made && (
+          <>
+            {" · "}
+            <span className="font-semibold text-primary">
+              <span className="tabular">{made.figure}</span>
+              {made.unit && ` ${made.unit}`}
+            </span>
+          </>
+        )}
+        {meta.map((part) => (
+          <span key={part} className="tabular">
+            {` · ${part}`}
+          </span>
+        ))}
+      </p>
+      <div className="mt-3 flex items-center gap-3">
+        <Pill type="button" variant="pale" onClick={onMadeIt}>
+          <CookingPot aria-hidden className="size-[18px]" />
+          Made it
+        </Pill>
+        <Link
+          to="/recipes/$recipeId"
+          params={{ recipeId: recipe.recipeId }}
+          aria-label={`Open ${recipe.name}`}
+          className="flex size-11 items-center justify-center rounded-full border border-border text-muted-foreground outline-none hover:text-foreground focus-ring"
+        >
+          <BookOpen aria-hidden className="size-5" strokeWidth={1.8} />
+        </Link>
+      </div>
+    </section>
+  );
+}
+
+/** Every selected recipe is made: the card says so, with the last cook's time. */
+function AllMade({ cooks }: { cooks: Cook[] }) {
+  const last = Math.max(...cooks.map((c) => c.cookedAt));
+  return (
+    <section
+      aria-label="Tonight"
+      className="mt-3 rounded-lg border border-border bg-card px-4 pt-3.5 pb-4"
+    >
+      <h2 className="font-display text-title">All made</h2>
+      <p className="mt-1.5 text-caption text-muted-foreground">
+        <span className="tabular">Last one {madeWhen(last)}</span>
+      </p>
+    </section>
+  );
+}
+
+/**
+ * A recipe in the week: the yield as a serif numeral with its unit under it, the name, and
+ * what is on hand or when it was made. The whole row opens the recipe; Made it is an
+ * outline pill until the recipe is made.
+ */
+function WeekRow({
+  recipe,
+  made,
+  onMadeIt,
+}: {
+  recipe: WeekRecipe;
+  made: Cook | undefined;
+  onMadeIt: () => void;
+}) {
+  const makes = yieldOf(recipe);
+  const second = made ? madeLabel(made.cookedAt, made.times) : onHandText(recipe);
+  return (
+    <li className="relative flex min-h-15 items-center gap-3 border-b border-border py-2.5 last:border-b-0">
+      <span className="flex w-14 shrink-0 flex-col items-end">
+        {makes && (
+          <>
+            <span className="font-display text-title leading-none text-primary">
+              {makes.figure}
+            </span>
+            {makes.unit && (
+              <span className="mt-0.5 max-w-full truncate text-label text-muted-foreground">
+                {makes.unit}
+              </span>
+            )}
+          </>
+        )}
+      </span>
+      <span className="flex min-w-0 flex-1 flex-col">
+        <Link
+          to="/recipes/$recipeId"
+          params={{ recipeId: recipe.recipeId }}
+          className="rounded-sm text-body outline-none focus-ring after:absolute after:inset-0"
+        >
+          {recipe.name}
+        </Link>
+        {second && (
+          <span className="mt-0.5 text-caption text-muted-foreground">
+            <span className="tabular">{second}</span>
+          </span>
+        )}
+        {/* Under the words, so a long name keeps the row's width. */}
+        {!made && (
+          <Pill
+            type="button"
+            variant="outline"
+            className="relative mt-2 mb-0.5 h-10 self-start px-4"
+            onClick={onMadeIt}
+          >
+            Made it
+          </Pill>
+        )}
+      </span>
+      <ChevronRight aria-hidden className="size-[18px] shrink-0 text-ring-quiet" />
+    </li>
+  );
+}
+
+/** In thumb reach above the tab bar, on a paper fade, wherever the week is scrolled. */
+function BottomBar({ error, children }: { error: string | null; children: ReactNode }) {
+  return (
+    <div className="sticky bottom-[calc(4rem+1px+env(safe-area-inset-bottom))] z-10 -mx-5 mt-auto flex flex-col items-center gap-2 bg-linear-to-b from-transparent to-background to-40% px-5 pt-9 pb-3">
+      {children}
       {error && (
-        <p role="alert" className="text-sm text-destructive">
+        <p role="alert" className="text-caption text-destructive">
           {error}
         </p>
       )}

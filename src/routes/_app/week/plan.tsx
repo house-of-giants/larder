@@ -5,9 +5,10 @@ import { type ReactNode, useState } from "react";
 import { toast } from "sonner";
 import { api } from "../../../../convex/_generated/api";
 import type { Id } from "../../../../convex/_generated/dataModel";
+import { AisleHeading } from "#/components/kit/aisle-heading";
+import { Pill } from "#/components/kit/pill";
 import { PlanSkeleton } from "#/components/page-skeleton";
 import type { IngredientOption } from "#/components/recipes/recipe-text";
-import { Button } from "#/components/ui/button";
 import { AdaptationSheet } from "#/components/week/adaptation-sheet";
 import {
   type Adaptation,
@@ -17,6 +18,7 @@ import {
 } from "#/components/week/labels";
 import { MultiplierField } from "#/components/week/multiplier-field";
 import { errorMessage } from "#/lib/errors";
+import { cn } from "#/lib/utils";
 import { weekOfLabel } from "#/lib/week-dates";
 
 export const Route = createFileRoute("/_app/week/plan")({
@@ -35,14 +37,14 @@ function Plan() {
 
   if (week === null || (week.status !== "planning" && week.status !== "shopping")) {
     return (
-      <main className="mx-auto flex max-w-2xl flex-col items-start gap-4 px-4 py-6">
-        <h1 className="text-2xl font-semibold tracking-tight">Plan the week</h1>
-        <p className="text-muted-foreground">
+      <main className="mx-auto flex max-w-2xl flex-col items-start px-5 pt-3">
+        <h1 className="font-display text-display">Plan the week</h1>
+        <p className="mt-1 text-caption text-muted-foreground">
           {week === null ? "No week started." : "The plan is set for this week."}
         </p>
-        <Button asChild variant="outline">
+        <Pill variant="text" asChild className="-ml-3 px-3">
           <Link to="/week">Back to the week</Link>
-        </Button>
+        </Pill>
       </main>
     );
   }
@@ -52,16 +54,13 @@ function Plan() {
   const group = (status: WeekRecipeStatus) => week.recipes.filter((r) => r.status === status);
 
   return (
-    <main className="mx-auto flex max-w-2xl flex-col gap-6 px-4 py-6">
-      <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-semibold tracking-tight">Plan the week</h1>
-        <p className="text-sm text-muted-foreground">{weekOfLabel(week.weekOf)}</p>
-      </div>
-      {week.status === "shopping" && (
-        <p className="rounded-lg border px-4 py-3 text-sm text-muted-foreground">
-          The list is made. Changes here show up when you make it again.
-        </p>
-      )}
+    <main className="mx-auto flex max-w-2xl flex-col px-5 pt-3 pb-6">
+      <h1 className="font-display text-display">Plan the week</h1>
+      <p className="mt-1 text-caption text-muted-foreground">
+        {weekOfLabel(week.weekOf)}
+        {week.status === "shopping" &&
+          ". The list is made. Changes here show up when you make it again."}
+      </p>
 
       <Group
         title="Selected"
@@ -109,7 +108,10 @@ function Plan() {
           recipes.length === 0 ? (
             <>
               No recipes yet.{" "}
-              <Link to="/recipes/new" className="text-primary underline-offset-4 hover:underline">
+              <Link
+                to="/recipes/new"
+                className="rounded-sm text-accent-foreground underline underline-offset-[3px] outline-none focus-ring"
+              >
                 Add one
               </Link>
             </>
@@ -126,6 +128,7 @@ function Plan() {
   );
 }
 
+/** A heading in the serif with its count, then rows with hairlines; no box around them. */
 function Group({
   title,
   empty,
@@ -137,18 +140,17 @@ function Group({
 }) {
   const headingId = `plan-${title.toLowerCase().replace(/\s+/g, "-")}`;
   return (
-    <section aria-labelledby={headingId} className="flex flex-col gap-2">
-      <h2
+    <section aria-labelledby={headingId} className="flex flex-col">
+      <AisleHeading
         id={headingId}
-        className="flex items-baseline justify-between text-sm font-medium text-muted-foreground"
-      >
-        {title}
-        <span className="tabular">{children.length}</span>
-      </h2>
+        title={title}
+        count={children.length === 0 ? undefined : children.length}
+        countLabel=""
+      />
       {children.length === 0 ? (
-        <p className="px-1 text-sm text-muted-foreground">{empty}</p>
+        <p className="pt-1 pb-2 text-caption text-muted-foreground">{empty}</p>
       ) : (
-        <ul className="flex flex-col divide-y rounded-lg border bg-card">{children}</ul>
+        <ul className="flex flex-col">{children}</ul>
       )}
     </section>
   );
@@ -183,21 +185,32 @@ function Moves({
 }) {
   const setStatus = useSetStatus(weekId, recipeId);
   return (
-    <div className="flex shrink-0 gap-1.5">
+    <div className="-mx-3 flex shrink-0">
       {moves
         .filter((m) => m.status !== status)
         .map((m) => (
-          <Button
+          <Pill
             key={m.status}
             type="button"
-            variant={m.status === "selected" ? "default" : "outline"}
-            size="sm"
-            className="h-10 min-w-14"
+            variant="text"
+            className="px-3"
             onClick={() => void setStatus(m.status)}
           >
             {m.label}
-          </Button>
+          </Pill>
         ))}
+    </div>
+  );
+}
+
+const rowClass = "flex flex-col border-b border-border py-1.5 last:border-b-0";
+
+/** The name, then the moves beside it, or under it when the name needs the width. */
+function NameAndMoves({ name, children }: { name: string; children: ReactNode }) {
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-x-3">
+      <span className="min-w-0 flex-[1_1_14rem] pt-2.5 pb-1 text-body">{name}</span>
+      {children}
     </div>
   );
 }
@@ -214,9 +227,10 @@ function RecipeRow({
   status?: WeekRecipeStatus;
 }) {
   return (
-    <li className="flex items-center justify-between gap-3 px-4 py-2.5">
-      <span className="min-w-0">{name}</span>
-      <Moves weekId={weekId} recipeId={recipeId} status={status} />
+    <li className={rowClass}>
+      <NameAndMoves name={name}>
+        <Moves weekId={weekId} recipeId={recipeId} status={status} />
+      </NameAndMoves>
     </li>
   );
 }
@@ -244,43 +258,41 @@ function SelectedRecipe({
   }
 
   return (
-    <li className="flex flex-col gap-3 px-4 py-3">
-      <div className="flex items-center justify-between gap-3">
-        <span className="min-w-0 font-medium">{recipe.name}</span>
+    <li className={cn(rowClass, "pb-2")}>
+      <NameAndMoves name={recipe.name}>
         <Moves weekId={week._id} recipeId={recipe.recipeId} status="selected" />
-      </div>
+      </NameAndMoves>
       <MultiplierField weekId={week._id} recipeId={recipe.recipeId} text={recipe.multiplier.text} />
       {adaptations.length > 0 && (
-        <ul className="flex flex-col gap-1">
+        <ul className="mt-1 flex flex-col">
           {adaptations.map((a) => (
-            <li key={a._id} className="flex items-start justify-between gap-2 text-sm">
-              <span className="flex min-w-0 flex-col gap-0.5 pt-2">
+            <li key={a._id} className="flex items-start gap-2 text-caption">
+              {/* The text's first line sits on the X's centre line. */}
+              <span className="flex min-w-0 flex-1 flex-col gap-0.5 pt-[13px]">
                 <span>{adaptationText(a)}</span>
                 {a.description && <span className="text-muted-foreground">{a.description}</span>}
               </span>
-              <Button
+              <button
                 type="button"
-                variant="ghost"
-                size="icon-lg"
                 aria-label={`Remove: ${adaptationText(a)}`}
                 onClick={() => void remove(a._id)}
+                className="-mr-3 flex size-11 shrink-0 items-center justify-center rounded-full text-muted-foreground outline-none hover:text-foreground focus-ring"
               >
-                <X aria-hidden />
-              </Button>
+                <X aria-hidden className="size-[18px]" />
+              </button>
             </li>
           ))}
         </ul>
       )}
-      <Button
+      <Pill
         type="button"
-        variant="ghost"
-        size="sm"
-        className="h-10 self-start"
+        variant="text"
+        className="-ml-3 gap-1.5 self-start px-3"
         onClick={() => setSheetOpen(true)}
       >
-        <Plus aria-hidden />
+        <Plus aria-hidden className="size-4" />
         Change for this week
-      </Button>
+      </Pill>
       <AdaptationSheet
         weekId={week._id}
         recipeId={recipe.recipeId}
