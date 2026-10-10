@@ -67,6 +67,8 @@ const week = {
       status: "selected" as const,
       multiplier: { text: "1", decimal: 1 },
       yield: { quantityText: "12", quantityDecimal: 12, unit: "sliders" },
+      ingredientCount: 16,
+      onHandCount: 9,
     },
   ],
   adaptations: [],
@@ -540,6 +542,14 @@ describe("the MCP tool surface", () => {
     expect(calls.map((call) => call.method)).toEqual(c.calls);
     // Internal fields never leave, even when the backend returns them.
     expect(JSON.stringify(result.structuredContent)).not.toContain("hh_secret");
+  });
+
+  it("weeks_current tells the agent how much of each recipe is on hand", async () => {
+    const client = await connect(fakeBackend([]));
+    const result = await client.callTool({ name: "weeks_current", arguments: {} });
+    expect(result.structuredContent).toMatchObject({
+      week: { recipes: [{ name: "Sliders", ingredientCount: 16, onHandCount: 9 }] },
+    });
   });
 
   it.each(cases)("$tool refuses arguments its input schema does not allow", async (c) => {
