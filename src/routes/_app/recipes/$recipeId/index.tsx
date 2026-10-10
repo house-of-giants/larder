@@ -63,7 +63,7 @@ function RecipeView({ recipe }: { recipe: Recipe }) {
                     target="_blank"
                     rel="noreferrer"
                     // A 44px tap target around the caption-sized words, without moving the line.
-                    className="relative rounded-sm underline decoration-ring-quiet underline-offset-4 after:absolute after:-inset-x-1 after:-inset-y-3.5 hover:text-foreground focus-ring"
+                    className="relative rounded-sm underline decoration-ring-quiet underline-offset-4 after:absolute after:-inset-x-1 after:-inset-y-4 hover:text-foreground focus-ring"
                   >
                     {sourceLabel}
                   </a>
