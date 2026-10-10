@@ -35,7 +35,8 @@ const buttonVariants = cva(
         "icon-lg": "size-10",
         pill: "h-11 gap-2 px-5",
         // The full-width primary in a half sheet's footer, in thumb reach.
-        "pill-sheet": "h-12.5 w-full gap-2 px-5 text-body",
+        // Its label stays at Secondary (15px, 600), as on every pill.
+        "pill-sheet": "h-12.5 w-full gap-2 px-5",
       },
     },
     defaultVariants: {

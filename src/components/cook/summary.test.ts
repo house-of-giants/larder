@@ -30,10 +30,10 @@ describe("summaryLines", () => {
         },
       ]),
     ).toEqual([
-      { text: "Hawaiian rolls went to 0", tone: "plain" },
-      { text: "Sliced ham went to 0 oz", tone: "plain" },
-      { text: "Unsalted butter went to 3 tbsp", tone: "plain" },
-      { text: "Italian seasoning went to half", tone: "plain" },
+      { text: "Hawaiian rolls went to 0.", tone: "plain" },
+      { text: "Sliced ham went to 0 oz.", tone: "plain" },
+      { text: "Unsalted butter went to 3 tbsp.", tone: "plain" },
+      { text: "Italian seasoning went to half.", tone: "plain" },
     ]);
   });
 
@@ -43,6 +43,21 @@ describe("summaryLines", () => {
       count({ name: "sliced ham", unit: "oz", before: 6, after: 0, used: 8, wentNegative: true }),
     ]);
     expect(lines[0]).toEqual({ text: "Short on sliced ham: had 6 oz, used 8 oz.", tone: "short" });
+  });
+
+  it("says a level that ran out is out, not that it went to out", () => {
+    expect(
+      summaryLines([
+        {
+          ingredientId: "c" as DeductionView["ingredientId"],
+          name: "ground cinnamon",
+          kind: "level",
+          before: "low",
+          after: "out",
+          wentNegative: false,
+        },
+      ]),
+    ).toEqual([{ text: "Ground cinnamon is out.", tone: "plain" }]);
   });
 
   it("names a level that was already out as short", () => {
@@ -72,12 +87,33 @@ describe("summaryLines", () => {
           note: "unit mismatch",
         }),
         count({ name: "large eggs", before: 15, after: 15, used: null, note: "no decimal" }),
-        count({ name: "lettuce", unit: "cup", before: null, after: null, used: 3 }),
       ]),
     ).toEqual([
-      { text: "Bacon left alone: the pantry counts it in slice.", tone: "quiet" },
+      { text: "Bacon left alone: the pantry counts it in slices.", tone: "quiet" },
       { text: "Large eggs left alone: the recipe gives no amount.", tone: "quiet" },
-      { text: "Lettuce is not in the pantry.", tone: "quiet" },
+    ]);
+  });
+
+  it("gathers everything not in the pantry into one quiet line, last", () => {
+    expect(
+      summaryLines([
+        count({ name: "crisp apples", before: null, after: null, used: 4 }),
+        count({}),
+        {
+          ingredientId: "m" as DeductionView["ingredientId"],
+          name: "maple syrup",
+          kind: "level",
+          before: null,
+          after: null,
+          wentNegative: false,
+        },
+        count({ name: "bacon", unit: "slice", used: null, note: "unit mismatch" }),
+        count({ name: "plain Greek yogurt", unit: "cup", before: null, after: null, used: 4 }),
+      ]),
+    ).toEqual([
+      { text: "Hawaiian rolls went to 0.", tone: "plain" },
+      { text: "Bacon left alone: the pantry counts it in slices.", tone: "quiet" },
+      { text: "Not in the pantry: crisp apples, maple syrup, plain Greek yogurt.", tone: "quiet" },
     ]);
   });
 });

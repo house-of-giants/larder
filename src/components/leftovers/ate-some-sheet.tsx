@@ -2,7 +2,8 @@ import { useMutation } from "convex/react";
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { api } from "../../../convex/_generated/api";
-import { MultiplierPicker } from "#/components/cook/multiplier-picker";
+import { BatchPicker } from "#/components/cook/batch-picker";
+import { shownUnit } from "#/components/recipes/recipe-text";
 import { Button } from "#/components/ui/button";
 import {
   Sheet,
@@ -14,6 +15,7 @@ import {
 import { amountWords } from "#/lib/amounts";
 import { errorMessage } from "#/lib/errors";
 import { parseQuantity } from "#/lib/quantities";
+import { pluralUnit } from "#/lib/units";
 import { RemainingWords } from "./leftover-card";
 import type { Leftover } from "./types";
 
@@ -78,9 +80,10 @@ function AteSomeForm({ food, close }: { food: Leftover; close: () => void }) {
       noValidate
       className="flex flex-col gap-4 px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]"
     >
-      <MultiplierPicker
+      <BatchPicker
         id={id}
         label="Ate"
+        unit={{ one: shownUnit(food.unit), many: pluralUnit("2", shownUnit(food.unit)) }}
         value={quantityText}
         onChange={(text) => {
           setQuantityText(text);

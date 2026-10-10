@@ -2,7 +2,7 @@ import { useMutation } from "convex/react";
 import { useRef, useState } from "react";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
-import { MultiplierPicker } from "#/components/cook/multiplier-picker";
+import { BatchPicker } from "#/components/cook/batch-picker";
 import { errorMessage } from "#/lib/errors";
 import { type PickEvent, multiplierChange, pickState } from "#/lib/multiplier";
 import { parseQuantity } from "#/lib/quantities";
@@ -10,9 +10,9 @@ import { parseQuantity } from "#/lib/quantities";
 const badMultiplier = "Use a number like 1/2, 1 or 2.";
 
 /**
- * How many batches of a selected recipe: the shared picker (picks, then the typed field)
- * with the plan's saving. The field is a draft until it loses focus (or Enter); the quick
- * picks save at once. Shows the words as typed: "1 1/2", not 1.5.
+ * How many batches of a selected recipe: the shared batch picker (three squares, then
+ * Other… for the typed field) with the plan's saving. The field is a draft until it loses
+ * focus (or Enter); the squares save at once. Shows the words as typed: "1 1/2", not 1.5.
  */
 export function MultiplierField({
   weekId,
@@ -69,8 +69,9 @@ export function MultiplierField({
         (e.currentTarget.elements.namedItem(id) as HTMLInputElement).blur();
       }}
     >
-      <MultiplierPicker
+      <BatchPicker
         id={id}
+        compact
         value={draft ?? text}
         pressed={text}
         error={error}
