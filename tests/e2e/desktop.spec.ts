@@ -71,9 +71,11 @@ test.describe("desktop shell", () => {
     await expect(headerGear(page)).toBeAttached();
     await expect(headerGear(page)).toBeHidden();
 
+    // The column starts a 32px gutter past the rail and is exactly the phone column's width:
+    // a centred or narrowed column, or a missing gutter, fails here.
     const main = (await page.locator("main").boundingBox())!;
-    expect(main.x).toBeGreaterThanOrEqual(RAIL);
-    expect(main.width).toBeLessThanOrEqual(COLUMN);
+    expect(main.x).toBe(RAIL + 32);
+    expect(main.width).toBe(COLUMN);
     // The header spans the column alone, at the 48px the sticky headings are offset by.
     const header = (await page.locator("header").boundingBox())!;
     expect(header.x).toBe(main.x);
@@ -84,8 +86,7 @@ test.describe("desktop shell", () => {
     await rail(page).getByRole("link", { name: "Pantry" }).click();
     await expect(page).toHaveURL(/\/pantry$/);
     const fab = (await page.getByRole("button", { name: "Add to pantry" }).boundingBox())!;
-    expect(fab.x + fab.width).toBeLessThanOrEqual(main.x + main.width);
-    expect(fab.x + fab.width).toBeGreaterThan(main.x + main.width - 32);
+    expect(main.x + main.width - (fab.x + fab.width)).toBe(16);
     expect(DESKTOP.height - (fab.y + fab.height)).toBe(16);
 
     await page.setViewportSize(PHONE);
