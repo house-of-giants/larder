@@ -98,9 +98,13 @@ export async function deleteTestUser(email: string): Promise<void> {
     `https://api.clerk.com/v1/users?email_address=${encodeURIComponent(email)}&limit=5`,
     { headers },
   );
-  if (!list.ok) return;
+  if (!list.ok) throw new Error(`Clerk user lookup for ${email} failed: ${list.status}`);
   const users = (await list.json()) as { id: string }[];
   for (const user of users) {
-    await fetch(`https://api.clerk.com/v1/users/${user.id}`, { method: "DELETE", headers });
+    const gone = await fetch(`https://api.clerk.com/v1/users/${user.id}`, {
+      method: "DELETE",
+      headers,
+    });
+    if (!gone.ok) throw new Error(`Clerk could not delete test user ${email}: ${gone.status}`);
   }
 }
