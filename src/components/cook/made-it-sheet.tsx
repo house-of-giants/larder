@@ -318,14 +318,23 @@ function IngredientRow({
   // A number leads ("8 oz bacon"); words that are not a number follow ("nonstick spray, as needed").
   const figure = amountTone(row.quantityText) === "accent";
   const hasAmount = amountText(row.quantityText, row.unit) !== "";
-  const words = (quiet: boolean) => (
+  const words = (quiet: boolean, marked = false) => (
     <>
       {figure && (
         <>
           <Amount quantityText={row.quantityText} unit={row.unit} quiet={quiet} />{" "}
         </>
       )}
-      <span className={cn(quiet && "text-muted-foreground")}>{row.name}</span>
+      <span
+        className={cn(
+          quiet && "text-muted-foreground",
+          // "Swap something" is on: the names that can be swapped say so.
+          marked &&
+            "underline decoration-ring-quiet decoration-dotted decoration-[1.5px] underline-offset-4",
+        )}
+      >
+        {row.name}
+      </span>
       {!figure && hasAmount && (
         <span className="text-muted-foreground">
           , <Amount quantityText={row.quantityText} unit={row.unit} quiet />
@@ -379,14 +388,7 @@ function IngredientRow({
             className="min-w-0 flex-1 rounded-sm py-2.5 text-left text-body outline-none focus-ring"
           >
             <span className="sr-only">Swap </span>
-            <span
-              className={cn(
-                choosing &&
-                  "underline decoration-ring-quiet decoration-dotted decoration-[1.5px] underline-offset-4",
-              )}
-            >
-              {words(false)}
-            </span>
+            {words(false, choosing)}
           </button>
         ) : (
           // Left out, the name is the circle's label too: tapping it puts the row back.

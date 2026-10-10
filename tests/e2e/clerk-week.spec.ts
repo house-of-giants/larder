@@ -74,6 +74,26 @@ const toGet = (page: Page, n: number) => page.getByText(new RegExp(`^${n} to get
 const pantryRow = (page: Page, name: string) =>
   page.locator("main li").filter({ has: page.getByText(name, { exact: true }) });
 
+/**
+ * Counts every Sonner toast that reaches the page from now on, even one already gone by the
+ * time it is asked: a toast only has to exist for a moment to say the same thing twice.
+ */
+async function watchToasts(page: Page) {
+  await page.evaluate(() => {
+    const before = new Set(document.querySelectorAll("[data-sonner-toast]"));
+    const seen = new Set<Element>();
+    const w = window as unknown as { toastsSeen: () => number };
+    const note = () =>
+      document.querySelectorAll("[data-sonner-toast]").forEach((el) => {
+        if (!before.has(el)) seen.add(el);
+      });
+    new MutationObserver(note).observe(document.body, { childList: true, subtree: true });
+    w.toastsSeen = () => (note(), seen.size);
+  });
+  return () =>
+    page.evaluate(() => (window as unknown as { toastsSeen: () => number }).toastsSeen());
+}
+
 /** A leftover card by its heading. */
 const leftoverCard = (page: Page, name: string) =>
   page.locator("main li").filter({ has: page.getByRole("heading", { name }) });
@@ -376,6 +396,7 @@ test.describe("a week in one household, signed in with Clerk", () => {
         await expect(sheet.getByRole("list", { name: "Ingredients used" })).toBeVisible();
         await expect.soft(sheet.getByText("1 batch makes", { exact: true })).toBeVisible();
         await expect.soft(sheet.getByText("8 biscuits", { exact: true })).toBeVisible();
+        let toastsSeen = await watchToasts(one);
         await sheet.getByRole("button", { name: "Made it", exact: true }).click();
         // The sheet stays on its summary while Tonight moves on to the next recipe behind it
         // (the open sheet hides the page from the accessibility tree, so CSS finds it).
@@ -385,7 +406,7 @@ test.describe("a week in one household, signed in with Clerk", () => {
         await expect.soft(one.locator('section[aria-label="Tonight"] h2')).not.toHaveText(BISCUITS);
         // The sheet is the confirmation; nothing says it again in a toast.
         await one.waitForTimeout(1_000);
-        await expect.soft(one.locator("[data-sonner-toast]")).toHaveCount(0);
+        expect.soft(await toastsSeen(), "no toast after Made it").toBe(0);
         await shot(one, "06a-tonight-summary");
         await sheet.getByRole("button", { name: "Done" }).click();
         // The rows hold no verbs: the biscuits row says when it was made.
@@ -405,12 +426,13 @@ test.describe("a week in one household, signed in with Clerk", () => {
           .toHaveAttribute("aria-pressed", "true");
         await expect(sheet.getByRole("list", { name: "Ingredients used" })).toBeVisible();
         await shot(one, "06b-made-it-sheet");
+        toastsSeen = await watchToasts(one);
         await sheet.getByRole("button", { name: "Made it", exact: true }).click();
         await expect
           .soft(sheet.getByText("12 sliders in the fridge.", { exact: true }))
           .toBeVisible();
         await one.waitForTimeout(1_000);
-        await expect.soft(one.locator("[data-sonner-toast]")).toHaveCount(0);
+        expect.soft(await toastsSeen(), "no toast after Made it").toBe(0);
         await shot(one, "06c-made-it-summary");
         await sheet.getByRole("button", { name: "Done" }).click();
 
