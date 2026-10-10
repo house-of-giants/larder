@@ -62,6 +62,8 @@ export function BatchPicker({
     // Synchronously, so the focus lands inside the tap and a phone raises its keyboard.
     flushSync(() => setTyping(true));
     field.current?.focus();
+    // What is there is replaced by what is typed, not added to.
+    field.current?.select();
   }
 
   return (

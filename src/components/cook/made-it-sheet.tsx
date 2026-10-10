@@ -233,11 +233,8 @@ function MadeItForm({
         caption={
           line && (
             <p className="text-caption text-muted-foreground">
-              <span className="tabular">{line.lead}</span>{" "}
-              <span className="font-semibold text-primary">
-                <span className="tabular">{line.made}</span>
-              </span>
-              .
+              <span>{line.lead}</span>{" "}
+              <span className="font-semibold text-primary">{line.made}</span>.
             </p>
           )
         }

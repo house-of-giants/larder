@@ -41,6 +41,8 @@ const OTHER = "Other";
 const SLIDERS = "Italian Grinder Sliders";
 // The seeded week's first selected recipe, and so tonight's until it is made.
 const BISCUITS = "Bacon, Egg and Pepper Jack Breakfast Biscuits";
+// Sixteen ingredients: more rows than the Made it sheet shows at once on a phone.
+const POT_ROAST = "Rosemary Balsamic Pot Roast with Carrots and Potatoes";
 
 // The list the seeded week must produce, computed by hand before the generator existed.
 type ExpectedList = {
@@ -229,7 +231,9 @@ test.describe("a week in one household, signed in with Clerk", () => {
           await pick("1/2").elementHandle(),
         );
         expect.soft(picksFirst, "the picks come before the typed field").toBe(true);
-        // The typed field is a draft until it loses focus.
+        // The typed field opens only on Other…, and is a draft until it loses focus.
+        await expect.soft(batches).toBeHidden();
+        await sliders.getByRole("button", { name: "Other…" }).click();
         await batches.fill("2");
         await batches.blur();
         await expect.soft(pick("2")).toHaveAttribute("aria-pressed", "true");
@@ -370,6 +374,8 @@ test.describe("a week in one household, signed in with Clerk", () => {
         await tonight.getByRole("button", { name: "Made it", exact: true }).click();
         const sheet = one.getByRole("dialog");
         await expect(sheet.getByRole("list", { name: "Ingredients used" })).toBeVisible();
+        await expect.soft(sheet.getByText("1 batch makes", { exact: true })).toBeVisible();
+        await expect.soft(sheet.getByText("8 biscuits", { exact: true })).toBeVisible();
         await sheet.getByRole("button", { name: "Made it", exact: true }).click();
         // The sheet stays on its summary while Tonight moves on to the next recipe behind it
         // (the open sheet hides the page from the accessibility tree, so CSS finds it).
@@ -377,6 +383,9 @@ test.describe("a week in one household, signed in with Clerk", () => {
           .soft(sheet.getByText("8 biscuits in the fridge.", { exact: true }))
           .toBeVisible();
         await expect.soft(one.locator('section[aria-label="Tonight"] h2')).not.toHaveText(BISCUITS);
+        // The sheet is the confirmation; nothing says it again in a toast.
+        await one.waitForTimeout(1_000);
+        await expect.soft(one.locator("[data-sonner-toast]")).toHaveCount(0);
         await shot(one, "06a-tonight-summary");
         await sheet.getByRole("button", { name: "Done" }).click();
         // The rows hold no verbs: the biscuits row says when it was made.
@@ -398,10 +407,44 @@ test.describe("a week in one household, signed in with Clerk", () => {
         await shot(one, "06b-made-it-sheet");
         await sheet.getByRole("button", { name: "Made it", exact: true }).click();
         await expect
-          .soft(one.getByText(new RegExp(`^Made ${SLIDERS}\\. 12 sliders in the`)))
+          .soft(sheet.getByText("12 sliders in the fridge.", { exact: true }))
           .toBeVisible();
+        await one.waitForTimeout(1_000);
+        await expect.soft(one.locator("[data-sonner-toast]")).toHaveCount(0);
         await shot(one, "06c-made-it-summary");
         await sheet.getByRole("button", { name: "Done" }).click();
+
+        // A long recipe on a 390 x 844 phone: the sheet stops short of the top and its body
+        // scrolls, so the last row and the Made it pill are both reachable.
+        const viewport = one.viewportSize();
+        await one.setViewportSize({ width: 390, height: 844 });
+        await one.goto("/week");
+        await one.locator("main li").getByRole("link", { name: POT_ROAST }).click();
+        await expect(one).toHaveURL(/\/recipes\//);
+        await one.getByRole("button", { name: "Made it", exact: true }).click();
+        const roastRows = sheet.getByRole("list", { name: "Ingredients used" });
+        await expect(roastRows).toBeVisible();
+        const scroll = await roastRows.evaluate((list) => {
+          let region = list.parentElement;
+          while (region && getComputedStyle(region).overflowY !== "auto") {
+            region = region.parentElement;
+          }
+          const sheetBox = list.closest('[role="dialog"]')!.getBoundingClientRect();
+          return {
+            rows: list.children.length,
+            scrolls: region !== null && region.scrollHeight > region.clientHeight,
+            sheetHeight: sheetBox.height,
+          };
+        });
+        expect.soft(scroll.rows, "the pot roast's rows").toBeGreaterThanOrEqual(14);
+        expect.soft(scroll.scrolls, "the sheet's body scrolls").toBe(true);
+        expect
+          .soft(scroll.sheetHeight, "the sheet stays under 92dvh")
+          .toBeLessThanOrEqual(844 * 0.92 + 1);
+        await shot(one, "06c2-long-sheet");
+        await sheet.getByRole("button", { name: "Close" }).click();
+        await expect(sheet).toBeHidden();
+        if (viewport) await one.setViewportSize(viewport);
 
         await one.goto("/pantry");
         for (const name of ["Hawaiian rolls", "sliced ham"]) {
