@@ -139,6 +139,7 @@ test.describe("a week in one household, signed in with Clerk", () => {
       return context.newPage();
     }
 
+    const leaks: string[] = [];
     try {
       const one = await newPerson();
       let invite = { url: "", code: "" };
@@ -584,8 +585,18 @@ test.describe("a week in one household, signed in with Clerk", () => {
         convexRun("testing:deleteDevHousehold", { householdId });
       }
       for (const context of contexts) await context.close();
-      // The three sign-ups come off the development instance, which caps at 100 users.
-      for (const email of Object.values(EMAIL)) await deleteTestUser(email);
+      // The three sign-ups come off the development instance, which caps at 100 users. Every
+      // user is tried; failures are reported after the walk's own result, never over it.
+      for (const email of Object.values(EMAIL)) {
+        try {
+          await deleteTestUser(email);
+        } catch (error) {
+          leaks.push(error instanceof Error ? error.message : String(error));
+        }
+      }
     }
+    // Reached only when the walk itself passed: a quiet leak here is what filled the
+    // instance once, so it fails the run on its own.
+    expect(leaks, "test users not cleaned up").toEqual([]);
   });
 });
