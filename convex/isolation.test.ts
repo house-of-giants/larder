@@ -50,6 +50,7 @@ const cases: Case[] = [
     args: {},
   },
   { name: "households.leave", kind: "mutation", fn: api.households.leave, args: {} },
+  { name: "households.refreshName", kind: "mutation", fn: api.households.refreshName, args: {} },
   { name: "events.recent", kind: "query", fn: api.events.recent, args: {} },
   // Phase 2. convex-test ids are a counter then the table name; these pass `v.id` and
   // point at nothing, which is fine: the refusal comes first.
