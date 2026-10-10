@@ -1,5 +1,5 @@
 import { useMutation } from "convex/react";
-import { useRef, useState } from "react";
+import { type RefObject, useRef, useState } from "react";
 import { toast } from "sonner";
 import { api } from "../../../convex/_generated/api";
 import { ConfirmDialog } from "#/components/confirm-dialog";
@@ -15,7 +15,16 @@ import type { Leftover } from "./types";
  * much is left in tomato, then what to do with it. Ate one is the pale pill; the rest are
  * text actions.
  */
-export function LeftoverCard({ food, now }: { food: Leftover; now: number }) {
+export function LeftoverCard({
+  food,
+  now,
+  title,
+}: {
+  food: Leftover;
+  now: number;
+  /** The screen's title, where focus lands once this row is gone. */
+  title: RefObject<HTMLElement | null>;
+}) {
   const consume = useMutation(api.leftovers.consume);
   const discard = useMutation(api.leftovers.discard);
   const move = useMutation(api.leftovers.move);
@@ -110,7 +119,13 @@ export function LeftoverCard({ food, now }: { food: Leftover; now: number }) {
           {error}
         </p>
       )}
-      <AteSomeSheet food={food} open={ateSome} onOpenChange={setAteSome} opener={ateOpener} />
+      <AteSomeSheet
+        food={food}
+        open={ateSome}
+        onOpenChange={setAteSome}
+        opener={ateOpener}
+        fallbackFocus={title}
+      />
     </li>
   );
 }

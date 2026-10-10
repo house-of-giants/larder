@@ -19,11 +19,14 @@ export function AteSomeSheet({
   open,
   onOpenChange,
   opener,
+  fallbackFocus,
 }: {
   food: Leftover;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   opener: RefObject<HTMLElement | null>;
+  /** Where focus goes when the last portions are eaten and the row is gone. */
+  fallbackFocus: RefObject<HTMLElement | null>;
 }) {
   const formId = `ate-${food._id}-form`;
   const [pending, setPending] = useState(false);
@@ -32,6 +35,7 @@ export function AteSomeSheet({
       open={open}
       onOpenChange={onOpenChange}
       opener={opener}
+      fallbackFocus={fallbackFocus}
       title="How many did you eat?"
       note={
         <>

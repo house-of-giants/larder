@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { type RefObject, useRef, useState } from "react";
 import { Amount } from "#/components/kit/amount";
 import { cn } from "#/lib/utils";
 import { isOut, type PantryRowData } from "./pantry-data";
@@ -10,7 +10,14 @@ import { shelfLine } from "./shelf-line";
  * it how much ("10 slices", "Half") in tomato, or "out" in quiet ink. The whole row opens
  * the item sheet, where Out is the first control.
  */
-export function PantryRow({ row }: { row: PantryRowData }) {
+export function PantryRow({
+  row,
+  title,
+}: {
+  row: PantryRowData;
+  /** The screen's title, where focus lands if the row is removed from its sheet. */
+  title: RefObject<HTMLElement | null>;
+}) {
   const [open, setOpen] = useState(false);
   const opener = useRef<HTMLButtonElement>(null);
   const out = isOut(row);
@@ -31,7 +38,13 @@ export function PantryRow({ row }: { row: PantryRowData }) {
           {line.kind === "out" && <span className="text-muted-foreground">out</span>}
         </span>
       </button>
-      <PantryItemSheet row={row} open={open} onOpenChange={setOpen} opener={opener} />
+      <PantryItemSheet
+        row={row}
+        open={open}
+        onOpenChange={setOpen}
+        opener={opener}
+        fallbackFocus={title}
+      />
     </li>
   );
 }

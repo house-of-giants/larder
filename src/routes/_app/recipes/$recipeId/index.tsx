@@ -62,7 +62,8 @@ function RecipeView({ recipe }: { recipe: Recipe }) {
                     href={href}
                     target="_blank"
                     rel="noreferrer"
-                    className="rounded-sm underline decoration-ring-quiet underline-offset-4 hover:text-foreground focus-ring"
+                    // A 44px tap target around the caption-sized words, without moving the line.
+                    className="relative rounded-sm underline decoration-ring-quiet underline-offset-4 after:absolute after:-inset-x-1 after:-inset-y-3.5 hover:text-foreground focus-ring"
                   >
                     {sourceLabel}
                   </a>
@@ -209,6 +210,7 @@ function Actions({ recipe }: { recipe: Recipe }) {
         <ConfirmDialog
           trigger={<Pill variant="text">Archive</Pill>}
           title="Archive this recipe?"
+          destructive
           description="It leaves the recipe list. Nothing is deleted, and Show archived brings it back."
           confirmLabel="Archive"
           onConfirm={async () => {

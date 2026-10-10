@@ -22,11 +22,14 @@ export function PantryItemSheet({
   open,
   onOpenChange,
   opener,
+  fallbackFocus,
 }: {
   row: PantryRowData;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   opener: RefObject<HTMLElement | null>;
+  /** Where focus goes when the row is gone after Remove: the screen's title. */
+  fallbackFocus: RefObject<HTMLElement | null>;
 }) {
   const formId = `pantry-${row.ingredientId}-form`;
   const saveStock = useSaveStock();
@@ -59,6 +62,7 @@ export function PantryItemSheet({
         if (!next) setError(null);
       }}
       opener={opener}
+      fallbackFocus={fallbackFocus}
       quietOpen
       title={row.name}
       note={locationLabels[row.location]}
@@ -96,7 +100,8 @@ export function PantryItemSheet({
                       disabled={pending}
                       className="min-w-14 disabled:opacity-60"
                       onClick={() => {
-                        if (current) return;
+                        // The level it already has: nothing to write, the sheet just closes.
+                        if (current) return close();
                         void run(() => setLevel({ ingredientId: row.ingredientId, level }));
                       }}
                     >

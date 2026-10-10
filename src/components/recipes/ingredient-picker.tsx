@@ -183,7 +183,7 @@ function Choice({
     <button
       type="button"
       className={cn(
-        "flex min-h-11 w-full items-center justify-between gap-3 px-3 text-left text-sm hover:bg-accent/60 focus-visible:bg-accent focus-visible:outline-none",
+        "flex min-h-11 w-full items-center justify-between gap-3 rounded-sm px-3 text-left text-subhead hover:bg-accent/60 focus-ring-inset",
         active && "bg-accent text-accent-foreground",
         className,
       )}

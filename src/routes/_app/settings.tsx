@@ -177,7 +177,7 @@ function InviteLink({ code }: { code: string }) {
         rows={2}
         value={url}
         aria-label="Invite link"
-        className="mt-2.5 min-h-0 resize-none text-subhead break-all"
+        className="mt-2.5 min-h-11 resize-none text-subhead break-all"
         onFocus={(e) => e.currentTarget.select()}
       />
       <div className="mt-2.5 flex flex-wrap items-center gap-1">
@@ -247,7 +247,7 @@ function AgentAccess() {
             readOnly
             rows={2}
             value={fresh.token}
-            className="min-h-0 resize-none text-subhead break-all"
+            className="min-h-11 resize-none text-subhead break-all"
             onFocus={(e) => e.currentTarget.select()}
           />
           <p className="text-caption text-muted-foreground">

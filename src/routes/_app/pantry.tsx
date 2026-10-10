@@ -30,6 +30,7 @@ function Pantry() {
   const [search, setSearch] = useState("");
   const [adding, setAdding] = useState(false);
   const fab = useRef<HTMLButtonElement>(null);
+  const title = useRef<HTMLHeadingElement>(null);
 
   const aliasesOf = useMemo(
     () => new Map((ingredients ?? []).map((i) => [i._id, i.aliases])),
@@ -49,7 +50,9 @@ function Pantry() {
 
   return (
     <main className="mx-auto flex max-w-2xl flex-col px-5 pt-3 pb-24">
-      <h1 className="font-display text-display">Pantry</h1>
+      <h1 ref={title} tabIndex={-1} className="font-display text-display outline-none">
+        Pantry
+      </h1>
       {rows.length === 0 ? (
         <p className="mt-1 text-body text-muted-foreground">Nothing on the shelf yet.</p>
       ) : (
@@ -96,7 +99,7 @@ function Pantry() {
                 />
                 <ul className="flex flex-col">
                   {here.map((row) => (
-                    <PantryRow key={row.pantryItemId} row={row} />
+                    <PantryRow key={row.pantryItemId} row={row} title={title} />
                   ))}
                 </ul>
               </section>
