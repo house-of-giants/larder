@@ -1,11 +1,18 @@
 import { convexTest } from "convex-test";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { countOf, levelOf } from "../src/lib/pantry-amount";
+import { normalizeName } from "../src/lib/aliases";
 import { api, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import schema from "./schema";
 import { createHousehold, type Test } from "./test_helpers";
 
 const modules = import.meta.glob("./**/*.ts");
+
+// seed.load runs only where SEED_ALLOWED is "true"; the config resets stubs between tests.
+beforeEach(() => {
+  vi.stubEnv("SEED_ALLOWED", "true");
+});
 const newTest = (): Test => convexTest(schema, modules);
 
 const SLIDERS = "Italian Grinder Sliders";
@@ -25,7 +32,9 @@ async function ingredientId(t: Test, householdId: Id<"households">, name: string
   const row = await t.run((ctx) =>
     ctx.db
       .query("ingredients")
-      .withIndex("by_householdId_name", (q) => q.eq("householdId", householdId).eq("name", name))
+      .withIndex("by_householdId_nameKey", (q) =>
+        q.eq("householdId", householdId).eq("nameKey", normalizeName(name)),
+      )
       .unique(),
   );
   if (row === null) throw new Error(`No ingredient ${name}`);
@@ -69,16 +78,16 @@ describe("Phase 4 gate: cook the seeded sliders, undo, eat, close the week", () 
 
     // Cook.
     const result = await as.mutation(api.cooking.madeIt, cookArgs(weekId, recipeId));
-    expect((await shelf(t, householdId, "Hawaiian rolls"))?.count).toEqual({
+    expect(countOf(await shelf(t, householdId, "Hawaiian rolls"))).toEqual({
       quantityText: "0",
       quantityDecimal: 0,
       unit: "each",
     });
-    expect((await shelf(t, householdId, "sliced ham"))?.count).toMatchObject({
+    expect(countOf(await shelf(t, householdId, "sliced ham"))).toMatchObject({
       quantityDecimal: 0,
       unit: "oz",
     });
-    expect((await shelf(t, householdId, "Italian seasoning"))?.level).toBe("half");
+    expect(levelOf(await shelf(t, householdId, "Italian seasoning"))).toBe("half");
     expect(result.preparedFood).toMatchObject({
       name: SLIDERS,
       remaining: { text: "12", decimal: 12 },
@@ -112,17 +121,17 @@ describe("Phase 4 gate: cook the seeded sliders, undo, eat, close the week", () 
 
     // Undo restores all of it and removes the untouched leftovers.
     await as.mutation(api.cooking.undo, { cookingEventId: result.cookingEventId });
-    expect((await shelf(t, householdId, "Hawaiian rolls"))?.count).toEqual({
+    expect(countOf(await shelf(t, householdId, "Hawaiian rolls"))).toEqual({
       quantityText: "12",
       quantityDecimal: 12,
       unit: "each",
     });
-    expect((await shelf(t, householdId, "sliced ham"))?.count).toMatchObject({
+    expect(countOf(await shelf(t, householdId, "sliced ham"))).toMatchObject({
       quantityDecimal: 8,
       unit: "oz",
     });
-    expect((await shelf(t, householdId, "Italian seasoning"))?.level).toBe("full");
-    expect((await shelf(t, householdId, "Dijon mustard"))?.level).toBe("low");
+    expect(levelOf(await shelf(t, householdId, "Italian seasoning"))).toBe("full");
+    expect(levelOf(await shelf(t, householdId, "Dijon mustard"))).toBe("low");
     expect(await foods(t, householdId)).toEqual([]);
     const afterUndo = await as.query(api.events.recent, { limit: 100 });
     expect(
@@ -184,8 +193,8 @@ describe("cooking.madeIt", () => {
       ...cookArgs(weekId, recipeId),
       multiplierText: "1/2",
     });
-    expect((await shelf(t, householdId, "Hawaiian rolls"))?.count?.quantityDecimal).toBe(6);
-    expect((await shelf(t, householdId, "Italian seasoning"))?.level).toBe("half");
+    expect(countOf(await shelf(t, householdId, "Hawaiian rolls"))?.quantityDecimal).toBe(6);
+    expect(levelOf(await shelf(t, householdId, "Italian seasoning"))).toBe("half");
     expect(result.preparedFood?.remaining).toEqual({ text: "6", decimal: 6 });
     const cook = await t.run((ctx) => ctx.db.get(result.cookingEventId));
     expect(cook?.multiplier).toEqual({ text: "1/2", decimal: 0.5 });
@@ -203,9 +212,9 @@ describe("cooking.madeIt", () => {
       skippedIngredientIds: [rolls],
       substitutions: [{ ingredientId: ham, replacementIngredientId: bacon }],
     });
-    expect((await shelf(t, householdId, "Hawaiian rolls"))?.count?.quantityDecimal).toBe(12);
-    expect((await shelf(t, householdId, "sliced ham"))?.count?.quantityDecimal).toBe(8);
-    expect((await shelf(t, householdId, "bacon"))?.count?.quantityDecimal).toBe(2);
+    expect(countOf(await shelf(t, householdId, "Hawaiian rolls"))?.quantityDecimal).toBe(12);
+    expect(countOf(await shelf(t, householdId, "sliced ham"))?.quantityDecimal).toBe(8);
+    expect(countOf(await shelf(t, householdId, "bacon"))?.quantityDecimal).toBe(2);
   });
 
   it("flags ham that came up short, with what was had and what was used", async () => {
@@ -241,6 +250,7 @@ describe("cooking.madeIt", () => {
       const yolk = await ctx.db.insert("ingredients", {
         householdId,
         name: "egg yolk",
+        nameKey: normalizeName("egg yolk"),
         kind: "count",
         category: "dairy_refrigerated",
         aliases: [],
@@ -275,7 +285,7 @@ describe("cooking.madeIt", () => {
       skippedIngredientIds: [],
       substitutions: [],
     });
-    expect((await shelf(t, householdId, "large eggs"))?.count?.quantityDecimal).toBe(14);
+    expect(countOf(await shelf(t, householdId, "large eggs"))?.quantityDecimal).toBe(14);
     expect(result.deductions).toEqual([
       expect.objectContaining({ ingredientId: eggs, name: "large eggs", before: 15, after: 14 }),
     ]);
@@ -315,7 +325,7 @@ describe("cooking.undo", () => {
     await expect(
       as.mutation(api.cooking.undo, { cookingEventId: result.cookingEventId }),
     ).rejects.toMatchObject({ data: "Someone already ate from this. Undo those first." });
-    expect((await shelf(t, householdId, "Hawaiian rolls"))?.count?.quantityDecimal).toBe(0);
+    expect(countOf(await shelf(t, householdId, "Hawaiian rolls"))?.quantityDecimal).toBe(0);
   });
 
   it("gives back only what the cook took when the shelf changed since", async () => {
@@ -331,9 +341,9 @@ describe("cooking.undo", () => {
     });
     await as.mutation(api.pantry.setLevel, { ingredientId: mayo, level: "full" });
     await as.mutation(api.cooking.undo, { cookingEventId: result.cookingEventId });
-    expect((await shelf(t, householdId, "Hawaiian rolls"))?.count?.quantityDecimal).toBe(16);
+    expect(countOf(await shelf(t, householdId, "Hawaiian rolls"))?.quantityDecimal).toBe(16);
     // A level set by hand since the cook stands.
-    expect((await shelf(t, householdId, "mayonnaise"))?.level).toBe("full");
+    expect(levelOf(await shelf(t, householdId, "mayonnaise"))).toBe("full");
   });
 });
 
@@ -458,12 +468,12 @@ describe("undo.event on a check-off", () => {
       (await ctx.db.query("listItems").collect()).find((i) => i.displayName === "unsalted butter"),
     );
     await as.mutation(api.lists.setItemStatus, { listItemId: butter!._id, status: "checked" });
-    expect((await shelf(t, householdId, "unsalted butter"))?.count?.quantityDecimal).toBe(22);
+    expect(countOf(await shelf(t, householdId, "unsalted butter"))?.quantityDecimal).toBe(22);
     const row = (await as.query(api.undo.recent, {}))[0];
     expect(row).toMatchObject({ line: "Checked off unsalted butter", canUndo: true });
 
     await as.mutation(api.undo.event, { eventId: row.eventId });
-    expect((await shelf(t, householdId, "unsalted butter"))?.count?.quantityDecimal).toBe(5);
+    expect(countOf(await shelf(t, householdId, "unsalted butter"))?.quantityDecimal).toBe(5);
     expect(await t.run((ctx) => ctx.db.get(butter!._id))).toMatchObject({ status: "needed" });
     const drawer = await as.query(api.undo.recent, {});
     expect(drawer[0]).toMatchObject({

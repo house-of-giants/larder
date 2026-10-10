@@ -9,7 +9,13 @@ import {
   planDeductions,
 } from "./lib/deductions";
 import { recordInventoryEvent } from "./lib/ledger";
-import { findPantryRow, pantrySnapshot, requireIngredient } from "./lib/pantry";
+import { countOf, levelOf } from "../src/lib/pantry-amount";
+import {
+  type PantrySnapshot,
+  findPantryRow,
+  pantrySnapshot,
+  requireIngredient,
+} from "./lib/pantry";
 import { type FoodPayload, foodSnapshot } from "./lib/prepared_food";
 import { formatQuantity, parseQuantity } from "./lib/quantities";
 import { type DeductionPayload, undoCook } from "./lib/reversals";
@@ -33,9 +39,11 @@ async function requireRecipe(ctx: QueryCtx, householdId: Id<"households">, id: I
 async function recipeRows(ctx: QueryCtx, householdId: Id<"households">, recipeId: Id<"recipes">) {
   const rows = await ctx.db
     .query("recipeIngredients")
-    .withIndex("by_recipeId", (q) => q.eq("recipeId", recipeId))
+    .withIndex("by_householdId_recipeId", (q) =>
+      q.eq("householdId", householdId).eq("recipeId", recipeId),
+    )
     .collect();
-  return rows.filter((r) => r.householdId === householdId).sort((a, b) => a.order - b.order);
+  return rows.sort((a, b) => a.order - b.order);
 }
 
 /** The household's own ingredient, or null; a row naming another household's is ignored. */
@@ -205,10 +213,12 @@ export const madeIt = mutation({
       const row = await findPantryRow(ctx, householdId, id);
       if (row === null) continue;
       pantryRows.set(id, row);
+      // A row of the other kind than its ingredient holds nothing this cook can take.
+      const count = ingredient.kind === "count" ? countOf(row) : undefined;
+      const level = ingredient.kind === "level" ? levelOf(row) : undefined;
       pantry.set(id, {
-        // A count row never carries a level and a level row never a count; the kind decides.
-        ...(ingredient.kind === "count" && row.count !== undefined && { count: row.count }),
-        ...(ingredient.kind === "level" && row.level !== undefined && { level: row.level }),
+        ...(count !== undefined && { count }),
+        ...(level !== undefined && { level }),
       });
     }
 
@@ -250,18 +260,22 @@ export const madeIt = mutation({
       const changed =
         d.kind === "level" ? d.after !== null : d.after !== null && d.note === undefined;
       if (row === undefined || !changed) continue;
-      const after = pantrySnapshot(
-        d.kind === "level"
-          ? { ...row, level: d.after! }
-          : {
-              ...row,
-              count: {
-                quantityText: formatQuantity(d.after!),
-                quantityDecimal: d.after!,
-                unit: row.count!.unit,
-              },
-            },
-      );
+      // `after` is set only when the pantry held this kind, so the row is that kind too.
+      let after: PantrySnapshot;
+      if (d.kind === "level" && row.kind === "level" && d.after !== null) {
+        after = pantrySnapshot({ ...row, level: d.after });
+      } else if (d.kind === "count" && row.kind === "count" && d.after !== null) {
+        after = pantrySnapshot({
+          ...row,
+          count: {
+            quantityText: formatQuantity(d.after),
+            quantityDecimal: d.after,
+            unit: row.count.unit,
+          },
+        });
+      } else {
+        continue;
+      }
       await ctx.db.replace("pantryItems", row._id, { householdId, ...after, updatedAt: cookedAt });
       await recordInventoryEvent(ctx, {
         householdId,
@@ -363,7 +377,9 @@ export const forWeek = query({
     const week = await requireWeek(ctx, householdId, args.weekId);
     const cooks = await ctx.db
       .query("cookingEvents")
-      .withIndex("by_weekId", (q) => q.eq("weekId", week._id))
+      .withIndex("by_householdId_weekId", (q) =>
+        q.eq("householdId", householdId).eq("weekId", week._id),
+      )
       .collect();
     // The latest standing cook per recipe, and how many times it was made this week.
     const byRecipe = new Map<

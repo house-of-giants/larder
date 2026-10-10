@@ -1,11 +1,18 @@
 import { convexTest } from "convex-test";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { countOf } from "../src/lib/pantry-amount";
+import { normalizeName } from "../src/lib/aliases";
 import { api, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import schema from "./schema";
 import { createHousehold, type Test } from "./test_helpers";
 
 const modules = import.meta.glob("./**/*.ts");
+
+// seed.load runs only where SEED_ALLOWED is "true"; the config resets stubs between tests.
+beforeEach(() => {
+  vi.stubEnv("SEED_ALLOWED", "true");
+});
 const newTest = (): Test => convexTest(schema, modules);
 
 const SLIDERS = "Italian Grinder Sliders";
@@ -32,7 +39,9 @@ async function ingredientId(t: Test, householdId: Id<"households">, name: string
   const row = await t.run((ctx) =>
     ctx.db
       .query("ingredients")
-      .withIndex("by_householdId_name", (q) => q.eq("householdId", householdId).eq("name", name))
+      .withIndex("by_householdId_nameKey", (q) =>
+        q.eq("householdId", householdId).eq("nameKey", normalizeName(name)),
+      )
       .unique(),
   );
   return row!._id;
@@ -202,10 +211,10 @@ describe("cook undo gives back only what the cook took", () => {
       api.cooking.madeIt,
       cook(alice.weekId, alice.recipeId, "1/2"),
     );
-    expect((await shelf(t, alice.householdId, "Hawaiian rolls"))?.count?.quantityDecimal).toBe(6);
+    expect(countOf(await shelf(t, alice.householdId, "Hawaiian rolls"))?.quantityDecimal).toBe(6);
     await alice.as.mutation(api.pantry.remove, { ingredientId: rolls });
     await alice.as.mutation(api.cooking.undo, { cookingEventId: made.cookingEventId });
-    expect((await shelf(t, alice.householdId, "Hawaiian rolls"))?.count).toMatchObject({
+    expect(countOf(await shelf(t, alice.householdId, "Hawaiian rolls"))).toMatchObject({
       quantityDecimal: 6,
       unit: "each",
     });
@@ -228,7 +237,7 @@ describe("cook undo gives back only what the cook took", () => {
       unit: "oz",
     });
     await alice.as.mutation(api.cooking.undo, { cookingEventId: made.cookingEventId });
-    expect((await shelf(t, alice.householdId, "sliced ham"))?.count?.quantityDecimal).toBe(9);
+    expect(countOf(await shelf(t, alice.householdId, "sliced ham"))?.quantityDecimal).toBe(9);
   });
 });
 
@@ -262,7 +271,7 @@ describe("undo follows insertion order, not the tap's clock", () => {
       ),
     );
     expect(undo?.undoesEventId).toBe(second._id);
-    expect((await shelf(t, alice.householdId, "unsalted butter"))?.count?.quantityDecimal).toBe(5);
+    expect(countOf(await shelf(t, alice.householdId, "unsalted butter"))?.quantityDecimal).toBe(5);
   });
 });
 

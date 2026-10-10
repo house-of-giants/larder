@@ -1,6 +1,6 @@
 import { convexTest } from "convex-test";
 import type { FunctionReference } from "convex/server";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import * as closeout from "./closeout";
@@ -11,6 +11,11 @@ import { createHousehold, identityFor, type Test } from "./test_helpers";
 import * as undo from "./undo";
 
 const modules = import.meta.glob("./**/*.ts");
+
+// seed.load runs only where SEED_ALLOWED is "true"; the config resets stubs between tests.
+beforeEach(() => {
+  vi.stubEnv("SEED_ALLOWED", "true");
+});
 
 // Every public function in cooking.ts, leftovers.ts, closeout.ts, and undo.ts, with
 // arguments that would be valid for a member of the household that owns the targets.

@@ -2,7 +2,13 @@ import { ConvexError } from "convex/values";
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import { recordInventoryEvent } from "./ledger";
-import { type PantrySnapshot, findPantryRow, pantrySnapshot } from "./pantry";
+import {
+  type PantrySnapshot,
+  type StoredPantrySnapshot,
+  findPantryRow,
+  normalizeSnapshot,
+  pantrySnapshot,
+} from "./pantry";
 import { type FoodPayload, type FoodSnapshot, foodNotHere, foodSnapshot } from "./prepared_food";
 import { formatQuantity } from "./quantities";
 
@@ -20,6 +26,12 @@ export type DeductionPayload = {
   wentNegative: boolean;
   /** What the recipe called for, in the pantry's unit; null for a level. */
   used: number | null;
+};
+
+/** A deduction payload as stored: events from before pantry kinds may lack `kind`. */
+type StoredDeductionPayload = Omit<DeductionPayload, "before" | "after"> & {
+  before: StoredPantrySnapshot;
+  after: StoredPantrySnapshot;
 };
 
 export const eventNotHere = "That event is not here.";
@@ -104,7 +116,7 @@ async function requireOwnDeduction(
   householdId: Id<"households">,
   event: Doc<"inventoryEvents">,
 ): Promise<DeductionPayload> {
-  const payload = event.payload as Partial<DeductionPayload> | null;
+  const payload = event.payload as Partial<StoredDeductionPayload> | null;
   const ingredientId = payload?.after?.ingredientId;
   if (
     payload?.before === undefined ||
@@ -125,7 +137,11 @@ async function requireOwnDeduction(
       throw new ConvexError(eventNotHere);
     }
   }
-  return payload as DeductionPayload;
+  return {
+    ...(payload as StoredDeductionPayload),
+    before: normalizeSnapshot(payload.before),
+    after: normalizeSnapshot(payload.after),
+  };
 }
 
 /**
@@ -145,25 +161,29 @@ async function restoreDeduction(
 }> {
   const current = await findPantryRow(ctx, householdId, payload.after.ingredientId);
   const before = current === null ? null : pantrySnapshot(current);
-  const was = payload.before.count;
-  const left = payload.after.count;
+  const was = payload.before;
+  const left = payload.after;
   let restored: PantrySnapshot | null = null;
 
-  if (was !== undefined && left !== undefined) {
-    const taken = Math.max(0, was.quantityDecimal - left.quantityDecimal);
-    const now = current?.count;
+  if (was.kind === "count" && left.kind === "count") {
+    const taken = Math.max(0, was.count.quantityDecimal - left.count.quantityDecimal);
     if (current === null) {
       restored = pantrySnapshot({
-        ...payload.after,
-        count: { quantityText: formatQuantity(taken), quantityDecimal: taken, unit: left.unit },
+        ...left,
+        count: {
+          quantityText: formatQuantity(taken),
+          quantityDecimal: taken,
+          unit: left.count.unit,
+        },
       });
-    } else if (now !== undefined && now.unit.trim() === left.unit.trim()) {
+    } else if (current.kind === "count" && current.count.unit.trim() === left.count.unit.trim()) {
+      const now = current.count;
       restored = pantrySnapshot({
         ...current,
         // Untouched since the cook: the original words come back too.
         count:
-          now.quantityDecimal === left.quantityDecimal
-            ? was
+          now.quantityDecimal === left.count.quantityDecimal
+            ? was.count
             : {
                 quantityText: formatQuantity(now.quantityDecimal + taken),
                 quantityDecimal: now.quantityDecimal + taken,
@@ -172,12 +192,12 @@ async function restoreDeduction(
       });
     }
   } else if (
-    current !== null &&
-    current.level !== undefined &&
-    payload.before.level !== undefined &&
-    current.level === payload.after.level
+    was.kind === "level" &&
+    left.kind === "level" &&
+    current?.kind === "level" &&
+    current.level === left.level
   ) {
-    restored = pantrySnapshot({ ...current, level: payload.before.level });
+    restored = pantrySnapshot({ ...current, level: was.level });
   }
 
   if (restored === null) {
