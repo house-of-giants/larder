@@ -1,4 +1,7 @@
 import { Link, Navigate, Outlet, createFileRoute } from "@tanstack/react-router";
+import { useMutation } from "convex/react";
+import { useEffect } from "react";
+import { api } from "../../convex/_generated/api";
 import { BookOpen, CalendarDays, Refrigerator, Settings, ShoppingBasket } from "lucide-react";
 import { PageSkeleton } from "#/components/page-skeleton";
 import { TabBar, type Tab } from "#/components/tab-bar";
@@ -28,6 +31,14 @@ export const Route = createFileRoute("/_app")({
 function AppShell() {
   const household = useHousehold();
   const online = useOnline();
+  const refreshName = useMutation(api.households.refreshName);
+  const me = household?.members.find((m) => m.isYou)?._id;
+
+  // Once per visit: a member who joined before the sign-in carried a name picks it up.
+  // Nothing to say if it fails; the row keeps the name it had.
+  useEffect(() => {
+    if (me !== undefined) refreshName({}).catch(() => {});
+  }, [me, refreshName]);
 
   if (household === null) {
     return <Navigate to="/join" replace />;

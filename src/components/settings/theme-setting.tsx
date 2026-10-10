@@ -1,6 +1,6 @@
+import { RadioChips } from "#/components/kit/radio-chips";
 import { setThemePreference, useThemePreference } from "#/hooks/use-theme";
 import { THEME_PREFERENCES, type ThemePreference } from "#/lib/theme";
-import { cn } from "#/lib/utils";
 
 const labels: Record<ThemePreference, string> = {
   system: "System",
@@ -8,39 +8,26 @@ const labels: Record<ThemePreference, string> = {
   dark: "Dark",
 };
 
-/** Light, dark, or whatever the phone is set to. Kept on this phone only. */
+/**
+ * Light, dark, or whatever the phone is set to, as three chips (radios underneath, so
+ * arrow keys move between them). Kept on this phone only.
+ */
 export function ThemeSetting() {
   const preference = useThemePreference();
   return (
-    <section className="flex flex-col gap-2" aria-labelledby="theme-heading">
-      <h2 id="theme-heading" className="font-medium">
+    <section className="flex flex-col" aria-labelledby="theme-heading">
+      <h2 id="theme-heading" className="font-display text-title">
         Theme
       </h2>
-      <fieldset className="grid grid-cols-3 gap-1 rounded-lg bg-muted p-1">
-        <legend className="sr-only">Theme</legend>
-        {THEME_PREFERENCES.map((value) => (
-          <label
-            key={value}
-            className={cn(
-              "flex min-h-11 cursor-pointer items-center justify-center rounded-md px-2 text-sm has-[:focus-visible]:ring-[3px] has-[:focus-visible]:ring-ring/50",
-              preference === value
-                ? "bg-background font-medium text-foreground shadow-xs"
-                : "text-muted-foreground",
-            )}
-          >
-            <input
-              type="radio"
-              name="theme"
-              value={value}
-              checked={preference === value}
-              onChange={() => setThemePreference(value)}
-              className="sr-only"
-            />
-            {labels[value]}
-          </label>
-        ))}
-      </fieldset>
-      <p className="text-sm text-muted-foreground">System follows the phone.</p>
+      <RadioChips
+        name="theme"
+        legend="Theme"
+        options={THEME_PREFERENCES.map((value) => ({ value, label: labels[value] }))}
+        value={preference}
+        onChange={setThemePreference}
+        className="mt-1"
+      />
+      <p className="text-caption text-muted-foreground">System follows the phone.</p>
     </section>
   );
 }

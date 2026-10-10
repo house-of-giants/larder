@@ -168,6 +168,12 @@ test.describe("a week in one household, signed in with Clerk", () => {
       await test.step("02 an invite link brings a second person into the household", async () => {
         invite = await readInvite(one);
         householdIds.push(householdIdByInviteCode(invite.code));
+        // The whole link shows, the code at its end included: nothing scrolls inside the field.
+        const shown = await one.getByLabel("Invite link").evaluate((field) => ({
+          wide: field.scrollWidth <= field.clientWidth,
+          tall: field.scrollHeight <= field.clientHeight,
+        }));
+        expect.soft(shown, "the invite link shows whole").toEqual({ wide: true, tall: true });
         await shot(one, "02a-settings-invite");
 
         const two = await newPerson();

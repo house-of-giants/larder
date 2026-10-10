@@ -327,3 +327,59 @@ describe("households.leave", () => {
     ).rejects.toMatchObject({ data: "Join a household first." });
   });
 });
+
+describe("households.refreshName", () => {
+  // A sign-in with no name claim, then the same person once the token carries one.
+  const bare = (who: string) => {
+    const { name: _name, ...rest } = identityFor(who);
+    return rest;
+  };
+
+  it("puts the name from a later sign-in on a member who joined without one", async () => {
+    const t = newTest();
+    const before = t.withIdentity(bare("Alice"));
+    await before.mutation(api.households.create, { name: "Elm Street" });
+    expect((await before.query(api.households.current, {}))?.members[0].name).toBeUndefined();
+
+    const after = t.withIdentity({ ...bare("Alice"), name: "Alice Moreau" });
+    await after.mutation(api.households.refreshName, {});
+
+    expect((await after.query(api.households.current, {}))?.members).toEqual([
+      expect.objectContaining({ name: "Alice Moreau", isYou: true }),
+    ]);
+  });
+
+  it("keeps the name it has when the sign-in carries none", async () => {
+    const t = newTest();
+    const { as } = await createHousehold(t, { who: "Alice", name: "Elm Street" });
+    await t.withIdentity(bare("Alice")).mutation(api.households.refreshName, {});
+    expect((await as.query(api.households.current, {}))?.members[0].name).toBe("Alice");
+  });
+
+  it("names only the caller's own member row, never anyone in another household", async () => {
+    const t = newTest();
+    await t.withIdentity(bare("Alice")).mutation(api.households.create, { name: "Elm Street" });
+    await t.withIdentity(bare("Bob")).mutation(api.households.create, { name: "Oak Road" });
+
+    await t
+      .withIdentity({ ...bare("Bob"), name: "Bob Okafor" })
+      .mutation(api.households.refreshName, {});
+
+    const names = await t.run(async (ctx) =>
+      (await ctx.db.query("members").collect()).map((m) => [m.clerkUserId, m.name ?? null]),
+    );
+    expect(names).toEqual(
+      expect.arrayContaining([
+        ["user_alice", null],
+        ["user_bob", "Bob Okafor"],
+      ]),
+    );
+  });
+
+  it("asks a caller with no household to join one first", async () => {
+    const t = newTest();
+    await expect(
+      t.withIdentity(identityFor("Nobody")).mutation(api.households.refreshName, {}),
+    ).rejects.toMatchObject({ data: "Join a household first." });
+  });
+});

@@ -1,4 +1,4 @@
-import { cn } from "#/lib/utils";
+import { RadioChips } from "#/components/kit/radio-chips";
 import { RemainingWords } from "./leftover-card";
 import type { Leftover } from "./types";
 
@@ -24,7 +24,6 @@ export function CloseoutCard({
   outcome: Outcome;
   onChange: (outcome: Outcome) => void;
 }) {
-  const name = `closeout-${food._id}`;
   return (
     <li className="flex flex-col border-b border-border py-3 last:border-b-0">
       <h2 className="text-body font-normal">{food.name}</h2>
@@ -34,35 +33,14 @@ export function CloseoutCard({
         </span>{" "}
         left · {food.location}
       </p>
-      <fieldset className="m-0 mt-1 flex min-w-0 gap-2 border-0 p-0">
-        <legend className="sr-only">What happened to {food.name}</legend>
-        {outcomes.map((o) => {
-          const on = outcome === o.value;
-          return (
-            <label key={o.value} className="group flex min-h-11 cursor-pointer items-center">
-              <input
-                type="radio"
-                name={name}
-                value={o.value}
-                checked={on}
-                onChange={() => onChange(o.value)}
-                className="peer sr-only"
-              />
-              <span
-                className={cn(
-                  "rounded-sm border px-2.5 py-1.5 text-caption whitespace-nowrap",
-                  "peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-ring peer-focus-visible:outline-solid",
-                  on
-                    ? "border-transparent bg-accent font-semibold text-accent-foreground"
-                    : "border-border bg-card text-muted-foreground group-hover:text-foreground",
-                )}
-              >
-                {o.label}
-              </span>
-            </label>
-          );
-        })}
-      </fieldset>
+      <RadioChips
+        name={`closeout-${food._id}`}
+        legend={`What happened to ${food.name}`}
+        options={outcomes}
+        value={outcome}
+        onChange={onChange}
+        className="mt-1"
+      />
       {outcome === "keep" && (
         <p className="text-caption text-muted-foreground">
           Stays in the {food.location} for next week.
