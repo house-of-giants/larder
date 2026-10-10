@@ -105,9 +105,11 @@
   --muted-foreground: #776d63;
   --accent: #f6dfd6;
   --accent-foreground: #8e2a14;
-  --destructive: #b93a20;
+  /* Tomato ink: destructive is words or an outline, never a filled red. */
+  --destructive: #8e2a14;
   --border: #e8e0d2;
-  --input: #e8e0d2;
+  /* A field's boundary is the ring (3:1 on paper and card); rows keep the hairline. */
+  --input: #978c7e;
   --ring: #b93a20;
   /* DESIGN.md's #a89d8d is 2.47:1 on paper; this is the nearest step on the same line
      toward Ink Quiet that clears 3:1 on paper and card. */
@@ -130,12 +132,28 @@
   --muted-foreground: #b3a797;
   --accent: #4a2a21;
   --accent-foreground: #ffd2c5;
-  --destructive: #ee7757;
+  --destructive: #ffd2c5;
   --border: #3a332c;
-  --input: #3a332c;
+  --input: #7a6f64;
   --ring: #ee7757;
   --ring-quiet: #7a6f64;
   --scrim: rgba(0, 0, 0, 0.6);
+}
+
+/* Keyboard focus on every control: a solid 2px tomato ring with a 2px gap of whatever
+   surface is behind it. Solid, because a 50% ring measured under 3:1. */
+@utility focus-ring {
+  &:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+}
+/* The same ring drawn inside the control, where there is no room around it (tab cells). */
+@utility focus-ring-inset {
+  &:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: -4px;
+  }
 }
 
 /* Every quantity and count on screen: tabular figures in the body sans. */
@@ -145,7 +163,7 @@
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply border-border outline-ring;
   }
   /* Native inputs, selects, and scrollbars follow the active theme, not the OS. */
   html {
@@ -154,8 +172,9 @@
   .dark {
     color-scheme: dark;
   }
-  /* The parts the browser draws, in the palette. */
-  html {
+  /* The parts the browser draws, in the palette; again under a nested .dark scope. */
+  html,
+  .dark {
     caret-color: var(--primary);
     accent-color: var(--primary);
     scrollbar-color: var(--border) var(--background);

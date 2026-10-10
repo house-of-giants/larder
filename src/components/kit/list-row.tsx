@@ -33,7 +33,7 @@ export function ListRow({
         type="button"
         onClick={onToggle}
         {...(putBack ? {} : { role: "checkbox", "aria-checked": checked })}
-        className="flex min-h-14 min-w-0 flex-1 items-center gap-3 rounded-md py-1.5 text-left outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+        className="flex min-h-14 min-w-0 flex-1 items-center gap-3 rounded-md py-1.5 text-left focus-ring"
       >
         <span
           aria-hidden

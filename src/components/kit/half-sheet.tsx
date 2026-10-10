@@ -67,7 +67,7 @@ export function HalfSheet({
         {footer && (
           <div className="pt-3 pb-[calc(1.125rem+env(safe-area-inset-bottom))]">{footer}</div>
         )}
-        <SheetClose className="absolute top-2.5 right-2.5 flex size-11 items-center justify-center rounded-full text-muted-foreground outline-none hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50">
+        <SheetClose className="absolute top-2.5 right-2.5 flex size-11 items-center justify-center rounded-full text-muted-foreground outline-none hover:text-foreground focus-ring">
           <XIcon aria-hidden className="size-[22px]" />
           <span className="sr-only">Close</span>
         </SheetClose>

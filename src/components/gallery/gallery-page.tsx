@@ -186,7 +186,7 @@ function Specimens({ title, dark = false }: { title: string; dark?: boolean }) {
             <button
               type="button"
               aria-label="Open the recipe"
-              className="flex size-11 items-center justify-center rounded-full border border-border text-muted-foreground outline-none hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50"
+              className="flex size-11 items-center justify-center rounded-full border border-border text-muted-foreground outline-none hover:text-foreground focus-ring"
             >
               <BookOpen aria-hidden className="size-5" />
             </button>

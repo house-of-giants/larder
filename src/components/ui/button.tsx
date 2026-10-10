@@ -4,13 +4,13 @@ import { cn } from "#/lib/utils";
 import { Slot } from "radix-ui";
 
 const buttonVariants = cva(
-  "inline-flex shrink-0 items-center justify-center gap-2 rounded-md text-sm font-medium whitespace-nowrap transition-all outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+  "inline-flex shrink-0 items-center justify-center gap-2 rounded-md text-sm font-medium whitespace-nowrap transition-[color,background-color,border-color,filter] outline-none focus-ring disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
   {
     variants: {
       variant: {
         default: "bg-primary text-primary-foreground hover:bg-primary/90",
-        destructive:
-          "bg-destructive text-primary-foreground hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40",
+        // Tomato ink as an outline and its words (DESIGN.md, the Destructive Rule); never filled.
+        destructive: "border border-destructive bg-card text-destructive hover:bg-accent",
         outline: "border border-border bg-card text-foreground hover:bg-secondary",
         secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
         ghost: "text-foreground hover:bg-secondary",
@@ -22,8 +22,7 @@ const buttonVariants = cva(
           "rounded-full bg-accent text-subhead font-semibold text-accent-foreground hover:brightness-[0.98] active:brightness-95",
         "pill-outline":
           "rounded-full border border-border bg-card text-subhead font-semibold text-foreground hover:bg-secondary",
-        "pill-text":
-          "rounded-full text-subhead font-normal text-accent-foreground hover:underline hover:underline-offset-4 dark:text-primary",
+        "pill-text": "rounded-full text-subhead font-normal text-accent-foreground hover:bg-accent",
       },
       size: {
         default: "h-9 px-4 py-2 has-[>svg]:px-3",

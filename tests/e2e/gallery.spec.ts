@@ -116,6 +116,81 @@ test.describe("gallery, built in", () => {
       await expect(opener).toBeFocused();
     }
   });
+
+  test("keyboard focus is a solid 2px tomato ring with a 2px gap, on every kind of control", async ({
+    page,
+  }) => {
+    const column = page.getByRole("region", { name: "This theme" });
+    const targets = {
+      pill: column.getByRole("button", { name: "Make the list" }).first(),
+      chip: column.getByRole("button", { name: "Produce", exact: true }),
+      field: column.getByRole("textbox", { name: "Add something" }),
+      row: column.getByRole("checkbox", { name: /^carrots/ }),
+      fab: column.getByRole("button", { name: "Add something", exact: true }),
+    };
+    for (const [kind, target] of Object.entries(targets)) {
+      await page.keyboard.press("Shift"); // a keyboard interaction, so focus is :focus-visible
+      await target.focus();
+      const ring = await target.evaluate((el) => {
+        const style = getComputedStyle(el);
+        return {
+          visible: el.matches(":focus-visible"),
+          style: style.outlineStyle,
+          width: style.outlineWidth,
+          color: style.outlineColor,
+          // Chrome snaps the offset to device pixels (2px is 1.9 at the Pixel 7's 2.625x, and
+          // reads back as 1px or 2px); a gap of at least one pixel is the contract here.
+          gap: Number.parseFloat(style.outlineOffset) >= 1,
+        };
+      });
+      expect({ kind, ...ring }).toEqual({
+        kind,
+        visible: true,
+        style: "solid",
+        width: "2px",
+        color: "rgb(185, 58, 32)",
+        gap: true,
+      });
+    }
+  });
+
+  test("fields have a 3:1 boundary and chips a 44px tap height", async ({ page }) => {
+    const column = page.getByRole("region", { name: "This theme" });
+    // The ring token, #978c7e, not the 1.3:1 hairline.
+    await expect(column.getByRole("textbox", { name: "Add something" })).toHaveCSS(
+      "border-top-color",
+      "rgb(151, 140, 126)",
+    );
+    const chip = await column.getByRole("button", { name: "Produce", exact: true }).boundingBox();
+    expect(chip?.height).toBeGreaterThanOrEqual(44);
+  });
+
+  test("the text action stays tomato ink in dark, with no underline on hover", async ({ page }) => {
+    const action = page.getByRole("region", { name: "Dark" }).getByRole("button", {
+      name: "Plan the week",
+    });
+    await action.hover();
+    await expect(action).toHaveCSS("color", "rgb(255, 210, 197)");
+    await expect(action).toHaveCSS("text-decoration-line", "none");
+  });
+
+  test("the sheet's primary is 50px tall and spans the sheet inside its 20px sides", async ({
+    page,
+  }) => {
+    await page.getByRole("button", { name: "Open the sheet" }).first().click();
+    const sheet = page.getByRole("dialog");
+    await expect(sheet).toBeVisible();
+    // Wait out the rise, so the boxes are measured where they settle.
+    await expect.poll(async () => (await sheet.boundingBox())?.y).toBeLessThan(844 - 200);
+    await page.waitForTimeout(300);
+    const [box, pill] = await Promise.all([
+      sheet.boundingBox(),
+      sheet.getByRole("button", { name: "Made it" }).boundingBox(),
+    ]);
+    expect(pill!.height).toBe(50);
+    expect(pill!.x - box!.x).toBe(20);
+    expect(pill!.width).toBe(box!.width - 40);
+  });
 });
 
 test.describe("gallery, not built in", () => {
