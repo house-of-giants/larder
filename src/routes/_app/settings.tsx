@@ -46,6 +46,7 @@ function Settings() {
           {members.map((m) => (
             <li key={m._id} className="flex items-baseline justify-between gap-4 px-4 py-3">
               <span className="truncate">
+                {/* No name: the Clerk `convex` JWT template carries no name/email claim. */}
                 {m.name ?? "Someone"}
                 {m.isYou && <span className="text-muted-foreground"> (you)</span>}
               </span>

@@ -88,6 +88,26 @@ bun run check          # typecheck, lint, format, unit + convex tests, build
 bun run test:e2e       # playwright against the built server (run `bun run build` first)
 ```
 
+`.env.local` is not exported to Playwright or the built server on its own. With Clerk keys
+in it, load it for both so the signed-in suites run:
+
+```sh
+set -a; . ./.env.local; set +a; bun run build && bun run test:e2e
+```
+
+The browser week (`tests/e2e/clerk-week.spec.ts`) walks a whole week with real sessions:
+sign-up, invites, the seeded week, the list, store mode offline, a cook, closeout and its
+undo, sign-out. It is opt-in and never runs in CI:
+
+```sh
+set -a; . ./.env.local; set +a; bun run build && E2E_CLERK_WEEK=1 bun run test:e2e
+```
+
+It signs up new Clerk test users on the dev instance every run (`+clerk_test@example.com`
+addresses, verification code `424242`; they stay in the instance), seeds its household
+with `bunx convex run seed:load` (needs `SEED_ALLOWED` on the dev deployment), and deletes
+the households it makes at the end. Screenshots land in `test-results/clerk-week/`.
+
 ## Deploy
 
 Vercel builds every PR as a preview against the dev Convex deployment. Production builds
