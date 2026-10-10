@@ -1,9 +1,10 @@
 import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useConvexAuth, useMutation, useQuery } from "convex/react";
+import { useConvex, useConvexAuth, useMutation, useQuery } from "convex/react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
+import { ConfirmDialog } from "#/components/confirm-dialog";
 import { CloseoutCard, type Outcome } from "#/components/leftovers/closeout-card";
 import type { Leftover } from "#/components/leftovers/types";
 import { CloseoutSkeleton } from "#/components/page-skeleton";
@@ -42,30 +43,54 @@ function Closeout() {
 
 function CloseoutForm({ week, foods }: { week: CurrentWeek; foods: Leftover[] }) {
   const run = useMutation(api.closeout.run);
+  const undoEvent = useMutation(api.undo.event);
+  const convex = useConvex();
   const navigate = useNavigate();
   // Only the overrides; everything else is all eaten.
   const [outcomes, setOutcomes] = useState<ReadonlyMap<Id<"preparedFoods">, Outcome>>(new Map());
-  const [pending, setPending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const decisions = [...outcomes]
+    .filter(([id]) => foods.some((f) => f._id === id))
+    .map(([preparedFoodId, outcome]) => ({ preparedFoodId, outcome }));
+  // Read once when the screen opens; the new week is named for today.
+  const [nextWeekOf] = useState(() => localIsoDate(new Date()));
+  const nextWeek = weekOfLabel(nextWeekOf).replace(/^Week/, "week");
 
+  /** Thrown errors stay in the confirm dialog as a sentence. */
   async function close() {
-    setPending(true);
-    setError(null);
+    await run({ weekId: week._id, decisions, weekOf: nextWeekOf });
+    // The closeout wrote one event per food still in the fridge, the newest events in the
+    // household; their undo is the one the Recent changes drawer offers.
+    const events =
+      foods.length === 0
+        ? []
+        : (await convex.query(api.undo.recent, { limit: foods.length }))
+            .filter((row) => row.type === "closeout" && row.canUndo)
+            .map((row) => row.eventId);
+    toast(
+      "Week closed. A new one is ready to plan.",
+      events.length === 0
+        ? undefined
+        : { action: { label: "Undo", onClick: () => void takeBack(events) } },
+    );
+    await navigate({ to: "/week" });
+  }
+
+  /** Puts the leftovers back as they were; the new week stays. */
+  async function takeBack(events: Id<"inventoryEvents">[]) {
     try {
-      await run({
-        weekId: week._id,
-        decisions: [...outcomes]
-          .filter(([id]) => foods.some((f) => f._id === id))
-          .map(([preparedFoodId, outcome]) => ({ preparedFoodId, outcome })),
-        weekOf: localIsoDate(new Date()),
-      });
-      toast("Week closed. A new one is ready to plan.");
-      await navigate({ to: "/week" });
+      for (const eventId of events) await undoEvent({ eventId });
+      toast("Undone.");
     } catch (e) {
-      setError(errorMessage(e));
-      setPending(false);
+      toast.error(errorMessage(e));
     }
   }
+
+  const question =
+    foods.length === 0
+      ? `Start the ${nextWeek}?`
+      : decisions.some((d) => d.outcome !== "eaten")
+        ? `Sort the leftovers as marked and start the ${nextWeek}?`
+        : `Count the leftovers as eaten and start the ${nextWeek}?`;
 
   return (
     <main className="mx-auto flex max-w-2xl flex-col gap-6 px-4 py-6">
@@ -92,22 +117,17 @@ function CloseoutForm({ week, foods }: { week: CurrentWeek; foods: Leftover[] })
           ))}
         </ul>
       )}
-      <div className="flex flex-col gap-2">
-        <Button
-          type="button"
-          size="lg"
-          className="h-12 text-base"
-          disabled={pending}
-          onClick={close}
-        >
-          Close the week
-        </Button>
-        {error && (
-          <p role="alert" className="text-sm text-destructive">
-            {error}
-          </p>
-        )}
-      </div>
+      <ConfirmDialog
+        trigger={
+          <Button type="button" size="lg" className="h-12 text-base">
+            Close the week
+          </Button>
+        }
+        title="Close the week?"
+        description={question}
+        confirmLabel="Close the week"
+        onConfirm={close}
+      />
     </main>
   );
 }
