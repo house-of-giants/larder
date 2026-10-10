@@ -157,7 +157,7 @@ test.describe("a week in one household, signed in with Clerk", () => {
         await shot(one, "01b-join");
 
         await one.locator("#household-name").fill(HOUSEHOLD);
-        await one.getByRole("button", { name: "Start", exact: true }).click();
+        await one.getByRole("button", { name: "Start a household", exact: true }).click();
         await expect(one).toHaveURL(/\/week$/);
         // households.current, rendered: the name is only in the signed-in member's row.
         await expect(headerName(one, HOUSEHOLD)).toBeVisible();
@@ -210,7 +210,7 @@ test.describe("a week in one household, signed in with Clerk", () => {
           timeout: 30_000,
         });
         await three.locator("#household-name").fill(OTHER);
-        await three.getByRole("button", { name: "Start", exact: true }).click();
+        await three.getByRole("button", { name: "Start a household", exact: true }).click();
         await expect(headerName(three, OTHER)).toBeVisible();
         householdIds.push(householdIdByInviteCode((await readInvite(three)).code));
 

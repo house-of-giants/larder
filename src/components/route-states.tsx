@@ -1,6 +1,6 @@
 import { Link, useRouter, type ErrorComponentProps } from "@tanstack/react-router";
 import { ConvexError } from "convex/values";
-import { Button } from "#/components/ui/button";
+import { Pill } from "#/components/kit/pill";
 
 /**
  * A screen that failed to load or render, a Convex query error included. As the root
@@ -13,14 +13,17 @@ export function ErrorScreen({ error, reset }: ErrorComponentProps) {
   const line =
     error instanceof ConvexError && typeof error.data === "string"
       ? error.data
-      : "This did not load. Check the signal and try again.";
+      : "Check the signal and try again.";
 
   return (
-    <main className="mx-auto flex max-w-2xl flex-col items-start gap-4 px-4 py-6">
-      <p role="alert">{line}</p>
-      <Button
-        type="button"
-        variant="outline"
+    <main className="mx-auto flex max-w-2xl flex-col items-start px-5 pt-3">
+      <h1 className="font-display text-display">This did not load.</h1>
+      <p role="alert" className="mt-1 text-body text-muted-foreground">
+        {line}
+      </p>
+      <Pill
+        variant="pale"
+        className="mt-4"
         onClick={() => {
           // Clears the boundary and runs the route's loaders again.
           reset?.();
@@ -28,7 +31,7 @@ export function ErrorScreen({ error, reset }: ErrorComponentProps) {
         }}
       >
         Try again
-      </Button>
+      </Pill>
     </main>
   );
 }
@@ -36,11 +39,11 @@ export function ErrorScreen({ error, reset }: ErrorComponentProps) {
 /** An address that is not a screen. */
 export function NotFound() {
   return (
-    <main className="mx-auto flex max-w-2xl flex-col items-start gap-4 px-4 py-6">
-      <h1 className="text-2xl font-semibold tracking-tight">Nothing at this address.</h1>
-      <Button asChild variant="outline">
+    <main className="mx-auto flex max-w-2xl flex-col items-start px-5 pt-3">
+      <h1 className="font-display text-display">Nothing at this address.</h1>
+      <Pill variant="text" asChild className="mt-1 -ml-5">
         <Link to="/week">This week</Link>
-      </Button>
+      </Pill>
     </main>
   );
 }
