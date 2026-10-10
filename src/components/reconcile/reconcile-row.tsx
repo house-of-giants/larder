@@ -8,6 +8,7 @@ import { Input } from "#/components/ui/input";
 import { errorMessage } from "#/lib/errors";
 import type { Level } from "#/lib/levels";
 import { parseQuantity } from "#/lib/quantities";
+import { pluralUnit } from "#/lib/units";
 import { NeededText } from "./needed";
 import { afterSave, type SaveTracker } from "./saves";
 
@@ -178,7 +179,9 @@ function CountEditor({
         onChange={(e) => setDraft(e.target.value)}
         onBlur={() => void commit()}
       />
-      <span className="min-w-8 text-caption text-muted-foreground">{shownUnit(unit)}</span>
+      <span className="min-w-8 text-caption text-muted-foreground">
+        {pluralUnit(draft ?? saved, shownUnit(unit))}
+      </span>
     </form>
   );
 }

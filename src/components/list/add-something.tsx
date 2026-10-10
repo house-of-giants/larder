@@ -76,6 +76,7 @@ export function AddSomething({
       onOpenChange={onOpenChange}
       opener={opener}
       title="Add something"
+      note="Goes on this list only, not the pantry."
       footer={
         <Pill
           sheet

@@ -13,10 +13,10 @@ import { nextStatus, viewList } from "./list-view";
 import { recipeNamesLine } from "./row-text";
 import type { CurrentList, ListItem, TapStatus } from "./types";
 
-// The sticky stack under the app header (3rem and its hairline): the progress line (h-6)
-// and the chip row (h-16) pin together, and each aisle heading pins under them.
+// The sticky stack under the app header (3rem and its hairline): the progress line (30px)
+// and the chip row (44px) pin together, 74px in all, and each aisle heading pins under them.
 const PINNED_TOP = "top-[calc(3rem+1px+env(safe-area-inset-top))]";
-const HEADING_TOP = "top-[calc(3rem+1px+5.5rem+env(safe-area-inset-top))]";
+const HEADING_TOP = "top-[calc(3rem+1px+4.625rem+env(safe-area-inset-top))]";
 
 function sectionLabel(category: string): string {
   return categoryLabels[category] ?? category.replace(/_/g, " ");
@@ -192,7 +192,9 @@ function Shell({
     <main className="mx-auto flex max-w-2xl flex-col px-5 pt-3 pb-24">
       <h1 className="font-display text-display">Store</h1>
       <div className={`sticky z-10 -mx-5 bg-background px-5 ${PINNED_TOP}`}>
-        <p className="h-6 truncate text-caption leading-6 text-muted-foreground">{progress}</p>
+        <p className="truncate py-1.5 text-caption leading-[18px] text-muted-foreground">
+          {progress}
+        </p>
         {filterBar}
       </div>
       {children}
@@ -218,6 +220,16 @@ function SyncPill({ online, pending }: { online: boolean; pending: number }) {
   );
 }
 
+/** Scrolls a chip into view along its row; a browser without the options does nothing. */
+function revealSideways(element: HTMLElement) {
+  if (typeof element.scrollIntoView !== "function") return;
+  try {
+    element.scrollIntoView({ inline: "nearest", block: "nearest" });
+  } catch {
+    // An older engine that rejects the options object: leave the row where it is.
+  }
+}
+
 /** The section filter: chips that scroll sideways, fading at the right edge. */
 function FilterBar({
   categories,
@@ -234,14 +246,15 @@ function FilterBar({
   ];
   return (
     <nav aria-label="Store sections" className="-mx-5">
-      <ul className="flex h-16 items-center gap-2.5 overflow-x-auto px-5 mask-r-from-[calc(100%-2.5rem)] [scrollbar-width:none]">
+      {/* pr-12 leaves the last chip, and its focus ring, clear of the 2.5rem fade at the end. */}
+      <ul className="flex h-11 items-center gap-2.5 overflow-x-auto pr-12 pl-5 mask-r-from-[calc(100%-2.5rem)] [scrollbar-width:none]">
         {chips.map(({ value, label }) => (
           <li key={value ?? "all"} className="shrink-0">
             <Chip
               selected={value === active}
               onClick={(event) => {
                 onChange(value);
-                event.currentTarget.scrollIntoView({ inline: "nearest", block: "nearest" });
+                revealSideways(event.currentTarget);
               }}
             >
               {label}

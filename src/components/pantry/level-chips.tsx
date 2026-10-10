@@ -27,7 +27,7 @@ export function LevelChips({
             onClick={() => {
               if (!current) onChange(level);
             }}
-            className="min-w-11 justify-center disabled:opacity-60"
+            className="min-w-11 disabled:opacity-60"
           >
             {levelLabels[level]}
           </Chip>
