@@ -68,9 +68,20 @@ export function setThemePreference(preference: ThemePreference): void {
   apply();
 }
 
-/** Keeps the theme applied for as long as the page is open. Called once, from the shell. */
+/**
+ * Keeps the theme applied for as long as the page is open. Called once, from the shell.
+ * Marks `<html data-theme-ready="1">` once it listens: the page is hydrated and follows the
+ * phone from then on (the e2e theme suite waits on it).
+ */
 export function useThemeSync(): void {
-  useEffect(() => subscribeTheme(() => {}), []);
+  useEffect(() => {
+    const unsubscribe = subscribeTheme(() => {});
+    document.documentElement.dataset.themeReady = "1";
+    return () => {
+      delete document.documentElement.dataset.themeReady;
+      unsubscribe();
+    };
+  }, []);
 }
 
 /** What the person picked: System, Light, or Dark. The server render assumes System. */

@@ -36,6 +36,14 @@ describe("invite links through sign-in", () => {
     expect(leaf?.search).toMatchObject({ redirect_url: "/join?code=abc" });
   });
 
+  // Clerk's sign-in card links to sign-up with the return address as a full URL; the
+  // screen reduces it with the page's origin, so the route must not drop it first.
+  it.each(["/sign-in", "/sign-up"])("%s keeps an absolute redirect_url", (path) => {
+    const url = "http://127.0.0.1:3100/join?code=abc";
+    const leaf = router.matchRoutes(path, { redirect_url: url }).at(-1);
+    expect(leaf?.search).toMatchObject({ redirect_url: url });
+  });
+
   it.each(["/sign-in", "/sign-up"])("%s drops a redirect_url to another site", (path) => {
     // `search` is what Route.useSearch() hands the screen, raw params merged in.
     const leaf = router.matchRoutes(path, { redirect_url: "//evil.com" }).at(-1);

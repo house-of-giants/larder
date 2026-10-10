@@ -94,13 +94,21 @@ function RootDocument({ children }: { children: ReactNode }) {
 
 function Providers({ children }: { children: ReactNode }) {
   return (
-    <ClerkProvider appearance={clerkAppearance}>
+    <ClerkProvider appearance={clerkAppearance} allowedRedirectOrigins={allowedRedirectOrigins()}>
       <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
         <OfflineIdentityProvider>{children}</OfflineIdentityProvider>
         <Toaster position="top-center" />
       </ConvexProviderWithClerk>
     </ClerkProvider>
   );
+}
+
+// Clerk follows a redirect only to these origins. Its default also allows every subdomain
+// of the Frontend API's parent domain (a sibling app, or anyone's on a shared one); the app
+// sends people back only to itself. Clerk checks redirects in the browser, so the server
+// render passes nothing.
+function allowedRedirectOrigins(): string[] | undefined {
+  return typeof window === "undefined" ? undefined : [window.location.origin];
 }
 
 // Clerk's sign-in and sign-up cards drawn from the app's own tokens, so they follow the

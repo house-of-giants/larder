@@ -35,6 +35,19 @@ test.describe("with Clerk keys", () => {
     await expect(page.locator('[data-screen="sign-in"]')).toBeVisible();
   });
 
+  test("a redirect_url to another site never reaches Clerk's card", async ({ page }) => {
+    await page.goto("/sign-in?redirect_url=https%3A%2F%2Fevil.example.com%2Fphish");
+    const card = page.locator('[data-screen="sign-in"]');
+    await expect(card.locator("form").first()).toBeVisible();
+    // Gone from the address bar, where Clerk would otherwise read it ahead of the app.
+    await expect(page).toHaveURL("/sign-in");
+    const hrefs = await card
+      .locator("a")
+      .evaluateAll((links) => links.map((a) => (a as HTMLAnchorElement).href));
+    expect(hrefs.length).toBeGreaterThan(0);
+    for (const href of hrefs) expect(decodeURIComponent(href)).not.toContain("evil.example.com");
+  });
+
   test("a nested sign-in step still renders the sign-in screen", async ({ page }) => {
     const response = await page.goto("/sign-in/verify/factor-one");
     expect(response?.status()).toBe(200);
