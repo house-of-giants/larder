@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from "react";
+import { Pill } from "#/components/kit/pill";
 import { Button } from "#/components/ui/button";
 import {
   Dialog,
@@ -62,23 +63,32 @@ export function ConfirmDialog({
           <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
         {error && (
-          <p role="alert" className="text-sm text-destructive">
+          <p role="alert" className="text-caption text-destructive">
             {error}
           </p>
         )}
         <DialogFooter>
           <DialogClose asChild>
-            <Button variant="outline" disabled={pending}>
+            <Pill variant="outline" disabled={pending}>
               Cancel
-            </Button>
+            </Pill>
           </DialogClose>
-          <Button
-            variant={destructive ? "destructive" : "default"}
-            disabled={pending}
-            onClick={confirm}
-          >
-            {confirmLabel}
-          </Button>
+          {destructive ? (
+            // Tomato ink as an outline (DESIGN.md, the Destructive Rule), at the pill's 44px.
+            <Button
+              variant="destructive"
+              size="pill"
+              className="rounded-full text-subhead font-semibold"
+              disabled={pending}
+              onClick={confirm}
+            >
+              {confirmLabel}
+            </Button>
+          ) : (
+            <Pill disabled={pending} onClick={confirm}>
+              {confirmLabel}
+            </Pill>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>
